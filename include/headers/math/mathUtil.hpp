@@ -6,8 +6,35 @@
 #include "constants.hpp"
 #include "vector3.hpp"
 #include "vector2.hpp"
+#include "vector2i.hpp"
 
 namespace pathtracer{
+
+
+    class Util{
+
+        public:  
+
+        static int floor(real x){
+            return static_cast<int>(x);
+        }
+
+
+        static int ceiling(real x){
+            return static_cast<int>(x + 0.5);
+        }
+
+
+        static Vector2i floor(Vector2 uv){
+            return Vector2i(floor(uv.x()), floor(uv.y()));
+        }
+
+
+        static Vector2i ceiling(Vector2 uv){
+            return Vector2i(ceiling(uv.x()), ceiling(uv.y()));
+        }
+
+    };
 
 
     class Barycentric{
