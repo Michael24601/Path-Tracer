@@ -40,6 +40,26 @@ namespace pathtracer{
         const Texture* const alphaTexture() const{
             return m_alpha;
         }
+
+        
+        const Texture* const albedoTexture() const{
+            return m_albedo;
+        }
+
+
+        const Texture* const normalTexture() const{
+            return m_normal;
+        }
+
+
+        const Transform& transform() const{
+            return m_transform;
+        }
+
+
+        const Shape* const shape() const{
+            return m_shape;
+        }
         
 
     };

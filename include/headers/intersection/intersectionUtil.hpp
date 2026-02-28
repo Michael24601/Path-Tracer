@@ -34,14 +34,18 @@ namespace pathtracer{
         // function probabilistically chooses to either go through
         // or intersect the surface at this point, given the alpha
         // value at the intersection and using it as a probability.
-        static bool alphaMask(const Intersection& its){
+        // Note that we input instance alongside the intersection
+        // instead of using the instance parameter since it may not
+        // have been set yet.
+        static bool alphaMask(const Intersection& its, 
+            const Instance* instance){
 
             // First we extract the alpha value if available
-            if(!its.instance()->hasAlphaTexture()){
+            if(!instance->hasAlphaTexture()){
                 return true;
             }
 
-            real alpha = its.instance()->alphaTexture()->sample(its.uv()).x();
+            real alpha = instance->alphaTexture()->sample(its.uv()).x();
 
             real random = Random::next();
             // If alpha is 0, it means that we will always pass through.

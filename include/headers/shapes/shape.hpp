@@ -5,6 +5,7 @@
 #include "config.hpp"
 #include "../core/ray.hpp"
 #include "../intersection/intersection.hpp"
+#include "../intersection/intersectionList.hpp"
 #include "../core/areaSample.hpp"
 #include "../bvh/axisAlignedBox.hpp"
 #include "../core/random.hpp"
@@ -12,25 +13,12 @@
 
 namespace pathtracer{
 
-    enum class Space { 
-        LOCAL,
-        GLOBAL
-    };
-
-
     class Shape{
-
-    private:
-        
-        Space m_space;
 
     public:
 
-        Shape(Space space) : m_space{space}{} 
-
-
-        virtual Space space() const { return m_space; }
-
+        Shape() {} 
+        
 
         // Returns surface area of the shape, in the space it is
         // defined in.
@@ -48,7 +36,7 @@ namespace pathtracer{
         // Note that the intersection only checks if the ray
         // intersects the object. It does not check for visibility,
         // whether the object is behind the ray, or for self inetrsection.
-        virtual std::vector<Intersection> intersect(const Ray&) const = 0;
+        virtual void intersect(const Ray&, IntersectionList&) const = 0;
 
 
         // Samples a random point on the surface area

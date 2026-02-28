@@ -34,6 +34,19 @@ namespace pathtracer{
             return Vector2i(ceiling(uv.x()), ceiling(uv.y()));
         }
 
+
+        static void swap(real& x, real& y){
+            real temp = x;
+            x = y;
+            y = temp;
+        }
+
+
+        static real clamp(real value, real minVal, real maxVal){
+            return (value < minVal) ? minVal : 
+                (value > maxVal ? maxVal : value);
+        }
+
     };
 
 

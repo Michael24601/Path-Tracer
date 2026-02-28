@@ -19,21 +19,42 @@ namespace pathtracer{
             Vector3 point = ray.at(t);
             // The shading and geometry normal are the same
             Vector3 normal = point.normalized();
-            return Intersection(t, point, normal, normal, nullptr);
+
+            // UV calculation
+            real theta = std::acos(Util::clamp(normal.z(), -1, 1));
+            real phi   = std::atan2(normal.y(), normal.x());
+            if (phi < 0){
+                    phi += 2 * PI;
+            }
+
+            Vector2 uv(phi * 0.5 * INV_PI, theta * INV_PI);
+
+            // Tangent calculation
+            Vector3 tangent(-normal.y(), normal.x(), 0.0);
+
+            if (tangent.lengthSquared() > 0){
+                tangent = tangent.normalized();
+            }
+            else{
+                tangent = Vector3(1, 0, 0);
+            }
+            
+            return Intersection(t, point, normal, normal, tangent, 
+                uv, nullptr);
         }
 
     public:
 
-        Sphere(): Shape(Space::LOCAL) {}
+        Sphere() {}
 
 
-        virtual real getSurfaceArea() const{
+        real getSurfaceArea() const override{
             // For a sphere with radius 1
             return 4 * PI;
         }
 
 
-        virtual AxisAlignedBox getBoundingBox() const {
+        AxisAlignedBox getBoundingBox() const override {
             // The local sphere will range between -1 and 1
             // for all axes.
             return AxisAlignedBox(Vector3(-1.0), Vector3(1.0));
@@ -41,7 +62,7 @@ namespace pathtracer{
 
         
         // Intersects the shape with a ray
-        virtual std::vector<Intersection> intersect(const Ray& ray) const{
+        void intersect(const Ray& ray, IntersectionList& list) const override{
             // Solving for the sphere intersection can be done
             // by plugging the parametric ray equation into the implicit
             // unit sphere equation:
@@ -50,8 +71,6 @@ namespace pathtracer{
             // t^2||d||^2 + 2t<d, o> + ||o||^2 - 1 = 0
             // at^2 + bt + c = 0
             // Which can be solved by checking the discriminant.
-
-            std::vector<Intersection> intersections;
             
             // The norm of the direction is 1
             real a = 1;
@@ -61,12 +80,12 @@ namespace pathtracer{
             real discriminant = b * b - 4 * a * c;
 
             if(discriminant < 0){
-                return intersections;
+                return;
             }
             else if (discriminant < EPSILON){
                 // Only one solution, which is -b/2a
                 real t = -b / (2.0 * a);
-                intersections.push_back(generateIntersection(ray, t));
+                list.push(generateIntersection(ray, t));
             }
             else{
                 // In this case we have two solutions
@@ -74,15 +93,13 @@ namespace pathtracer{
                 real t0 = -b - sqrtDiscriminant / (2.0 * a);
                 real t1 = -b + sqrtDiscriminant / (2.0 * a);
                 
-                intersections.push_back(generateIntersection(ray, t0));
-                intersections.push_back(generateIntersection(ray, t1));
+                list.push(generateIntersection(ray, t0));
+                list.push(generateIntersection(ray, t1));
             }
-
-            return intersections;
         }
 
 
-        virtual AreaSample sampleSurfaceArea() const{
+        AreaSample sampleSurfaceArea() const override{
             // We will sample the sphere surface area by mapping
             // a 2D square onto the sphere using spherical coordinates.
             Vector2 uv = Random::next2D();
