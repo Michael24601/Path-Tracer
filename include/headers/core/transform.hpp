@@ -20,6 +20,8 @@ namespace pathtracer{
         Vector3 m_translation;
 
     public:
+
+        static Transform IDENTITY;
     
         // Identity matrix and no translation
         Transform(){

@@ -7,6 +7,7 @@
 #include "vector2.hpp"
 #include "shape.hpp"
 #include "instance.hpp"
+#include "../bsdf/bsdfSample.hpp"
 
 namespace pathtracer{
 
@@ -29,6 +30,10 @@ namespace pathtracer{
         Vector2 m_uv;
 
         const Instance* m_instance;
+
+        // The shading frame that consists of the bitangent, tangent
+        // and normals, where the normal is the z coordinate.
+        Transform m_shadingFrame;
         
 
     public:
@@ -98,9 +103,82 @@ namespace pathtracer{
         }
 
 
+        void computeShadingFrame(){
+            // Bitangent
+            Vector3 bit = m_shadingNormal.cross(m_tangent);
+
+            Matrix3 frame = Matrix3(m_tangent, bit, m_shadingNormal);
+            m_shadingFrame = Transform(frame, Vector3::ORIGIN);
+        }
+
+
         // Returns false if not a hit
         explicit operator bool() const {
             return m_t < std::numeric_limits<real>::infinity();
+        }
+
+
+        // Samples the BSDF of the instance at this point.
+        // We assume the direction wo is given in world coordinates.
+        BsdfSample sample(const Vector3& wo) const{
+
+            if(!m_instance || !m_instance->bsdf()){
+                return BsdfSample::INVALID;
+            }
+
+            // We transform the direction wo to local coordinates
+            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
+            BsdfSample sample = m_instance->bsdf()->sample(localWo, m_uv);
+
+            // We then transform the result back to world coordinates
+            Vector3 wi = m_shadingFrame.transformDirection(sample.wi());
+            sample.setWi(wi);
+
+            // The pdf and bsdf remain the same. The cosine term
+            // also remains the same since the shading frame is
+            // orthonormal.
+            return sample;
+        }
+
+
+        // Evaluates the BSDF of the instance at this point.
+        // We assume the direction wo is given in world coordinates.
+        // We are given the wi already, so there is no need to
+        // sample anything.
+        BsdfSample evaluate(const Vector3& wo, const Vector3& wi,
+            real pdf) const{
+
+            if(!m_instance || !m_instance->bsdf()){
+                return BsdfSample::INVALID;
+            }
+
+            // We transform the direction wo and wi to local coordinates
+            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
+            Vector3 localWi = m_shadingFrame.inverseTransformDirection(wi);
+
+            // No need to transform anything else
+            BsdfSample sample = 
+                m_instance->bsdf()->evaluate(localWo, m_uv, localWi, pdf);
+
+            // We then transform the result back to world coordinates
+            sample.setWi(wi);
+
+            // The pdf and bsdf remain the same. The cosine term
+            // also remains the same since the shading frame is
+            // orthonormal.
+            return sample;
+        }
+
+
+        // Here, we just evaluate the emission at this point.
+        Vector3 evaluateEmission(const Vector3& wo) const{
+
+            if(!m_instance || !m_instance->emission()){
+                return Vector3::ORIGIN;
+            }
+
+            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
+            return m_instance->emission()->evaluate(wo, m_uv);
         }
 
     };

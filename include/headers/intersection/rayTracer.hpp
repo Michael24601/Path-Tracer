@@ -81,6 +81,8 @@ namespace pathtracer{
                 // older one.
                 oldIt = *list.top();
                 transformIntersection(oldIt, instance, ray);
+                // We also compute the shading frame now
+                oldIt.computeShadingFrame();
                 break;
             }
         }

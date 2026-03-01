@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_AXIS_ALIGNED_BOX_HPP
 #define PATH_TRACER_AXIS_ALIGNED_BOX_HPP
 
-#include "vector3.hpp"
+#include "../core/ray.hpp"
 
 namespace pathtracer{
 
@@ -27,6 +27,11 @@ namespace pathtracer{
 
 
         const Vector3& maxCorner() const { return m_maxCorner; } 
+
+        
+        bool intersect(const Ray& ray) const{
+            return false;
+        }
 
     };
 

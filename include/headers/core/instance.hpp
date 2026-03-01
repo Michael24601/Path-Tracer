@@ -6,6 +6,8 @@
 #include "shape.hpp"
 #include "transform.hpp"
 #include "../texture/texture.hpp"
+#include "../bsdf/bsdf.hpp"
+#include "emission.hpp"
 
 namespace pathtracer{
 
@@ -17,6 +19,8 @@ namespace pathtracer{
         const Texture* m_alpha;
         const Texture* m_normal;
         const Texture* m_albedo;
+        const Bsdf* m_bsdf;
+        const Emission* m_emission;
         Transform m_transform;
 
     public:
@@ -59,6 +63,16 @@ namespace pathtracer{
 
         const Shape* const shape() const{
             return m_shape;
+        }
+
+
+        const Emission* const emission() const{
+            return m_emission;
+        }
+
+
+        const Bsdf* const bsdf() const {
+            return m_bsdf;
         }
         
 

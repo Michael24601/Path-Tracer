@@ -6,7 +6,7 @@
 #include "../core/ray.hpp"
 #include "../intersection/intersection.hpp"
 #include "../intersection/intersectionList.hpp"
-#include "../core/areaSample.hpp"
+#include "../bsdf/areaSample.hpp"
 #include "../bvh/axisAlignedBox.hpp"
 #include "../core/random.hpp"
 #include "../math/mathUtil.hpp"

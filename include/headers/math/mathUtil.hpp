@@ -116,6 +116,36 @@ namespace pathtracer{
 
     };
 
+
+    // Does the same for a Hemisphere 
+    class SquareToHemisphereUniform{
+    
+    public: 
+        
+        // Transforms uv coordinates in a unit square to 3D
+        // coordinates on a unit hemisphere uniformly.
+        static Vector3 transform(const Vector2& uv){
+            real theta = 2.0 * PI * uv.x();
+
+            real z = uv.y();
+            real r = sqrt(1.0 - z * z);
+
+            return Vector3{
+                r * cos(theta),
+                r * sin(theta),
+                z
+            };
+        }
+
+        
+        // The PDF is constant since it is uniform over the hemisphere 
+        // area. It is half of the surface area of a sphere.
+        static real pdf(const Vector3& point){
+            return 0.5 * INV_PI;
+        }
+
+    };
+
 }
 
 #endif

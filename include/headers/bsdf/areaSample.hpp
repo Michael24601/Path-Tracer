@@ -2,8 +2,7 @@
 #ifndef PATH_TRACER_AREA_SAMPLE_HPP
 #define PATH_TRACER_AREA_SAMPLE_HPP
 
-#include "shape.hpp"
-#include "transform.hpp"
+#include "../core/transform.hpp"
 
 namespace pathtracer{
 
