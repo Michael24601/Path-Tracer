@@ -4,6 +4,8 @@
 
 #include "shape.hpp"
 #include "../math/constants.hpp"
+#include "../intersection/IntersectionList.hpp"
+#include "../intersection/areaSample.hpp"
 
 namespace pathtracer{
 
@@ -13,10 +15,10 @@ namespace pathtracer{
     
     private:
 
-        // Given a ray and a distance t along it, sets the intersection
-        // object.
-        Intersection generateIntersection(const Ray& ray, real t) const {
-            Vector3 point = ray.at(t);
+        // Generates the point with its shading frame and texture coordinates
+        SurfacePoint generateSurfacePoint(const Vector3& point) 
+            const {
+
             // The shading and geometry normal are the same
             Vector3 normal = point.normalized();
 
@@ -39,8 +41,10 @@ namespace pathtracer{
                 tangent = Vector3(1, 0, 0);
             }
             
-            return Intersection(t, point, normal, normal, tangent, 
-                uv, nullptr);
+            // The instance is null since this class doesn't know 
+            // which isntance of itself it is. 
+            return SurfacePoint(point, normal, normal, tangent, uv, 
+                nullptr);
         }
 
     public:
@@ -85,7 +89,8 @@ namespace pathtracer{
             else if (discriminant < EPSILON){
                 // Only one solution, which is -b/2a
                 real t = -b / (2.0 * a);
-                list.push(generateIntersection(ray, t));
+                Vector3 point = ray.at(t);
+                list.push(Intersection(t, generateSurfacePoint(point)));
             }
             else{
                 // In this case we have two solutions
@@ -93,8 +98,10 @@ namespace pathtracer{
                 real t0 = -b - sqrtDiscriminant / (2.0 * a);
                 real t1 = -b + sqrtDiscriminant / (2.0 * a);
                 
-                list.push(generateIntersection(ray, t0));
-                list.push(generateIntersection(ray, t1));
+                Vector3 point0 = ray.at(t0);
+                Vector3 point1 = ray.at(t1);
+                list.push(Intersection(t0, generateSurfacePoint(point0)));
+                list.push(Intersection(t1, generateSurfacePoint(point1)));
             }
         }
 
@@ -110,7 +117,7 @@ namespace pathtracer{
             // the reciprocal of the surface area. If not, we would
             // have had to calculate the proabbility of choosing
             // this specific point and returned that value.
-            AreaSample sample(point, pdf);
+            AreaSample sample(generateSurfacePoint(point), pdf);
         }
 
     };

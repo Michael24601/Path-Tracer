@@ -4,6 +4,7 @@
 
 #include "shape.hpp"
 #include "../math/constants.hpp"
+#include "../intersection/IntersectionList.hpp"
 
 namespace pathtracer{
 

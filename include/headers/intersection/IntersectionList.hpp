@@ -3,9 +3,10 @@
 #ifndef PATH_TRACER_INTERSECTION_LIST_HPP
 #define PATH_TRACER_INTERSECTION_LIST_HPP
 
-#include "vector3.hpp"
-#include "shape.hpp"
-#include "instance.hpp"
+#include "../math/vector3.hpp"
+#include "../shapes/shape.hpp"
+#include "../core/instance.hpp"
+#include "intersection.hpp"
 
 namespace pathtracer{
 

@@ -3,11 +3,11 @@
 #ifndef PATH_TRACER_INSTANCE_HPP
 #define PATH_TRACER_INSTANCE_HPP
 
-#include "shape.hpp"
-#include "transform.hpp"
+#include "../shapes/shape.hpp"
 #include "../texture/texture.hpp"
 #include "../bsdf/bsdf.hpp"
-#include "emission.hpp"
+#include "../emission/emission.hpp"
+#include "transform.hpp"
 
 namespace pathtracer{
 
@@ -24,6 +24,15 @@ namespace pathtracer{
         Transform m_transform;
 
     public:
+
+
+        Instance(const Shape* shape,
+            const Texture* alpha, const Texture* normal,
+            const Texture* albedo, const Bsdf* bsdf,
+            const Emission* emission, const Transform& transform) : 
+            m_shape(shape), m_alpha(alpha), m_normal(normal),
+            m_albedo(albedo), m_bsdf(bsdf), m_emission(emission),
+            m_transform(transform) {}
 
         
         bool hasAlphaTexture() const{

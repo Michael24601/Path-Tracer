@@ -3,7 +3,7 @@
 
 namespace pathtracer{
 
-    BsdfSample BsdfSample::INVALID = BsdfSample(Vector3::ORIGIN, 
-        Vector3::ORIGIN, 0.0, -1.0);
+    BsdfSample BsdfSample::INVALID = 
+        BsdfSample(Vector3(0.0), Vector3::ORIGIN, 0.0, 0.0);
         
 }

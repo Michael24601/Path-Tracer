@@ -2,16 +2,16 @@
 #ifndef PATH_TRACER_SHAPE_HPP
 #define PATH_TRACER_SHAPE_HPP
 
-#include "config.hpp"
 #include "../core/ray.hpp"
-#include "../intersection/intersection.hpp"
-#include "../intersection/intersectionList.hpp"
-#include "../bsdf/areaSample.hpp"
 #include "../bvh/axisAlignedBox.hpp"
 #include "../core/random.hpp"
 #include "../math/mathUtil.hpp"
 
 namespace pathtracer{
+
+    // Forward declaration
+    class IntersectionList;
+    class AreaSample;
 
     class Shape{
 

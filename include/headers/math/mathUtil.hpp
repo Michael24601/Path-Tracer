@@ -2,7 +2,6 @@
 #ifndef PATH_TRACER_MATH_UTIL_HPP
 #define PATH_TRACER_MATH_UTIL_HPP
 
-#include "config.hpp"
 #include "constants.hpp"
 #include "vector3.hpp"
 #include "vector2.hpp"

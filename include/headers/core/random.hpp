@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_RANDOM_HPP
 #define PATH_TRACER_RANDOM_HPP
 
-#include "vector2.hpp"
+#include "../math/vector2.hpp"
 
 namespace pathtracer{
 

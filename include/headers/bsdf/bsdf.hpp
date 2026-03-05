@@ -4,6 +4,7 @@
 
 #include "../math/vector2.hpp"
 #include "bsdfSample.hpp"
+#include "bsdfEvaluation.hpp"
 
 namespace pathtracer{
 
@@ -28,8 +29,8 @@ namespace pathtracer{
         // for a BSDF since some BSDFs require a specific angle
         // to be sampled from with respect to the exitant direction
         // wo.
-        // Note that this in local coordinates, and wo is expected
-        // to be local.
+        // Note that this in the shading frame coordinates, 
+        // and wo is expected to be transformed already.
         virtual BsdfSample sample(const Vector3& wo, const Vector2& uv) 
             const = 0;
 
@@ -45,8 +46,8 @@ namespace pathtracer{
         // only reflects light in wo from one specific direction wi,
         // the probability that the given wi matches that is 0,
         // so we return an invalid sample.
-        virtual BsdfSample evaluate(const Vector3& wo, 
-            const Vector2& uv, const Vector3& wi, real pdf) const = 0;
+        virtual BsdfEvaluation evaluate(const Vector3& wo, 
+            const Vector3& wi, const Vector2& uv) const = 0;
         
 
     };

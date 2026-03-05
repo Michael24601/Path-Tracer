@@ -2,10 +2,10 @@
 #ifndef PATH_TRACER_TEXTURE_HPP
 #define PATH_TRACER_TEXTURE_HPP
 
-#include "vector3.hpp"
-#include "vector2.hpp"
+#include "../math/vector3.hpp"
+#include "../math/vector2.hpp"
+#include "../math/mathUtil.hpp"
 #include "textureUtil.hpp"
-#include "mathUtil.hpp"
 
 namespace pathtracer{
 

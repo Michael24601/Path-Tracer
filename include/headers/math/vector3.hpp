@@ -141,6 +141,14 @@ namespace pathtracer{
         }
 
 
+        // Element-wise product
+        Vector3 operator*(const Vector3& v) const{
+            return Vector3(m_data[0] * v.m_data[0], 
+                m_data[1] * v.m_data[1], m_data[2] * v.m_data[2]);
+        }
+
+
+
         // Dot product
         real dot(const Vector3& v) const{
             return m_data[0] * v.m_data[0]

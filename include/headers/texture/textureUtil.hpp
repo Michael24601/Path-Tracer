@@ -3,9 +3,9 @@
 #ifndef PATH_TRACER_TEXTURE_UTIL_HPP
 #define PATH_TRACER_TEXTURE_UTIL_HPP
 
-#include "vector3.hpp"
-#include "vector2.hpp"
-#include "vector2i.hpp"
+#include "../math/vector3.hpp"
+#include "../math/vector2.hpp"
+#include "../math/mathUtil.hpp"
 
 namespace pathtracer{
 

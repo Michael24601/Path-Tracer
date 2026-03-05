@@ -23,11 +23,6 @@ namespace pathtracer{
     public:
 
         static BsdfSample INVALID;
-
-
-        bool isInvalid() const {
-            return m_pdf <= 0.0;
-        }
         
         
         BsdfSample(const Vector3& bsdf, const Vector3& wi, 

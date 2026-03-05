@@ -37,6 +37,16 @@ namespace pathtracer{
         Scene(){}
 
 
+        int instanceCount() const { return instances.size(); }
+
+
+        const Instance* const instance(int index) const { 
+            assert((index >=  0 && index < instances.size())
+                && "Index is out of bounds");
+            return instances[index];
+        }
+
+
         // Expects ray this is in world coordinates.
         // Returns the closest hit.
         Intersection intersect(const Ray& ray) const {
@@ -51,8 +61,8 @@ namespace pathtracer{
         }
 
 
-        bool visibility(const Vector3& origin, 
-            const Vector3& target, const Vector3& direction){
+        bool visibility(const Vector3& origin, const Vector3& target,
+            const Vector3& direction) const {
 
             real distance = (origin - target).length();
             // We then add a spall pad to avoid self intersection

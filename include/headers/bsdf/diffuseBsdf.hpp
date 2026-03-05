@@ -39,15 +39,11 @@ namespace pathtracer{
         }
 
 
-        BsdfSample evaluate(const Vector3& wo, const Vector2& uv, 
-            const Vector3& wi, real pdf) const override{
+        BsdfEvaluation evaluate(const Vector3& wo, 
+            const Vector3& wi, const Vector2& uv) const override{
 
             Vector3 bsdf = m_albedo->sample(uv) * INV_PI;
-            // The cosine term is the normal dot wi, and since we
-            // are in local coordinates, the normal is the z axis.
-            real cosine = Bsdf::cosineTerm(wi);
-
-            return BsdfSample(bsdf, wi, cosine, pdf);
+            return BsdfEvaluation(bsdf, false);
         }
         
 

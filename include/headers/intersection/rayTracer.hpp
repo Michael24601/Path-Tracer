@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_RAY_TRACER_HPP
 #define PATH_TRACER_RAY_TRACER_HPP
 
-#include "instance.hpp"
+#include "../core/instance.hpp"
 #include "intersectionUtil.hpp"
 #include "IntersectionList.hpp"
 

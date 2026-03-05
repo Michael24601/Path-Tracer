@@ -3,9 +3,9 @@
 #ifndef PATH_TRACER_TRANSFORM_HPP
 #define PATH_TRACER_TRANSFORM_HPP
 
-#include "vector3.hpp"
-#include "matrix3.hpp"
-#include "matrix4.hpp"
+#include "../math/vector3.hpp"
+#include "../math/matrix3.hpp"
+#include "../math/matrix4.hpp"
 #include "../core/ray.hpp"
 
 namespace pathtracer{
@@ -50,6 +50,14 @@ namespace pathtracer{
             Matrix3 invM = m_transform.inverse();
             Vector3 invT = -(invM * m_translation);
             return Transform(invM, invT);
+        }
+
+
+        // Returns the inverse tranpose without the translation
+        Transform inverseTranspose() const{
+            Matrix3 invM = m_transform.inverse().transposed();
+            Vector3 t = Vector3::ORIGIN;
+            return Transform(invM, t);
         }
 
 
@@ -106,7 +114,8 @@ namespace pathtracer{
         }
 
 
-        real getScale() const{
+        // Returns the determinant of the transform matrix
+        real determinant() const{
             return m_transform.determinant();
         }
        

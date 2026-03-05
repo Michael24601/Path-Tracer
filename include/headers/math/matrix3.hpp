@@ -4,6 +4,7 @@
 
 #include "../config.hpp"
 #include "constants.hpp"
+#include "mathUtil.hpp"
 
 namespace pathtracer{
 

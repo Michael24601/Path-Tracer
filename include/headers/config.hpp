@@ -2,6 +2,8 @@
 #ifndef PATH_TRACER_CONFIG_HPP
 #define PATH_TRACER_CONFIG_HPP
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+
 #include <cmath>
 #include <vector>
 #include <string>

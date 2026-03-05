@@ -1,12 +1,14 @@
 
 all:
-	g++ -O3 -DNDEBUG *.cpp -o ./build/build.exe
+	if not exist build mkdir build
+	g++ -O3 -DNDEBUG source/*.cpp -I. -o build/build.exe
 
 debug:
-	g++ -g -DDEBUG_MODE -O0 *.cpp -o ./build/build.exe
+	if not exist build mkdir build
+	g++ -g -DDEBUG_MODE -O0 source/*.cpp -I. -o build/build.exe
 
 run: all
-	./build/build
+	build/build.exe
 
 clean:
-	rm -rf build
+	if exist build rmdir /s /q build

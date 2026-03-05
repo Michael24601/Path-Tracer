@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_RAY_HPP
 #define PATH_TRACER_RAY_HPP
 
-#include "vector3.hpp"
+#include "../math/vector3.hpp"
 
 namespace pathtracer{
 

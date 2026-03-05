@@ -3,39 +3,19 @@
 #ifndef PATH_TRACER_INTERSECTION_HPP
 #define PATH_TRACER_INTERSECTION_HPP
 
-#include "vector3.hpp"
-#include "vector2.hpp"
-#include "shape.hpp"
-#include "instance.hpp"
-#include "../bsdf/bsdfSample.hpp"
+#include "surfacePoint.hpp"
+
 
 namespace pathtracer{
 
-    class Intersection{
+    // Represents a surface point we got by intersecting with a ray
+    class Intersection: public SurfacePoint {
 
     private:
 
         // Distance along the ray that the intersection took place.
         real m_t;
-
-        Vector3 m_position;
-
-        Vector3 m_geometryNormal;
-
-        Vector3 m_shadingNormal;
-
-        Vector3 m_tangent;
-
-        // Texture coordinates
-        Vector2 m_uv;
-
-        const Instance* m_instance;
-
-        // The shading frame that consists of the bitangent, tangent
-        // and normals, where the normal is the z coordinate.
-        Transform m_shadingFrame;
         
-
     public:
 
         static Intersection NO_HIT;
@@ -45,140 +25,23 @@ namespace pathtracer{
             const Vector3& geometryNormal, const Vector3& shadingNormal,
             const Vector3& tangent, const Vector2& uv, 
             const Instance* instance) : 
-            m_t{t}, m_position(position), 
-            m_geometryNormal(geometryNormal), 
-            m_shadingNormal(shadingNormal),
-            m_tangent(tangent),
-            m_uv(uv),
-            m_instance{instance} {};
+            m_t{t}, SurfacePoint(position, geometryNormal, 
+                shadingNormal, tangent, uv, instance) {};
+
+
+        Intersection(real t, const SurfacePoint& sp) : 
+            m_t{t}, SurfacePoint(sp) {};
 
 
         const real t() const { return m_t; }
 
 
-        const Vector3& position() const { return m_position; }
-
-
-        const Vector3& geometryNormal() const { return m_geometryNormal; }
-        
-        
-        const Vector3& shadingNormal() const { return m_shadingNormal; }
-
-
-        const Vector3& tangent() const { return m_tangent; }
-
-    
-        const Vector2& uv() const { return m_uv; }
-
-        
-        const Instance* instance() const { return m_instance; }
-
-
         void setT(real t) { m_t = t; }
-
-
-        void setPosition(const Vector3& pos) { m_position = pos; }
-
-        
-        void setGeometryNormal(const Vector3& normal) { 
-            m_geometryNormal = normal; 
-        }
-
-
-        void setShadingNormal(const Vector3& normal) { 
-            m_shadingNormal = normal; 
-        }
-
-
-        void setTangent(const Vector3& tangent){
-            m_tangent = tangent;
-        }
-
-
-        void setUV(const Vector2& uv) { m_uv = uv; }
-
-
-        void setInstance(const Instance* instance) { 
-            m_instance = instance; 
-        }
-
-
-        void computeShadingFrame(){
-            // Bitangent
-            Vector3 bit = m_shadingNormal.cross(m_tangent);
-
-            Matrix3 frame = Matrix3(m_tangent, bit, m_shadingNormal);
-            m_shadingFrame = Transform(frame, Vector3::ORIGIN);
-        }
 
 
         // Returns false if not a hit
         explicit operator bool() const {
             return m_t < std::numeric_limits<real>::infinity();
-        }
-
-
-        // Samples the BSDF of the instance at this point.
-        // We assume the direction wo is given in world coordinates.
-        BsdfSample sample(const Vector3& wo) const{
-
-            if(!m_instance || !m_instance->bsdf()){
-                return BsdfSample::INVALID;
-            }
-
-            // We transform the direction wo to local coordinates
-            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
-            BsdfSample sample = m_instance->bsdf()->sample(localWo, m_uv);
-
-            // We then transform the result back to world coordinates
-            Vector3 wi = m_shadingFrame.transformDirection(sample.wi());
-            sample.setWi(wi);
-
-            // The pdf and bsdf remain the same. The cosine term
-            // also remains the same since the shading frame is
-            // orthonormal.
-            return sample;
-        }
-
-
-        // Evaluates the BSDF of the instance at this point.
-        // We assume the direction wo is given in world coordinates.
-        // We are given the wi already, so there is no need to
-        // sample anything.
-        BsdfSample evaluate(const Vector3& wo, const Vector3& wi,
-            real pdf) const{
-
-            if(!m_instance || !m_instance->bsdf()){
-                return BsdfSample::INVALID;
-            }
-
-            // We transform the direction wo and wi to local coordinates
-            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
-            Vector3 localWi = m_shadingFrame.inverseTransformDirection(wi);
-
-            // No need to transform anything else
-            BsdfSample sample = 
-                m_instance->bsdf()->evaluate(localWo, m_uv, localWi, pdf);
-
-            // We then transform the result back to world coordinates
-            sample.setWi(wi);
-
-            // The pdf and bsdf remain the same. The cosine term
-            // also remains the same since the shading frame is
-            // orthonormal.
-            return sample;
-        }
-
-
-        // Here, we just evaluate the emission at this point.
-        Vector3 evaluateEmission(const Vector3& wo) const{
-
-            if(!m_instance || !m_instance->emission()){
-                return Vector3::ORIGIN;
-            }
-
-            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
-            return m_instance->emission()->evaluate(wo, m_uv);
         }
 
     };
