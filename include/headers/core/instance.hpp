@@ -11,6 +11,10 @@
 
 namespace pathtracer{
 
+    // Forward declaration
+    class AreaSample;
+    class Light;
+
     class Instance{
 
     private:
@@ -18,30 +22,28 @@ namespace pathtracer{
         const Shape* m_shape;
         const Texture* m_alpha;
         const Texture* m_normal;
-        const Texture* m_albedo;
         const Bsdf* m_bsdf;
         const Emission* m_emission;
         Transform m_transform;
+
+        // If this current instance is considered an area light,
+        // then this pointer points to it.
+        Light* m_light;
 
     public:
 
 
         Instance(const Shape* shape,
             const Texture* alpha, const Texture* normal,
-            const Texture* albedo, const Bsdf* bsdf,
-            const Emission* emission, const Transform& transform) : 
+            const Bsdf* bsdf, const Emission* emission, 
+            const Transform& transform) : 
             m_shape(shape), m_alpha(alpha), m_normal(normal),
-            m_albedo(albedo), m_bsdf(bsdf), m_emission(emission),
-            m_transform(transform) {}
+            m_bsdf(bsdf), m_emission(emission),
+            m_transform(transform), m_light{nullptr} {}
 
         
         bool hasAlphaTexture() const{
             return m_alpha != nullptr;
-        }
-
-
-        bool hasAlbedoTexture() const{
-            return m_albedo != nullptr;
         }
 
 
@@ -52,11 +54,6 @@ namespace pathtracer{
 
         const Texture* const alphaTexture() const{
             return m_alpha;
-        }
-
-        
-        const Texture* const albedoTexture() const{
-            return m_albedo;
         }
 
 
@@ -85,6 +82,24 @@ namespace pathtracer{
         }
         
 
+        void setLight(Light* light){
+            m_light = light;
+        }
+
+
+        Light* light() const{ return m_light; }
+
+
+        // Samples random point on surface area, and returns the
+        // result in world coordinates, using the area measure pdf
+        AreaSample sampleArea() const;
+
+
+        // Returns, in global coordinates, the area sample of sampling
+        // a point on the surface of the instance.
+        // The input is in global coordinates.
+        AreaSample evaluateAreaSample(const Vector3&) const;
+        
     };
 
 }

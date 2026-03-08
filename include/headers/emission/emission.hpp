@@ -21,7 +21,8 @@ namespace pathtracer{
 
     public:
 
-        // Note that this assumes that wo is in local coordinates
+        // Note that this assumes that wo is in the shading
+        // frame coordinates.
         virtual Vector3 evaluate(const Vector3& wo, const Vector2& uv)
             const = 0;
 

@@ -6,6 +6,7 @@
 
 #include "instance.hpp"
 #include "../intersection/rayTracer.hpp"
+#include "../light/light.hpp"
 
 namespace pathtracer{
 
@@ -13,7 +14,8 @@ namespace pathtracer{
 
     private:
     
-        std::vector<Instance*> instances;
+        std::vector<Instance*> m_instances;
+        std::vector<Light*> m_lights;
 
 
         // Also intersects a scene but quits early if one is found
@@ -22,7 +24,7 @@ namespace pathtracer{
 
             Intersection it = Intersection::NO_HIT;
 
-            for(Instance* inst: instances){
+            for(Instance* inst: m_instances){
                 RayTracer::intersect(it, ray, inst);
                 if(it.t() < maxDistance) return it;
             }
@@ -34,16 +36,28 @@ namespace pathtracer{
 
     public:
 
-        Scene(){}
+        Scene(const std::vector<Instance*>& instances,
+            const std::vector<Light*>& lights) :
+            m_instances{instances}, m_lights{lights}{}
 
 
-        int instanceCount() const { return instances.size(); }
+        int instanceCount() const { return m_instances.size(); }
+
+
+        int lightCount() const { return m_lights.size(); }
 
 
         const Instance* const instance(int index) const { 
-            assert((index >=  0 && index < instances.size())
+            assert((index >=  0 && index < m_instances.size())
                 && "Index is out of bounds");
-            return instances[index];
+            return m_instances[index];
+        }
+
+
+        const Light* const light(int index) const { 
+            assert((index >=  0 && index < m_lights.size())
+                && "Index is out of bounds");
+            return m_lights[index];
         }
 
 
@@ -53,7 +67,7 @@ namespace pathtracer{
 
             Intersection it = Intersection::NO_HIT;
 
-            for(Instance* inst: instances){
+            for(Instance* inst: m_instances){
                 RayTracer::intersect(it, ray, inst);
             }
 
@@ -61,10 +75,11 @@ namespace pathtracer{
         }
 
 
-        bool visibility(const Vector3& origin, const Vector3& target,
-            const Vector3& direction) const {
+        bool visibility(const Vector3& origin, const Vector3& target) const {
 
             real distance = (origin - target).length();
+            Vector3 direction = (target - origin).normalized();
+            
             // We then add a spall pad to avoid self intersection
             Ray ray(origin + direction * SHADOW_EPSILON, direction);
             real maxDistance = distance - SHADOW_EPSILON;

@@ -201,6 +201,12 @@ namespace pathtracer{
                 && m_data[2] <= other.m_data[2];
         }
 
+
+        void display(std::ostream& out) const{
+            out << "Vector(" << m_data[0] << " " << m_data[1] << " " 
+                << m_data[2] << ")";
+        }
+
     };
 
 }

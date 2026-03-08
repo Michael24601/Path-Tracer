@@ -10,23 +10,6 @@ namespace pathtracer{
 
     class RayTracer{
 
-    private:
-
-        // Transforms intersections from local to world coordinates
-        static void transformIntersection(Intersection& it, 
-            const Instance* const instance, const Ray& globalRay){
-            
-            it.setPosition(instance->transform().transform(it.position()));
-            it.setTangent(
-                instance->transform().transformDirection(it.tangent()));
-            it.setGeometryNormal(
-                instance->transform().transformNormal(it.geometryNormal()));
-            it.setShadingNormal(
-                instance->transform().transformNormal(it.shadingNormal()));
-            it.setT((it.position() - globalRay.origin()).length());
-            it.setInstance(instance);
-        }
-
     public:
 
         // Intersects a ray with a shape instance. If we have a
@@ -42,7 +25,9 @@ namespace pathtracer{
             IntersectionList list; 
             instance->shape()->intersect(localRay, list);
 
-            if(list.empty()) return;
+            if(list.empty()) {
+                return;
+            }
 
             // The intersection distance t of the old intersection
             // is scaled so that we can compare it to the new
@@ -80,7 +65,11 @@ namespace pathtracer{
                 // transform it to world coordinates, and replace the
                 // older one.
                 oldIt = *list.top();
-                transformIntersection(oldIt, instance, ray);
+                oldIt.setInstance(instance);
+                SurfacePoint newIt = instance->transform()
+                    .transformSurfacePoint(oldIt);
+                real newT = (newIt.position() - ray.origin()).length();
+                oldIt = Intersection(newT, newIt);
                 // We also compute the shading frame now
                 oldIt.computeShadingFrame();
                 break;

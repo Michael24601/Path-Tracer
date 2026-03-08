@@ -24,7 +24,7 @@ namespace pathtracer{
         Matrix3(){ 
             m_data[1] = m_data[2] = m_data[3] = m_data[5] =
             m_data[6] = m_data[7] = 0.0; 
-            m_data[0] = m_data[4] = m_data[8] = 1;
+            m_data[0] = m_data[4] = m_data[8] = 1.0;
         }
 
 
@@ -53,8 +53,8 @@ namespace pathtracer{
             if (axis == 0){
                 r = Matrix3(
                     Vector3(1, 0, 0),
-                    Vector3(0, c, s),
-                    Vector3(0,-s, c)
+                    Vector3(0, c, -s),
+                    Vector3(0,s, c)
                 );
             }
             else if (axis == 1){
@@ -66,8 +66,8 @@ namespace pathtracer{
             }
             else {
                 r = Matrix3(
-                    Vector3( c, s, 0),
-                    Vector3(-s, c, 0),
+                    Vector3(c, -s, 0),
+                    Vector3(s, c, 0),
                     Vector3( 0, 0, 1)
                 );
             }
@@ -230,6 +230,14 @@ namespace pathtracer{
         void scale(real scale, int axis){
             Matrix3 s = scaleMatrix(scale, axis);
             *this = s * *this;
+        }
+
+
+        void display(std::ostream& out) const{
+            out << "Matrix3(" << m_data[0] << " " << m_data[1] << " " 
+                << m_data[2] << "\n"
+                << m_data[3] << " " << m_data[4] << " " << m_data[5] << "\n"
+                << m_data[6] << " " << m_data[7] << " " << m_data[8] << ")";
         }
 
     };

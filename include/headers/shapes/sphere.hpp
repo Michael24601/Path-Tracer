@@ -95,13 +95,14 @@ namespace pathtracer{
             else{
                 // In this case we have two solutions
                 real sqrtDiscriminant = sqrtReal(discriminant);
-                real t0 = -b - sqrtDiscriminant / (2.0 * a);
-                real t1 = -b + sqrtDiscriminant / (2.0 * a);
-                
+                real t0 = (-b - sqrtDiscriminant) / (2.0 * a);
+                real t1 = (-b + sqrtDiscriminant) / (2.0 * a);
+
                 Vector3 point0 = ray.at(t0);
                 Vector3 point1 = ray.at(t1);
                 list.push(Intersection(t0, generateSurfacePoint(point0)));
                 list.push(Intersection(t1, generateSurfacePoint(point1)));
+
             }
         }
 
@@ -118,6 +119,13 @@ namespace pathtracer{
             // have had to calculate the proabbility of choosing
             // this specific point and returned that value.
             AreaSample sample(generateSurfacePoint(point), pdf);
+        }
+
+
+        AreaSample evaluateAreaSample(const Vector3& point) const override{
+            real pdf = SquareToSphereUniform::pdf(point);
+            AreaSample sample(generateSurfacePoint(point), pdf);
+            return sample;
         }
 
     };

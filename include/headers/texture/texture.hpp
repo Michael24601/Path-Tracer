@@ -11,7 +11,7 @@ namespace pathtracer{
 
     class Texture{
 
-    private:
+    public:
 
         enum class BorderMode {
             CLAMP,
@@ -25,6 +25,8 @@ namespace pathtracer{
             BILINEAR
         };
         
+
+    private:
 
         std::vector<std::vector<Vector3>> m_data;
         int width, height;
@@ -47,6 +49,7 @@ namespace pathtracer{
         }
 
     public:
+
 
         Texture(const std::vector<std::vector<Vector3>>& data,
             BorderMode borderMode, FilterMode filterMode) :

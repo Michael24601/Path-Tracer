@@ -2,143 +2,258 @@
 #ifndef PATH_TRACER_MONTE_CARLO_HPP
 #define PATH_TRACER_MONTE_CARLO_HPP
 
-#include "estimator.hpp"
+#include "monteCarloEstimator.hpp"
+#include "../core/sceneUtil.hpp"
 #include "../intersection/areaSample.hpp"
 
 namespace pathtracer{
 
     class MonteCarlo{
 
-    private:
-    
-    
-        // Calculates the estimator for a path tracer using the area
-        // formulation.
-        // It takes as input the object we have decided to sample,
-        // as well as the pdf of choosing said object.
-        // Can be used both for regular path tracing and for
-        // next event estimation.
-        static AreaEstimator sampleArea(const Vector3& wo, 
-            const SurfacePoint& it, const Instance* const inst, 
-            real pdfInstance, const Scene& scene){
-
-            // Instead of using the BSDF to sample a direction,
-            // we just randomly pick a point on any surface in the
-            // scene.
-
-            // Both the position and the pdf are in the shape's
-            // local coordinates, so we can transform them.
-            AreaSample sample = inst->shape()->sampleSurfaceArea();
-
-            Vector3 posWorld = 
-                inst->transform().transform(sample.position());
-
-            // The transform matrix is used directly since we don't
-            // want it normalized yet.
-            Transform m = inst->transform().inverseTranspose();
-            Vector3 normalWorld = m.transform(sample.shadingNormal());
-
-            // Transforming a local pdf to a world pdf
-            real worldPdf = sample.pdf() / (normalWorld.length() 
-                * std::abs(inst->transform().determinant()));
-
-            // The total pdf is just the pdf of choosing the point
-            // multilplied by the pdf of choosing the shape.
-            real pdfPoint = worldPdf * pdfInstance;
-
-            // Calculates wi based on the sampling. Unlike solid
-            // angles, we don't sample wi according to the BSDF.
-            Vector3 wi = posWorld - it.position();
-            real dist = wi.length();
-            wi = wi * (1.0 / dist);
-            Vector3 radiance = it.evaluateEmission(wo);
-
-            // Because wi is sampled using the area, we evaluate the
-            // BSDF instead of sampling it, with the existing wi.
-            BsdfEvaluation bsdfEval = it.evaluateBsdf(wo, wi);
-
-            // This means deterministic BSDFs return an invalid,
-            // as they require a specific wi to work, and a random
-            // one will have a probability of 0 of working.
-            if(bsdfEval.isInvalid()){
-                return AreaEstimator(radiance, Vector3(0.0), sample, 
-                    0.0, false);
-            }
-
-            // Otherwise we add the geometry term and we proceed.
-            real cosineX = std::abs(it.shadingNormal().dot(wi));
-            real cosineY = std::abs(normalWorld.dot(-wi));
-            real geometryTerm = (cosineX * cosineY) / (dist * dist);
-
-            // The visibility term
-            bool visibility = scene.visibility(it.position(), posWorld, wi);
-
-            Vector3 weight = bsdfEval.bsdf() * geometryTerm 
-                * (1.0 / pdfPoint);
-
-            // We also convert the pdf to solid angles.
-            // In the estimator, we use the area measure pdf,
-            // because we are in the area formulation estimator, but
-            // for MIS, we need to use a common measure, so we will
-            // convert to solid angles just for that.
-            real pdfSolidAngle = pdfPoint * (dist * dist) / cosineY;
-
-            // Notice that if we wanted to use the solid angle
-            // formulation instead, we would have used the solid
-            // angle pdf, and by dividing by it, we would multiply
-            // the integrand by cosY / dist^2, which along with
-            // cosX gives us the geometry term. So the two
-            // are equivalent. 
-
-            return AreaEstimator(radiance, weight, sample, pdfSolidAngle, 
-                visibility);
-        }
-
     
     public:
 
         // Calculates the estimator for a path tracer using solid angles.
-        // Here wo is the direction we came from (light exits
-        // there), and our goal is to calculate the emission at the
-        // point of contact it, and a new sampled direction wi
-        // from whence the light comes. 
-        static SolidAngleEstimator sampleSolidAngle(const Vector3& wo, 
-            const SurfacePoint& it){
+        // We have the current point at it, and the outgoing direction wo.
+        // We sample an incoming direction wi, get the radiance from wi,
+        // calculate the weight (bsdf, cosine, pdf...) at the current
+        // point it, which we can use to multiply the incoming
+        // light emission (from the newly sampled point, not it).
+        static MonteCarloEstimator sampleSolidAngle(const Vector3& wo, 
+            const SurfacePoint& it, const Scene& scene){
 
             // We will use the BSDF at the point of contact x
             // to get the direction wi, from where the light comes,
             // as the BSDF is the only object that knows what directions
             // are valid based on the material type.
             BsdfSample sample = it.sampleBsdf(wo);
-            SolidAngleEstimator estimate;
+            MonteCarloEstimator estimate;
 
-            // Otherwise, we build an estimator use the sample
-            Vector3 radiance = it.evaluateEmission(wo);
+            // First we get the radiance incoming from wi
+            Ray ray(it.position(), sample.wi());
+            Intersection newIt = scene.intersect(ray);
+
+            if(!newIt){
+                // The default estimate is invalid/not visible
+                return estimate;
+            }
+
+            Vector3 radiance = newIt.evaluateEmission(wo);
+
             // The cosine doesn't need transformation since the shading
             // frame is orthonormal.
             Vector3 weight = sample.bsdf() * sample.cosine() 
                 * (1.0 / sample.pdf());
 
-            return SolidAngleEstimator(radiance, weight, sample.wi(),
-                sample.pdf());
+            real distance = newIt.t();
+
+            // Because this is a solid angle estimator, the
+            // sampled point is always visible.
+            return MonteCarloEstimator(radiance, weight, sample.wi(),
+                newIt, sample.pdf(), distance, true);
         }
 
 
         // Samples a point using the area formulation for a regular
         // path tracer (not NEE).
-        static AreaEstimator sampleArea(const Vector3& wo, 
+        static MonteCarloEstimator sampleArea(const Vector3& wo, 
             const SurfacePoint& it, const Scene& scene){
 
+            // First we pick a random object with uniform probability.
+            const Instance* inst = UniformInstance::sample(scene);
 
+            // The pdf of choosing this instance
+            real pdfInstance = UniformInstance::pdf(scene, inst);
+
+            // Instead of using the BSDF to sample a direction,
+            // we just randomly pick a point on any surface in the
+            // scene.
+
+            AreaSample sample = inst->sampleArea();
+            Vector3 posWorld = sample.position();
+            Vector3 normalWorld = sample.shadingNormal();
+
+            MonteCarloEstimator estimate;
+
+            // Calculates wi based on the sampling. Unlike solid
+            // angles, we don't sample wi according to the BSDF.
+            Vector3 wi = posWorld - it.position();
+            real dist = wi.length();
+            wi = wi * (1.0 / dist);
+
+            // The emission comes from the newly sampled point,
+            // not the old intersected point.
+            Vector3 radiance = sample.evaluateEmission(wo);
+
+            // Because wi is sampled using the area, we evaluate the
+            // BSDF instead of sampling it, with the existing wi.
+
+            // NOTE: We only care about the bsdf() from bsdfEval,
+            // the pdf is to be disregarded since we already have
+            // the pdf of choosing the point we sampled.
+            // The pdf returned by bsdfEval is the pdf of sampling
+            // wi according to the bsdf sample funciton, which we don't
+            // want for the area formulation.
+            BsdfSample bsdfEval = it.evaluateBsdf(wo, wi);
+
+            // This means deterministic BSDFs return an invalid,
+            // as they require a specific wi to work, and a random
+            // one will have a probability of 0 of working.
+            if(bsdfEval.isInvalid()){
+                return estimate;
+            }
+
+            // The visibility term
+            bool visibility = scene.visibility(it.position(), posWorld);
+
+            // The pdf is the pdf of choosing this instance, times
+            // the area pdf in world coordinates.
+            real pdfPoint = pdfInstance * sample.pdf();
+
+            // We have two choices:
+            // We either calculate the area formulation estimator,
+            // which includes a geometry term cosX * cosY / dist^2,
+            // or we can calculate the estimator in the solid
+            // angle formulation, where we only have cosX,
+            // but the pdf has to be transformed to the solid
+            // angle pdf by multiplying by dist^2/cosY.
+            // The result is the exact same, since we eventually
+            // divide by the pdf.
+            // We choose the latter, so that we have a common ground
+            // pdf we can use for MIS that is always in solid angles.
+            real cosineX = std::abs(it.shadingNormal().dot(wi));
+            real cosineY = std::abs(normalWorld.dot(-wi));
+            real pdfSolidAngle = pdfPoint * (dist * dist) / cosineY;
+
+            Vector3 weight = bsdfEval.bsdf() * cosineX
+                * (1.0 / pdfSolidAngle);
+
+            real distance = (posWorld - it.position()).length();
+
+            return MonteCarloEstimator(radiance, weight, wi, sample, 
+                pdfSolidAngle, distance, visibility);
         }
 
         
-        // Samples a point using the area formulation for NEE.
-        // Only returns amount of light that arrives
-        static Vector3 sampleLight(const Vector3& wo, 
+        // Samples a point on a light, for NEE.
+        static MonteCarloLightSample sampleLight(const Vector3& wo, 
             const SurfacePoint& it, const Scene& scene){
 
+            if(scene.lightCount() <= 0){
+                return MonteCarloLightSample();
+            }
 
+            // First we pick a random light with uniform probability.
+            const Light* light = UniformLight::sample(scene);
+
+            // The pdf of choosing this instance
+            real pdfInstance = UniformLight::pdf(scene, light);
+
+            // Then we sample the light for a point and radiance,
+            // which returns a light sample in world coordinates
+            // in solid angle measure.
+            LightSample s = light->sample(it.position());
+            
+            // The pdf of choosing this point is the pdf of
+            // choosing the light times the pdf of choosing the point
+            // on the light.
+            real pdfPoint = pdfInstance * s.pdf();
+
+            // The visibility term.
+            // Note that this works for directional lights
+            // as they generate a very far away point.
+            bool visibility = scene.visibility(it.position(), s.position());
+
+            // We also need the weights at the current points,
+            // that is the cosine and the bsdf terms.
+            // Note that the given pdf is in solid angles, so no need
+            // for geometry term.
+            real cosineX = std::abs(it.shadingNormal().dot(s.wi()));
+
+            // Note that we evaluate, not sample the bsdf, since
+            // we already have a wi.
+            // We also disregard everything returned by the evaluate function
+            // except the bsdf, as we already have the pdf we need
+            // (the pdf returned is that of the bsdf sampling the given wi).
+            BsdfSample bsdfEval = it.evaluateBsdf(wo, s.wi());
+
+            Vector3 weight = bsdfEval.bsdf() * cosineX
+                * (1.0 / s.pdf());
+        
+
+            return MonteCarloLightSample(s.radiance(), weight, 
+                s.position(), light, pdfPoint, visibility);
+        }
+
+
+
+        // We already have the functions that return the monte
+        // carlo estimators after sampling a direction, or point,
+        // on the instances or lights.
+        
+        // Now we need the reverse query. That is, given a direction,
+        // or point, what is the probability density that one of these
+        // schemes would have sampled it.
+        // We need this for MIS.
+
+
+
+        // Returns the pdf of having sampled a particular
+        // direction wi at a specific surface point.
+        static real evaluateSolidAnglePdf(const Vector3& wo, 
+            const SurfacePoint& it, const Vector3& wi){
+
+            // We evaluate the bsdf with the given wi, which returns
+            // the pdf of sampling said wi according to the bsdf's
+            // sampling strategy.
+            BsdfSample sample = it.evaluateBsdf(wo, wi);
+
+            return sample.pdf();
+        }
+
+
+        // Returns the pdf of having sampled a particular
+        // point on a particular instance using the area sampling.
+        static real evaluateAreaPdf(const Instance* inst, const Scene& scene,
+            const Vector3& point){
+
+            // The pdf of choosing this instance
+            int instanceCount = scene.instanceCount();
+            real pdfInstance = 1.0 / instanceCount;
+
+            // Instead of sampling the area, we evaluate the area
+            // sample assuming we had gotten this particular point,
+            // which returns to us the pdf of having chosen said
+            // point.
+            AreaSample sample = inst->evaluateAreaSample(point);
+
+            return sample.pdf() * pdfInstance;
+        }
+
+
+        // Returns the pdf of having sampled a particular
+        // point on a particular instance using the light sampling.
+        static real evaluateLightPdf(const Vector3& origin, 
+            const Light* light, const Scene& scene,
+            const Vector3& point){
+
+            if(scene.lightCount() <= 0){
+                return 0.0;
+            }
+
+            if(light->type() == Light::LightType::NON_INTERSECTABLE){
+                return 0.0;
+            }
+
+            // The pdf of choosing this instance
+            int lightCount = scene.lightCount();
+            real pdfInstance = 1.0 / lightCount;
+
+            // Instead of sampling the area, we evaluate the area
+            // sample assuming we had gotten this particular point.
+            LightSample sample = light->evaluateLightSample(origin, point);
+
+            return sample.pdf() * pdfInstance;
         }
 
     };

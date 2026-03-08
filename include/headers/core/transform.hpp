@@ -10,6 +10,9 @@
 
 namespace pathtracer{
 
+    // Forward declaration
+    class SurfacePoint;
+
     class Transform{
 
     private:
@@ -67,6 +70,16 @@ namespace pathtracer{
         }
 
 
+        const Matrix3& transform() const{
+            return m_transform;
+        }
+
+
+        const Vector3& translation() const{
+            return m_translation;
+        }
+
+
         // Transforms a point
         Vector3 inverseTransform(const Vector3& point) const{
             Matrix3 m = m_transform.inverse();
@@ -80,7 +93,7 @@ namespace pathtracer{
         }
 
 
-        // Transforms a point
+        // Transforms a direction
         Vector3 inverseTransformDirection(const Vector3& direction) const{
             Matrix3 m = m_transform.inverse();
             return (m * direction).normalized();
@@ -94,6 +107,7 @@ namespace pathtracer{
         }
 
 
+        // Inverse transforms a normal (from world to local)
         Vector3 inverseTransformNormal(const Vector3& normal) const {
             return (m_transform.transposed() * normal).normalized();
         }
@@ -114,9 +128,22 @@ namespace pathtracer{
         }
 
 
+        // Transforms surface points (like intersections)
+        SurfacePoint transformSurfacePoint(const SurfacePoint& it) const;
+
+
         // Returns the determinant of the transform matrix
         real determinant() const{
             return m_transform.determinant();
+        }
+
+
+        void display(std::ostream& out) const{
+            out << "Transform(";
+            m_transform.display(out);
+            out << "\n";
+            m_translation.display(out);
+            out << ")";
         }
        
     };

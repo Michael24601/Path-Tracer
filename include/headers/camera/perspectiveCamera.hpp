@@ -16,7 +16,7 @@ namespace pathtracer{
     public:
 
 
-        PerspectiveCamera(int width, int height,
+        PerspectiveCamera(real width, real height,
             const Transform& transform, real focalLength) :
             Camera(width, height, transform),
             m_focalLength{focalLength} {}
@@ -27,7 +27,7 @@ namespace pathtracer{
             // In local space, we always assume that the aperture
             // is at (0, 0, 0), and that the direction is z, so that
             // the image plane center is at (0, 0, focalLength).
-            
+
             // Then we know that the given pixel will be an offset of 
             // width/2 and height/2 times the given point coordinate.
             Vector3 pixel = Vector3(

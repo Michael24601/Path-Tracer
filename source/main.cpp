@@ -1,6 +1,13 @@
 
-#include "include/headers/renderer/renderer.hpp"
+#include "../include/headers/renderer/renderer.hpp"
 #include "../include/libs/stb_image_write.h"
+#include "../include/headers/camera/perspectiveCamera.hpp"
+#include "../include/headers/shapes/sphere.hpp"
+#include "../include/headers/bsdf/diffuseBsdf.hpp"
+#include "../include/headers/emission/lambertianEmission.hpp"
+#include "../include/headers/renderer/renderer.hpp"
+#include "../include/headers/integrator/aovIntegrator.hpp"
+#include "../include/headers/integrator/pathTracer.hpp"
 
 using namespace pathtracer;
 
@@ -50,7 +57,53 @@ void savePNG(const std::vector<std::vector<Vector3>>& image,
 
 int main(){
 
+    real width = 1.0;
+    real height = 0.7;
 
+    int texPixelsH = 100;
+    int texPixelsW = 150;
+
+    std::vector<std::vector<Vector3>> albedo(100, 
+        std::vector<Vector3>(150, Vector3(1.0, 0.0, 0.0)));
+
+    Transform camTransform = Camera::lookAt(Vector3(-3.0, 0, 0), 
+        Vector3::ORIGIN, Vector3(0, 0, 1));
+    real focalLength = 0.7;
+
+    PerspectiveCamera* camera = new PerspectiveCamera(width, 
+        height, camTransform, focalLength);
+
+    Sphere* sphere = new Sphere();
+    Texture* albedoTexture = new Texture(albedo, 
+        Texture::BorderMode::CLAMP, 
+        Texture::FilterMode::NEAREST
+    );
+
+    DiffuseBsdf* diffuseBsdf = new DiffuseBsdf(albedoTexture);
+    LambertianEmission* emission = new LambertianEmission(Vector3(1.0));
+
+    Instance* sphereInst = new Instance(sphere, nullptr, 
+        nullptr, diffuseBsdf, nullptr, Transform::IDENTITY);
+
+    Transform lightTransform(Matrix3(Vector3(0.5, 0.0, 0.0), 
+        Vector3(0.0, 0.5, 0.0), 
+        Vector3(0.0, 0.0, 0.5)),
+        Vector3(-1.0, 1.0, -1.0));
+
+    Instance* lightInst = new Instance(sphere, nullptr, 
+        nullptr, diffuseBsdf, emission, lightTransform);
+    std::vector<Instance*> instances {lightInst, sphereInst};
+
+    Scene* scene = new Scene(instances, std::vector<Light*>{});
+
+    AovIntegrator* integrator = new AovIntegrator(
+        AovIntegrator::RenderVariable::NORMAL);
+    PathTracer* pathtracer = new PathTracer(3, 50);
+    
+    Renderer renderer(500, 350, camera, scene, pathtracer);
+    auto image = renderer.render();
+
+    savePNG(image, "image.png");
 
     return 0;
 }

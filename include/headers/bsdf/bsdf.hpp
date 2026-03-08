@@ -4,7 +4,6 @@
 
 #include "../math/vector2.hpp"
 #include "bsdfSample.hpp"
-#include "bsdfEvaluation.hpp"
 
 namespace pathtracer{
 
@@ -35,18 +34,17 @@ namespace pathtracer{
             const = 0;
 
 
-        // For the area formulation, we will instead pick a random
-        // object, then sample a point on it. Both wi and the pdf
-        // are already set, so we just use them to evaluate the
-        // BSDF at this point, without randomly sampling a solid
-        // angle wi. The wi direction and pdf are given as input
-        // so they can be set automatically in the sample object.
-        
-        // If the BSDF is deterministic, like a perfect mirror that
-        // only reflects light in wo from one specific direction wi,
-        // the probability that the given wi matches that is 0,
-        // so we return an invalid sample.
-        virtual BsdfEvaluation evaluate(const Vector3& wo, 
+        // This is the reverse query, we pick the wi ourselves,
+        // So wi is already chosen.
+        // This evaluate function takes the given wi and returns the
+        // pdf of having sampled said point, along with the cosine
+        // term and bsdf of the given wi.
+        // This is useful for MIS, where we need to find the pdf
+        // of having sampled some given wi.
+        // It is also useful for the area formulation, where we
+        // sample a point, which gives us a wi, and we need to
+        // evaluate the bsdf value.
+        virtual BsdfSample evaluate(const Vector3& wo, 
             const Vector3& wi, const Vector2& uv) const = 0;
         
 

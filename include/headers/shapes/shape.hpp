@@ -42,6 +42,11 @@ namespace pathtracer{
         // Samples a random point on the surface area
         virtual AreaSample sampleSurfaceArea() const = 0;
 
+
+        // Returns the Area sample for a given point on the surface.
+        // The point is expected in local coordinates.
+        virtual AreaSample evaluateAreaSample(const Vector3&) const = 0;
+
     };
 }
 

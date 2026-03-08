@@ -29,6 +29,9 @@ namespace pathtracer{
             real cosine, real pdf): m_cosine{cosine}, m_bsdf{bsdf},  
             m_wi(wi), m_pdf{pdf}{}
 
+
+        bool isInvalid() const { return m_pdf <= 0.0; }
+
         
         real cosine() const { return m_cosine; }
 

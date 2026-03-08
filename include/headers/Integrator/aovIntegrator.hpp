@@ -8,12 +8,17 @@ namespace pathtracer{
 
     class AovIntegrator: public Integrator{
 
-    private:
+    public:
+
 
         enum class RenderVariable{
             ALBEDO,
-            NORMAL
+            NORMAL,
+            DIRECTION
         };
+
+
+    private:
 
         // Choice of variable to output, if we happen to intersect
         // an object.
@@ -28,6 +33,10 @@ namespace pathtracer{
         // the light received by the given shadow ray.
         Vector3 color(const Ray& ray, const Scene& scene) const override{
 
+            if(m_variable == RenderVariable::DIRECTION){
+                return (ray.direction() + Vector3(1.0)) * 0.5;
+            }
+
             Intersection it = scene.intersect(ray);
             
             // If background intersection
@@ -40,13 +49,7 @@ namespace pathtracer{
             // Otherwise
             switch(m_variable){
             case RenderVariable::ALBEDO:
-                if(it.instance()->hasAlbedoTexture()){
-                    color = it.instance()->albedoTexture()->sample(it.uv());
-                }
-                else{
-                    // Red as a fallback
-                    color = Vector3(1, 0, 0);
-                }
+                color = Vector3(1, 0, 0);
                 break;
             case RenderVariable::NORMAL:
                 color = (it.shadingNormal() + Vector3(1.0)) * 0.5;
