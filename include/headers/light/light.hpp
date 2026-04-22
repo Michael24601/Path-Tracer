@@ -10,19 +10,11 @@
 namespace pathtracer{
 
     class Light{
-        
+
     public:
 
-        enum class LightType{
-            INTERSECTABLE,
-            NON_INTERSECTABLE
-        };
 
-
-        LightType m_type;
-
-
-        Light(LightType type): m_type{type}{}
+        Light(){}
 
 
         // Returns the amount of light that is returned, to the
@@ -40,9 +32,11 @@ namespace pathtracer{
             const Vector3&) const = 0;
 
 
-        LightType type() const{
-            return m_type;
-        }
+
+        // This returns true if the light is intersectable (if it is
+        // an area light, and if this area light refers to an
+        // instance present in the scene.)
+        virtual bool isIntersectable() const = 0;
     
     };
 

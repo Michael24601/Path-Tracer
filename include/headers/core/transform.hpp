@@ -138,12 +138,10 @@ namespace pathtracer{
         }
 
 
-        void display(std::ostream& out) const{
-            out << "Transform(";
-            m_transform.display(out);
-            out << "\n";
-            m_translation.display(out);
-            out << ")";
+        std::string toString() const {
+            return "Transform(\n" 
+                + m_transform.toString() + "\n"
+                + m_translation.toString() + "\n)";
         }
        
     };

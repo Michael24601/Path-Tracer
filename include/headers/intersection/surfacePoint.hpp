@@ -72,7 +72,7 @@ namespace pathtracer{
         const Vector2& uv() const { return m_uv; }
 
         
-        const Instance* instance() const { return m_instance; }
+        const Instance* instance() const {  return m_instance; }
 
 
         void setPosition(const Vector3& pos) { m_position = pos; }
@@ -123,9 +123,8 @@ namespace pathtracer{
             }
 
             // We transform the direction wo to local coordinates
-            // NOTE: we must use the transform of the normal, instead
-            // of the direction, for some reason.
-            Vector3 localWo = m_shadingFrame.inverseTransformNormal(wo);
+            // NOTE: remember when you used the normal instead
+            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
 
             // The bsdf functions sample and evaluate in shading
             // frame coordinates, so we need to transform the inputs,
@@ -134,9 +133,8 @@ namespace pathtracer{
             BsdfSample sample = m_instance->bsdf()->sample(localWo, m_uv);
 
             // We then transform the result back to world coordinates
-            // NOTE: we must use the transform of the normal, instead
-            // of the direction, for some reason.
-            Vector3 wi = m_shadingFrame.transformNormal(sample.wi());
+            // NOTE: remember when you used the normal instead
+            Vector3 wi = m_shadingFrame.transformDirection(sample.wi());
             sample.setWi(wi);
 
             // The pdf and bsdf remain the same in world coordinates. 
@@ -159,14 +157,13 @@ namespace pathtracer{
             }
 
             // We transform the direction wo and wi to local coordinates
-            // NOTE: we must use the transform of the normal, instead
-            // of the direction, for some reason.
-            Vector3 localWo = m_shadingFrame.inverseTransformNormal(wo);
-            Vector3 localWi = m_shadingFrame.inverseTransformNormal(wi);
+            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
+            Vector3 localWi = m_shadingFrame.inverseTransformDirection(wi);
 
             // No need to transform anything else
             BsdfSample sample = m_instance->bsdf()->evaluate(localWo, 
                 localWi, m_uv);
+            sample.setWi(wi);
 
             // The pdf and bsdf remain the same in world coordinates. 
             // The cosine term also remains the same since the shading 
@@ -178,14 +175,12 @@ namespace pathtracer{
         // Here, we just evaluate the emission at this point.
         // Returns the emission in world coordinates
         Vector3 evaluateEmission(const Vector3& wo) const{
-
+            
             if(!m_instance || !m_instance->emission()){
                 return Vector3::ORIGIN;
             }
 
-            // NOTE: we must use the transform of the normal, instead
-            // of the direction, for some reason.
-            Vector3 localWo = m_shadingFrame.inverseTransformNormal(wo);
+            Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
 
             // The emission result is the same in world and shading
             // frame coordinates.

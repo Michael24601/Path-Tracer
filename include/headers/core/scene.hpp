@@ -38,7 +38,13 @@ namespace pathtracer{
 
         Scene(const std::vector<Instance*>& instances,
             const std::vector<Light*>& lights) :
-            m_instances{instances}, m_lights{lights}{}
+            m_instances{instances}, m_lights{lights}{
+
+            // These instances are now part of the scene, so we flag them
+            for(Instance* inst: m_instances){
+                inst->setInScene(true);
+            }
+        }
 
 
         int instanceCount() const { return m_instances.size(); }
@@ -80,9 +86,9 @@ namespace pathtracer{
             real distance = (origin - target).length();
             Vector3 direction = (target - origin).normalized();
             
-            // We then add a spall pad to avoid self intersection
+            // We then add a small pad to avoid self intersection
             Ray ray(origin + direction * SHADOW_EPSILON, direction);
-            real maxDistance = distance - SHADOW_EPSILON;
+            real maxDistance = distance;
             Intersection it = intersect(ray, maxDistance);
 
             // If we don't find an intersection we return true
@@ -90,7 +96,9 @@ namespace pathtracer{
 
             // If we find an intersection and it is closer we return
             // false as well.
-            if(it.t() < maxDistance) return false;
+            if(it.t() < maxDistance){
+                return false;
+            }
 
             // Otherwise there are no obejcts in between origin and 
             // target, so we can return true.

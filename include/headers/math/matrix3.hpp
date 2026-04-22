@@ -168,6 +168,9 @@ namespace pathtracer{
             setColumn(r0, 0);
             setColumn(r1, 1);
             setColumn(r2, 2);
+
+            // It needs to be transposed
+            transpose();
         }
 
 
@@ -233,11 +236,17 @@ namespace pathtracer{
         }
 
 
-        void display(std::ostream& out) const{
-            out << "Matrix3(" << m_data[0] << " " << m_data[1] << " " 
-                << m_data[2] << "\n"
-                << m_data[3] << " " << m_data[4] << " " << m_data[5] << "\n"
-                << m_data[6] << " " << m_data[7] << " " << m_data[8] << ")";
+        std::string toString() const {
+            return "Matrix3(" 
+                + std::to_string(m_data[0]) + " " + 
+                std::to_string(m_data[1]) + " " + 
+                std::to_string(m_data[2]) + "\n"
+                + std::to_string(m_data[3]) + " " + 
+                std::to_string(m_data[4]) + " " + 
+                std::to_string(m_data[5]) + "\n"
+                + std::to_string(m_data[6]) + " " + 
+                std::to_string(m_data[7]) + " " + 
+                std::to_string(m_data[8]) + ")";
         }
 
     };

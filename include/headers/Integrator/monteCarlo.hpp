@@ -27,25 +27,27 @@ namespace pathtracer{
             // as the BSDF is the only object that knows what directions
             // are valid based on the material type.
             BsdfSample sample = it.sampleBsdf(wo);
-            MonteCarloEstimator estimate;
 
-            // First we get the radiance incoming from wi
-            Ray ray(it.position(), sample.wi());
-            Intersection newIt = scene.intersect(ray);
-
-            if(!newIt){
-                // The default estimate is invalid/not visible
-                return estimate;
-            }
-
-            Vector3 radiance = newIt.evaluateEmission(wo);
-
-            // The cosine doesn't need transformation since the shading
-            // frame is orthonormal.
-            Vector3 weight = sample.bsdf() * sample.cosine() 
+            Vector3 weight = sample.bsdf() * sample.cosine()
                 * (1.0 / sample.pdf());
 
+            // First we get the radiance incoming from wi
+            // (With small offset to avoid self intersection)
+            Ray ray(it.position() + sample.wi() * EPSILON, sample.wi());
+            Intersection newIt = scene.intersect(ray);
+
+            // If we don't intersect any object
+            if(!newIt){
+                // Then we can return a sample with no visibility
+                // to indicate this shoots into the void.
+                return MonteCarloEstimator(Vector3::ORIGIN, weight, sample.wi(),
+                    Intersection::NO_HIT, sample.pdf(), 0, false);
+            }
+
+            Vector3 radiance = newIt.evaluateEmission(-sample.wi());
+            
             real distance = newIt.t();
+            
 
             // Because this is a solid angle estimator, the
             // sampled point is always visible.
@@ -121,8 +123,8 @@ namespace pathtracer{
             // divide by the pdf.
             // We choose the latter, so that we have a common ground
             // pdf we can use for MIS that is always in solid angles.
-            real cosineX = std::abs(it.shadingNormal().dot(wi));
-            real cosineY = std::abs(normalWorld.dot(-wi));
+            real cosineX = std::max(0.0, it.shadingNormal().dot(wi));
+            real cosineY = std::max(0.0, normalWorld.dot(-wi));
             real pdfSolidAngle = pdfPoint * (dist * dist) / cosineY;
 
             Vector3 weight = bsdfEval.bsdf() * cosineX
@@ -153,22 +155,15 @@ namespace pathtracer{
             // which returns a light sample in world coordinates
             // in solid angle measure.
             LightSample s = light->sample(it.position());
+
+            if(!s.isValid()) {
+                return MonteCarloLightSample();
+            }
             
             // The pdf of choosing this point is the pdf of
             // choosing the light times the pdf of choosing the point
             // on the light.
             real pdfPoint = pdfInstance * s.pdf();
-
-            // The visibility term.
-            // Note that this works for directional lights
-            // as they generate a very far away point.
-            bool visibility = scene.visibility(it.position(), s.position());
-
-            // We also need the weights at the current points,
-            // that is the cosine and the bsdf terms.
-            // Note that the given pdf is in solid angles, so no need
-            // for geometry term.
-            real cosineX = std::abs(it.shadingNormal().dot(s.wi()));
 
             // Note that we evaluate, not sample the bsdf, since
             // we already have a wi.
@@ -176,10 +171,17 @@ namespace pathtracer{
             // except the bsdf, as we already have the pdf we need
             // (the pdf returned is that of the bsdf sampling the given wi).
             BsdfSample bsdfEval = it.evaluateBsdf(wo, s.wi());
+            
+            if(bsdfEval.cosine() <= 0) {
+                return MonteCarloLightSample();
+            }
+            
+            // The visibility term.
+            // Note that this works for directional lights
+            // as they generate a very far away point.
+            bool visibility = scene.visibility(it.position(), s.position());
 
-            Vector3 weight = bsdfEval.bsdf() * cosineX
-                * (1.0 / s.pdf());
-        
+            Vector3 weight = bsdfEval.bsdf() * bsdfEval.cosine() * (1.0 / pdfPoint);
 
             return MonteCarloLightSample(s.radiance(), weight, 
                 s.position(), light, pdfPoint, visibility);
@@ -241,7 +243,7 @@ namespace pathtracer{
                 return 0.0;
             }
 
-            if(light->type() == Light::LightType::NON_INTERSECTABLE){
+            if(!light->isIntersectable()){
                 return 0.0;
             }
 

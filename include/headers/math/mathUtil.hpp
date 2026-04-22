@@ -109,6 +109,8 @@ namespace pathtracer{
 
 
         // The PDF is constant since it is uniform over the surface area.
+        // Note that this sampling pdf is the same for local area
+        // and solid angle measures.
         static real pdf(const Vector3& point){
             return 0.25 * INV_PI;
         }
@@ -139,6 +141,8 @@ namespace pathtracer{
         
         // The PDF is constant since it is uniform over the hemisphere 
         // area. It is half of the surface area of a sphere.
+        // Note that this sampling pdf is the same for local area
+        // and solid angle measures.
         static real pdf(const Vector3& point){
             return 0.5 * INV_PI;
         }

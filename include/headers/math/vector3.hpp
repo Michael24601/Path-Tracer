@@ -202,9 +202,10 @@ namespace pathtracer{
         }
 
 
-        void display(std::ostream& out) const{
-            out << "Vector(" << m_data[0] << " " << m_data[1] << " " 
-                << m_data[2] << ")";
+        std::string toString() const{
+            return "Vector(" + std::to_string(m_data[0]) 
+                + " " + std::to_string(m_data[1]) + " " 
+                + std::to_string(m_data[2]) + ")";
         }
 
     };

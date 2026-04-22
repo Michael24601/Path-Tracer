@@ -14,6 +14,7 @@ namespace pathtracer{
     // Forward declaration
     class AreaSample;
     class Light;
+    class Scene;
 
     class Instance{
 
@@ -30,6 +31,19 @@ namespace pathtracer{
         // then this pointer points to it.
         Light* m_light;
 
+        // This is true if the current instance is intersectable
+        // in the scene.
+        bool m_inScene;
+
+
+        // The scene is a friend class
+        friend class Scene;
+
+        
+        void setInScene(bool inScene){
+            inScene = inScene;
+        }
+
     public:
 
 
@@ -39,7 +53,7 @@ namespace pathtracer{
             const Transform& transform) : 
             m_shape(shape), m_alpha(alpha), m_normal(normal),
             m_bsdf(bsdf), m_emission(emission),
-            m_transform(transform), m_light{nullptr} {}
+            m_transform(transform), m_light{nullptr}, m_inScene{false} {}
 
         
         bool hasAlphaTexture() const{
@@ -50,6 +64,9 @@ namespace pathtracer{
         bool hasNormalTexture() const{
             return m_normal != nullptr;
         }
+
+
+        bool inScene() const {return m_inScene; }
 
 
         const Texture* const alphaTexture() const{

@@ -53,6 +53,7 @@ namespace pathtracer{
         real distance() const { return m_distance; }
         
 
+        bool isValid() const { return m_distance > 0.0; }
     };
 
 }

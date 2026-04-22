@@ -7,6 +7,7 @@ namespace pathtracer{
     // Samples random point on surface area, and returns the
     // result in world coordinates, using the area measure pdf
     AreaSample Instance::sampleArea() const{
+        
         // First we sample the shape in local coordinates
         // Both the position and the pdf are in the shape's
         // local coordinates, so we can transform them.
@@ -19,14 +20,21 @@ namespace pathtracer{
 
         // Transforming a local pdf to a world pdf
         real worldPdf = sample.pdf() / (normalWorld.length() 
-            * std::abs(m_transform.determinant()));
+            * m_transform.determinant());
 
         // We then transform the whole sample
         SurfacePoint newSample = m_transform.transformSurfacePoint(sample);
 
         // The total pdf is just the pdf of choosing the point
         // multilplied by the pdf of choosing the shape.
-        return AreaSample(newSample, worldPdf);
+        AreaSample areaSample(newSample, worldPdf);
+
+        // We can also set the instance at this point, in the area
+        // sample, which is nullptr up tp this point.
+        areaSample.setInstance(this);
+        areaSample.computeShadingFrame();
+
+        return areaSample;
     }
 
 

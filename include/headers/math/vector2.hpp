@@ -121,6 +121,14 @@ namespace pathtracer{
         }
 
 
+        
+        std::string toString() const{
+            return "Vector(" + std::to_string(m_data[0]) 
+                + " " + std::to_string(m_data[1]) + ")";
+        }
+
+
+
     };
 
 }

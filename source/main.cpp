@@ -8,6 +8,8 @@
 #include "../include/headers/renderer/renderer.hpp"
 #include "../include/headers/integrator/aovIntegrator.hpp"
 #include "../include/headers/integrator/pathTracer.hpp"
+#include "../include/headers/light/pointLight.hpp"
+#include "../include/headers/light/areaLight.hpp"
 
 using namespace pathtracer;
 
@@ -88,22 +90,26 @@ int main(){
     Transform lightTransform(Matrix3(Vector3(0.5, 0.0, 0.0), 
         Vector3(0.0, 0.5, 0.0), 
         Vector3(0.0, 0.0, 0.5)),
-        Vector3(-1.0, 1.0, -1.0));
+        Vector3(-1.3, 1.3, -1.0));
 
     Instance* lightInst = new Instance(sphere, nullptr, 
         nullptr, diffuseBsdf, emission, lightTransform);
-    std::vector<Instance*> instances {lightInst, sphereInst};
+    std::vector<Instance*> instances {sphereInst, lightInst};
 
-    Scene* scene = new Scene(instances, std::vector<Light*>{});
+    PointLight* light = new PointLight(Vector3(-1.0, -0.8, -1.0), Vector3(10.0));
+    AreaLight* aLight = new AreaLight(lightInst);
+    std::vector<Light*> lights {};
+
+    Scene* scene = new Scene(instances, lights);
 
     AovIntegrator* integrator = new AovIntegrator(
         AovIntegrator::RenderVariable::NORMAL);
-    PathTracer* pathtracer = new PathTracer(3, 50);
+    PathTracer* pathtracer = new PathTracer(2, 500);
     
     Renderer renderer(500, 350, camera, scene, pathtracer);
     auto image = renderer.render();
 
-    savePNG(image, "image.png");
+    savePNG(image, "emission_image.png");
 
     return 0;
 }

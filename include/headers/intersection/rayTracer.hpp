@@ -32,10 +32,18 @@ namespace pathtracer{
             // The intersection distance t of the old intersection
             // is scaled so that we can compare it to the new
             // intersection.
-            Vector3 oldLocalIntersectionPoint = 
-                inv.transform(oldIt.position());
-            real oldLocalT = 
-                (oldLocalIntersectionPoint - localRay.origin()).length();
+            real oldLocalT;
+
+            // If it's not a no hit
+            if(oldIt){
+                Vector3 oldLocalIntersectionPoint = 
+                    inv.transform(oldIt.position());
+                oldLocalT = (oldLocalIntersectionPoint 
+                    - localRay.origin()).length();
+            }
+            else{
+                oldLocalT = REAL_INFINITY;
+            }
 
             while(!list.empty()){
 

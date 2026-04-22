@@ -108,17 +108,18 @@ namespace pathtracer{
 
 
         AreaSample sampleSurfaceArea() const override{
+
             // We will sample the sphere surface area by mapping
             // a 2D square onto the sphere using spherical coordinates.
             Vector2 uv = Random::next2D();
             Vector3 point = SquareToSphereUniform::transform(uv);
             real pdf = SquareToSphereUniform::pdf(point);
-
-            // Because the mapping is uniform, the PDF is just
+            
             // the reciprocal of the surface area. If not, we would
             // have had to calculate the proabbility of choosing
             // this specific point and returned that value.
             AreaSample sample(generateSurfacePoint(point), pdf);
+            return sample;
         }
 
 

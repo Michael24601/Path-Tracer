@@ -23,7 +23,6 @@ namespace pathtracer{
     public:
 
         PointLight(const Vector3& position, const Vector3& power) : 
-            Light(LightType::NON_INTERSECTABLE),
             m_position{position}, m_power{power}{}
 
 
@@ -50,6 +49,11 @@ namespace pathtracer{
             
             // Non intersectable light
             return LightSample::INVALID;
+        }
+
+
+        bool isIntersectable() const override{
+            return false;
         }
 
     

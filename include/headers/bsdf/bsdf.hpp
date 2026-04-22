@@ -41,9 +41,9 @@ namespace pathtracer{
         // term and bsdf of the given wi.
         // This is useful for MIS, where we need to find the pdf
         // of having sampled some given wi.
-        // It is also useful for the area formulation, where we
+        // It is also useful for the area formulation or NEE, where we
         // sample a point, which gives us a wi, and we need to
-        // evaluate the bsdf value.
+        // evaluate the bsdf value without sampling.
         virtual BsdfSample evaluate(const Vector3& wo, 
             const Vector3& wi, const Vector2& uv) const = 0;
         
