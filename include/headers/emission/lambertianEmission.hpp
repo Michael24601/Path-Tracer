@@ -26,7 +26,13 @@ namespace pathtracer{
             // The emission in wo is weighted by the cosine of the
             // angle the normal makes with the outgoing ray of light.
             real cosine = Emission::cosineTerm(wo);
-            if(cosine <= 0) return Vector3::ORIGIN;
+
+           // std::cout << "cos: " << cosine << "\n";
+
+            if(cosine <= 0) {
+                return Vector3::ORIGIN;
+            }
+
             return m_emissionColor;
         };
 

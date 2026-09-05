@@ -149,6 +149,26 @@ namespace pathtracer{
 
     };
 
+
+    // Multiple importance sampling
+    class MIS{
+
+    public:
+
+        // Returns weight of estimator given the other sampling
+        // techniques probability of generating the sample.
+        // Uses balance heuristic.
+        static real weight(int n1, int n2, real pdf1, real pdf2){
+               real denominator = n1 * pdf1 + n2 * pdf2;
+
+            if (denominator <= EPSILON){
+                return 0.0;
+            }
+
+            return (n1 * pdf1) / denominator;
+        }
+    };
+
 }
 
 #endif

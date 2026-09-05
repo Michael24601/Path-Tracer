@@ -82,39 +82,25 @@ namespace pathtracer{
                         }
 
                         // ------ Next up is MIS to blend Li and Le ------
+                       
+                        // The bsdf sample is weighted by MIS if the intersected
+                        // point is an area light, and therefore intersectable
+                        // by NEE.
+                        if(est.it().instance() && est.it().instance()->light()){
+                            real pdfNee = MonteCarlo::evaluateLightPdf(
+                                sp.position(), est.it().instance()->light(), 
+                                scene, est.it().position() );
+                            le = le * MIS::weight(1, 1, est.pdf(), pdfNee);
+                        }
 
-                        // // Le is weighted by MIS if the intersected
-                        // // point is an area light, and therefore intersectable
-                        // // by NEE.
-                        // if(est.it().instance()->light() != nullptr){
-                        //     // Probability of intersecting instance
-                        //     // using pathtracing (in solid angles).
-                        //     real pLe = est.pdf();
-                        //     // Probability of intersecting it as an area
-                        //     // light in nee.
-                        //     real pLi = MonteCarlo::evaluateLightPdf(sp.position(), 
-                        //         est.it().instance()->light(),
-                        //         scene, est.it().position());
-
-                        //     real weight = pLe / (pLi + pLe);
-                        //     le = le * weight;
-                        // }
-
-                        // // Li is weighted by MIS if the light is intersectable
-                        // // by tha pathtracer, that is an area light with an
-                        // // instance that is part of the scene.
-                        // if(nee.light() && nee.light()->isIntersectable()){
-
-                        //     // Probability of intersecting it as an area
-                        //     // light in nee.
-                        //     real pLi = nee.pdf();
-                        //     // Probability of intersecting instance
-                        //     // using pathtracing (in solid angles).
-                        //     Vector3 wi = (nee.position() - sp.position()).normalized();
-                        //     real pLe = MonteCarlo::evaluateSolidAnglePdf(wo, sp, wi);
-                        //     real weight = pLi / (pLi + pLe);
-                        //     li = li * weight;
-                        // }
+                        // Li is weighted by MIS if the light is intersectable
+                        // by tha pathtracer, that is an area light with an
+                        // instance that is part of the scene.
+                        if(nee.light() && nee.light()->isIntersectable()){
+                            Vector3 wi = (nee.position() - sp.position()).normalized();
+                            real pdfBsdf = MonteCarlo::evaluateSolidAnglePdf(wo, sp, wi);
+                            li = li * MIS::weight(1, 1, nee.pdf(), pdfBsdf);
+                        }
 
                         // ------ Then we update the throughput, color,
                         // ray, and surface point for the next bounce ------

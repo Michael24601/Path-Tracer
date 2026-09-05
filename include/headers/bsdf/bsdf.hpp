@@ -15,7 +15,15 @@ namespace pathtracer{
         // are in local coordinates, the normal is the z axis.
         static real cosineTerm(const Vector3& wi) {
             return wi.z();
-        }        
+        }    
+        
+        
+        // This returns the vector reflected around the normal,
+        // which in local coordinates is always (0, 0, 1).
+        static Vector3 reflect(const Vector3& wo){
+            return Vector3(-wo.x(), -wo.y(), wo.z());
+        }
+
 
     public:
 

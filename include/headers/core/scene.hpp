@@ -89,14 +89,14 @@ namespace pathtracer{
             // We then add a small pad to avoid self intersection
             Ray ray(origin + direction * SHADOW_EPSILON, direction);
             real maxDistance = distance;
-            Intersection it = intersect(ray, maxDistance);
+            Intersection it = intersect(ray, maxDistance - 2 * SHADOW_EPSILON);
 
             // If we don't find an intersection we return true
             if(!it) return true;
 
             // If we find an intersection and it is closer we return
             // false as well.
-            if(it.t() < maxDistance){
+            if(it.t() < maxDistance - 2 * SHADOW_EPSILON){
                 return false;
             }
 

@@ -175,7 +175,7 @@ namespace pathtracer{
         // Here, we just evaluate the emission at this point.
         // Returns the emission in world coordinates
         Vector3 evaluateEmission(const Vector3& wo) const{
-            
+
             if(!m_instance || !m_instance->emission()){
                 return Vector3::ORIGIN;
             }

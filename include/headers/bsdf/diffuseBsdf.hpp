@@ -69,7 +69,7 @@ namespace pathtracer{
 
             // In this case, both wi and wo are given to us,
             // so we make sure they are on the same side.
-            if(Bsdf::cosineTerm(wo) * cosine <= 0){
+            if(Bsdf::cosineTerm(wo) <= 0 || cosine <= 0){
                 return BsdfSample::INVALID;
             }
 

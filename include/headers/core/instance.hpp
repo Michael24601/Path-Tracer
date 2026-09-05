@@ -41,7 +41,7 @@ namespace pathtracer{
 
         
         void setInScene(bool inScene){
-            inScene = inScene;
+            m_inScene = inScene;
         }
 
     public:

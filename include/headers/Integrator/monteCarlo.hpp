@@ -73,7 +73,6 @@ namespace pathtracer{
 
             AreaSample sample = inst->sampleArea();
             Vector3 posWorld = sample.position();
-            Vector3 normalWorld = sample.shadingNormal();
 
             MonteCarloEstimator estimate;
 
@@ -85,7 +84,8 @@ namespace pathtracer{
 
             // The emission comes from the newly sampled point,
             // not the old intersected point.
-            Vector3 radiance = sample.evaluateEmission(wo);
+            Vector3 radiance = sample.evaluateEmission(-wi);
+            
 
             // Because wi is sampled using the area, we evaluate the
             // BSDF instead of sampling it, with the existing wi.
@@ -108,32 +108,27 @@ namespace pathtracer{
             // The visibility term
             bool visibility = scene.visibility(it.position(), posWorld);
 
-            // The pdf is the pdf of choosing this instance, times
-            // the area pdf in world coordinates.
-            real pdfPoint = pdfInstance * sample.pdf();
-
-            // We have two choices:
-            // We either calculate the area formulation estimator,
-            // which includes a geometry term cosX * cosY / dist^2,
-            // or we can calculate the estimator in the solid
-            // angle formulation, where we only have cosX,
-            // but the pdf has to be transformed to the solid
-            // angle pdf by multiplying by dist^2/cosY.
-            // The result is the exact same, since we eventually
-            // divide by the pdf.
-            // We choose the latter, so that we have a common ground
-            // pdf we can use for MIS that is always in solid angles.
+            // We convert to the solid angle formulation by multiplying
+            // by the geometry term that relates dA to dw.
             real cosineX = std::max(0.0, it.shadingNormal().dot(wi));
-            real cosineY = std::max(0.0, normalWorld.dot(-wi));
-            real pdfSolidAngle = pdfPoint * (dist * dist) / cosineY;
+            real cosineY = std::max(0.0, sample.shadingNormal().dot(-wi));
+
+            if(cosineX <= 0 || cosineY <= 0){
+                return MonteCarloEstimator();
+            }
+
+            real pdfSolidAngle = sample.pdf() * (dist * dist) / cosineY;
+
+            // The pdf is the pdf of choosing this instance, times
+            // the area pdf in solid angles
+            real pdfPoint = pdfInstance * pdfSolidAngle;
+
 
             Vector3 weight = bsdfEval.bsdf() * cosineX
-                * (1.0 / pdfSolidAngle);
-
-            real distance = (posWorld - it.position()).length();
+                * (1.0 / pdfPoint);
 
             return MonteCarloEstimator(radiance, weight, wi, sample, 
-                pdfSolidAngle, distance, visibility);
+                pdfPoint, dist, visibility);
         }
 
         
@@ -216,8 +211,9 @@ namespace pathtracer{
 
         // Returns the pdf of having sampled a particular
         // point on a particular instance using the area sampling.
-        static real evaluateAreaPdf(const Instance* inst, const Scene& scene,
-            const Vector3& point){
+        // PDF is returned in solid angles.
+        static real evaluateAreaPdf(const Vector3& origin,
+            const Instance* inst, const Scene& scene, const Vector3& point){
 
             // The pdf of choosing this instance
             int instanceCount = scene.instanceCount();
@@ -229,12 +225,24 @@ namespace pathtracer{
             // point.
             AreaSample sample = inst->evaluateAreaSample(point);
 
-            return sample.pdf() * pdfInstance;
+            Vector3 wi = sample.position() - origin;
+            real dist = wi.length();
+            wi = wi * (1.0 / dist);
+            real cosineY = std::max(0.0, sample.shadingNormal().dot(-wi));
+
+            if(cosineY){
+                return 0.0;
+            }
+
+            real pdfSolidAngle = sample.pdf() * (dist * dist) / cosineY;
+
+            return pdfSolidAngle * pdfInstance;
         }
 
 
         // Returns the pdf of having sampled a particular
         // point on a particular instance using the light sampling.
+        // PDF is returned in solid angles.
         static real evaluateLightPdf(const Vector3& origin, 
             const Light* light, const Scene& scene,
             const Vector3& point){
