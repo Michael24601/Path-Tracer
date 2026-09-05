@@ -150,23 +150,31 @@ namespace pathtracer{
     };
 
 
-    // Multiple importance sampling
-    class MIS{
 
+    // Cosine weighted
+    class SquareToHemisphereCosine{
     public:
 
-        // Returns weight of estimator given the other sampling
-        // techniques probability of generating the sample.
-        // Uses balance heuristic.
-        static real weight(int n1, int n2, real pdf1, real pdf2){
-               real denominator = n1 * pdf1 + n2 * pdf2;
+        static Vector3 transform(const Vector2& uv){
+            real r = sqrt(uv.x());
+            real theta = 2.0 * PI * uv.y();
 
-            if (denominator <= EPSILON){
-                return 0.0;
-            }
+            real x = r * cos(theta);
+            real y = r * sin(theta);
+            real z = sqrt(1.0 - uv.x());
 
-            return (n1 * pdf1) / denominator;
+            return Vector3{
+                x,
+                y,
+                z
+            };
         }
+
+        // The point is in shading coordinates space (normal is z axis)
+        static real pdf(const Vector3& point){
+            return point.z() * INV_PI;
+        }
+
     };
 
 }

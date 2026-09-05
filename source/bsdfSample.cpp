@@ -4,6 +4,6 @@
 namespace pathtracer{
 
     BsdfSample BsdfSample::INVALID = 
-        BsdfSample(Vector3(0.0), Vector3::ORIGIN, 0.0, 0.0);
+        BsdfSample(Vector3(0.0), Vector3::ORIGIN, 0.0, 0.0, Vector3::ORIGIN);
         
 }

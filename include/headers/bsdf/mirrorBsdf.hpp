@@ -40,8 +40,9 @@ namespace pathtracer{
             real cosine = cosineTerm(direction);
 
             Vector3 bsdf = m_reflectance;
+            Vector3 weight = m_reflectance;
 
-            return BsdfSample(bsdf, direction, cosine, pdf);
+            return BsdfSample(bsdf, direction, cosine, pdf, weight);
         }
 
 

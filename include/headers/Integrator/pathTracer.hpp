@@ -45,22 +45,6 @@ namespace pathtracer{
 
                         Vector3 wo = -currRay.direction();
 
-                        // ------ This first step is NEE -------
-
-                        MonteCarloLightSample nee = MonteCarlo::sampleLight(wo, sp, scene);
-
-                        Vector3 li;
-
-                        // If not visible, we just return 0 for li
-                        if(!nee.visible()){
-                            li = Vector3(0.0);
-                        }
-
-                        // Note that the new radiance is multiplied by the
-                        // throughput, including the weight we get
-                        // form the intersection.
-                        li = nee.radiance() * throughput * nee.weight();
-
                         // ------ This next step is normal pathtracer ------
                     
                         MonteCarloEstimator est = MonteCarlo::sampleSolidAngle(wo, sp, scene);
@@ -81,39 +65,14 @@ namespace pathtracer{
                             le = Vector3(0.0) * throughput * est.weight();
                         }
 
-                        // ------ Next up is MIS to blend Li and Le ------
-                       
-                        // The bsdf sample is weighted by MIS if the intersected
-                        // point is an area light, and therefore intersectable
-                        // by NEE.
-                        if(est.it().instance() && est.it().instance()->light()){
-                            real pdfNee = MonteCarlo::evaluateLightPdf(
-                                sp.position(), est.it().instance()->light(), 
-                                scene, est.it().position() );
-                            le = le * MIS::weight(1, 1, est.pdf(), pdfNee);
-                        }
-
-                        // Li is weighted by MIS if the light is intersectable
-                        // by tha pathtracer, that is an area light with an
-                        // instance that is part of the scene.
-                        if(nee.light() && nee.light()->isIntersectable()){
-                            Vector3 wi = (nee.position() - sp.position()).normalized();
-                            real pdfBsdf = MonteCarlo::evaluateSolidAnglePdf(wo, sp, wi);
-                            li = li * MIS::weight(1, 1, nee.pdf(), pdfBsdf);
-                        }
-
-                        // ------ Then we update the throughput, color,
-                        // ray, and surface point for the next bounce ------
-
-
                         // Finally, we add li and le to the color
-                        color = color + le + li;
+                        color = color + le;
 
-                        if(!est.visible()){
+                        if(!est.visible() || 
+                            est.it().instance()->emission() != nullptr){
                             // If we couldnt sample a next point, we can break,
                             // as we can no longer trace a path.
-                            // We only break after we've added the li
-                            // contribution, since NEE may have been valid.
+                            // Or if we hit an emissive surface.
                             break;
                         }
 

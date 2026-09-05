@@ -10,7 +10,7 @@
 
 namespace pathtracer{
 
-    // Stores intersectiona, ordered according to the distance t.
+    // Stores intersections, ordered according to the distance t.
     // We assume all of the intersections are in the same space
     // (local or global) as the comparison is not meaningful
     // otherwise.

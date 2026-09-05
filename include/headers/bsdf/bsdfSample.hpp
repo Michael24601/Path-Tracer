@@ -20,14 +20,20 @@ namespace pathtracer{
         // The probability density of choosing the direction
         real m_pdf;
 
+        // The weight term (cosine * bsdf / pdf)
+        // Stored separately since BSDF may avoid redundant calculations
+        // like for cosine weighted sampling.
+        Vector3 m_weight;
+
     public:
 
         static BsdfSample INVALID;
         
         
         BsdfSample(const Vector3& bsdf, const Vector3& wi, 
-            real cosine, real pdf): m_cosine{cosine}, m_bsdf{bsdf},  
-            m_wi(wi), m_pdf{pdf}{}
+            real cosine, real pdf, const Vector3& weight): 
+            m_cosine{cosine}, m_bsdf{bsdf},  
+            m_wi(wi), m_pdf{pdf}, m_weight{weight}{}
 
 
         bool isInvalid() const { return m_pdf <= 0.0; }
@@ -37,6 +43,9 @@ namespace pathtracer{
 
 
         const Vector3& bsdf() const { return m_bsdf; }
+
+                
+        const Vector3& weight() const { return m_weight; }
 
 
         real pdf() const { return m_pdf; }

@@ -11,6 +11,7 @@
 #include "../include/headers/light/pointLight.hpp"
 #include "../include/headers/light/areaLight.hpp"
 #include "../include/headers/bsdf/mirrorBsdf.hpp"
+#include "../include/headers/shapes/triangle.hpp"
 
 using namespace pathtracer;
 
@@ -82,46 +83,38 @@ int main(){
         Texture::FilterMode::NEAREST
     );
 
+    Triangle* triangle = new Triangle(Vector3(0.5, 0.5, -0.5), Vector3(0.5, -0.2, -0.4), Vector3(0.1, 0.6, -0.1));
+
     DiffuseBsdf* diffuseBsdf = new DiffuseBsdf(albedoTexture);
-    LambertianEmission* emission = new LambertianEmission(Vector3(1.0));
+    LambertianEmission* emission = new LambertianEmission(Vector3(3.0));
 
     Instance* sphereInst = new Instance(sphere, nullptr, 
         nullptr, diffuseBsdf, nullptr, Transform::IDENTITY);
 
-    Transform lightTransform(Matrix3(Vector3(0.5, 0.0, 0.0), 
-        Vector3(0.0, 0.5, 0.0), 
-        Vector3(0.0, 0.0, 0.5)),
-        Vector3(-1.3, 1.3, -1.0));
+    Instance* triangleInst = new Instance(triangle, nullptr, 
+        nullptr, diffuseBsdf, nullptr, Transform::IDENTITY);
+        
+
+    Transform lightTransform(Matrix3(Vector3(0.1, 0.0, 0.0), 
+        Vector3(0.0, 0.1, 0.0), 
+        Vector3(0.0, 0.0, 0.1)),
+        Vector3(-0.8, 0.7, -0.7));
 
     Instance* lightInst = new Instance(sphere, nullptr, 
         nullptr, diffuseBsdf, emission, lightTransform);
 
-    Transform otherTransform(Matrix3(Vector3(0.4, 0.0, 0.0), 
-        Vector3(0.0, 0.4, 0.0), 
-        Vector3(0.0, 0.0, 0.4)),
-        Vector3(-0.0, 1.7, 0.0));
+    std::vector<Instance*> instances {lightInst, sphereInst};
 
-    MirrorBsdf* mirror = new MirrorBsdf(1.0);
-
-    Instance* otherSphere = new Instance(sphere, nullptr, 
-        nullptr, mirror, nullptr, otherTransform);
-
-    std::vector<Instance*> instances {sphereInst, lightInst, otherSphere};
-
-    PointLight* light = new PointLight(Vector3(-1.0, -0.8, -1.0), Vector3(10.0));
-    AreaLight* aLight = new AreaLight(lightInst);
-    std::vector<Light*> lights {aLight};
+    std::vector<Light*> lights {};
 
     Scene* scene = new Scene(instances, lights);
 
-    AovIntegrator* integrator = new AovIntegrator(
-        AovIntegrator::RenderVariable::NORMAL);
-    PathTracer* pathtracer = new PathTracer(3, 50);
+    PathTracer* pathtracer = new PathTracer(2, 20);
     
-    Renderer renderer(500, 350, camera, scene, pathtracer);
+    Renderer renderer(1000, 700, camera, scene, pathtracer);
     auto image = renderer.render();
 
-    savePNG(image, "mis_image.png");
+    savePNG(image, "image.png");
 
     return 0;
 }

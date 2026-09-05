@@ -123,7 +123,6 @@ namespace pathtracer{
             }
 
             // We transform the direction wo to local coordinates
-            // NOTE: remember when you used the normal instead
             Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
 
             // The bsdf functions sample and evaluate in shading
@@ -133,7 +132,6 @@ namespace pathtracer{
             BsdfSample sample = m_instance->bsdf()->sample(localWo, m_uv);
 
             // We then transform the result back to world coordinates
-            // NOTE: remember when you used the normal instead
             Vector3 wi = m_shadingFrame.transformDirection(sample.wi());
             sample.setWi(wi);
 

@@ -27,7 +27,7 @@ namespace pathtracer{
             // random direction in the hemisphere, and so long
             // as we sample uniformly, the pdf will be 1/2pi.
             Vector3 direction = 
-                SquareToHemisphereUniform::transform(Random::next2D());
+                SquareToHemisphereCosine::transform(Random::next2D());
             direction.normalize();
 
             // The cosine term is the normal dot wi, and since we
@@ -43,20 +43,26 @@ namespace pathtracer{
                 return BsdfSample::INVALID;
             }
 
+            // Cosine weighted
+            real pdf = SquareToHemisphereCosine::pdf(direction);
 
-            real pdf = SquareToHemisphereUniform::pdf(direction);
+            Vector3 albedo = m_albedo->sample(uv);
+            Vector3 bsdf = albedo * INV_PI;
 
-            Vector3 bsdf = m_albedo->sample(uv) * INV_PI;
+            // Since we know the cosines and PI cancel out, we can avoid
+            // the division by the pdf.
+            Vector3 weight = albedo; 
 
-            return BsdfSample(bsdf, direction, cosine, pdf);
+            return BsdfSample(bsdf, direction, cosine, pdf, weight);
         }
 
 
         BsdfSample evaluate(const Vector3& wo, 
             const Vector3& wi, const Vector2& uv) const override{
 
-            real pdf = SquareToHemisphereUniform::pdf(wi);
-            Vector3 bsdf = m_albedo->sample(uv) * INV_PI;
+            real pdf = SquareToHemisphereCosine::pdf(wi);
+            Vector3 albedo = m_albedo->sample(uv);
+            Vector3 bsdf = albedo * INV_PI;
             // The cosine term is the normal dot wi, and since we
             // are in local coordinates, the normal is the z axis.
             real cosine = Bsdf::cosineTerm(wi);
@@ -73,7 +79,9 @@ namespace pathtracer{
                 return BsdfSample::INVALID;
             }
 
-            return BsdfSample(bsdf, wi, cosine, pdf);
+            Vector3 weight = albedo;
+
+            return BsdfSample(bsdf, wi, cosine, pdf, weight);
         }
         
 

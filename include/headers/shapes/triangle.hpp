@@ -5,6 +5,7 @@
 #include "shape.hpp"
 #include "../math/constants.hpp"
 #include "../intersection/IntersectionList.hpp"
+#include "../intersection/areaSample.hpp"
 
 namespace pathtracer{
 
@@ -120,8 +121,67 @@ namespace pathtracer{
             list.push(generateIntersection(ray, t, uv));
         }
 
+            
+        AreaSample sampleSurfaceArea() const override{
+
+            Vector2 random = Random::next2D();
+
+            real sqrtU = sqrtReal(random.x());
+
+            real b0 = 1.0 - sqrtU;
+            real b1 = sqrtU * (1.0 - random.y());
+            real b2 = sqrtU * random.y();
+
+            Vector2 uv(b1, b2);
+
+            Vector3 point = Barycentric::interpolate(v0, v1, v2, uv);
+
+            real pdf = 1.0 / getSurfaceArea();
+
+            return AreaSample(
+                generateIntersection(
+                    Ray(point, Vector3(0, 0, 1)),
+                    0,
+                    uv
+                ),
+                pdf
+            );
+        }
+
+
+        AreaSample evaluateAreaSample(const Vector3& point) const override{
+
+            Vector3 edge0 = v1 - v0;
+            Vector3 edge1 = v2 - v0;
+            Vector3 relative = point - v0;
+
+            real d00 = edge0.dot(edge0);
+            real d01 = edge0.dot(edge1);
+            real d11 = edge1.dot(edge1);
+            real d20 = relative.dot(edge0);
+            real d21 = relative.dot(edge1);
+
+            real denominator = d00 * d11 - d01 * d01;
+
+            real u = (d11 * d20 - d01 * d21) / denominator;
+            real v = (d00 * d21 - d01 * d20) / denominator;
+
+            Vector2 uv(u, v);
+
+            real pdf = 1.0 / getSurfaceArea();
+
+            return AreaSample(
+                generateIntersection(
+                    Ray(point, Vector3(0, 0, 1)),
+                    0,
+                    uv
+                ),
+                pdf
+            );
+        }
 
     };
+
 }
 
 #endif
