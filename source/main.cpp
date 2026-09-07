@@ -13,6 +13,9 @@
 #include "../include/headers/bsdf/mirrorBsdf.hpp"
 #include "../include/headers/shapes/triangle.hpp"
 
+
+#include "data/cornellBox.hpp"
+
 using namespace pathtracer;
 
 void savePNG(const std::vector<std::vector<Vector3>>& image,
@@ -61,60 +64,34 @@ void savePNG(const std::vector<std::vector<Vector3>>& image,
 
 int main(){
 
-    real width = 1.0;
-    real height = 0.7;
+    real width = 0.025;
+    real height = 0.025;
 
-    int texPixelsH = 100;
-    int texPixelsW = 150;
-
-    std::vector<std::vector<Vector3>> albedo(100, 
-        std::vector<Vector3>(150, Vector3(1.0, 0.0, 0.0)));
-
-    Transform camTransform = Camera::lookAt(Vector3(-3.0, 0, 0), 
-        Vector3::ORIGIN, Vector3(0, 0, 1));
-    real focalLength = 0.7;
-
-    PerspectiveCamera* camera = new PerspectiveCamera(width, 
-        height, camTransform, focalLength);
-
-    Sphere* sphere = new Sphere();
-    Texture* albedoTexture = new Texture(albedo, 
-        Texture::BorderMode::CLAMP, 
-        Texture::FilterMode::NEAREST
+    Transform camTransform = Camera::lookAt(
+        Vector3(278.0, 273.0, -800.0),
+        Vector3(278.0, 273.0, 200.0),
+        Vector3(0.0, 1.0, 0.0)
     );
 
-    Triangle* triangle = new Triangle(Vector3(0.5, 0.5, -0.5), Vector3(0.5, -0.2, -0.4), Vector3(0.1, 0.6, -0.1));
+    real focalLength = 0.035;
 
-    DiffuseBsdf* diffuseBsdf = new DiffuseBsdf(albedoTexture);
-    LambertianEmission* emission = new LambertianEmission(Vector3(3.0));
-
-    Instance* sphereInst = new Instance(sphere, nullptr, 
-        nullptr, diffuseBsdf, nullptr, Transform::IDENTITY);
-
-    Instance* triangleInst = new Instance(triangle, nullptr, 
-        nullptr, diffuseBsdf, nullptr, Transform::IDENTITY);
-        
-
-    Transform lightTransform(Matrix3(Vector3(0.1, 0.0, 0.0), 
-        Vector3(0.0, 0.1, 0.0), 
-        Vector3(0.0, 0.0, 0.1)),
-        Vector3(-0.8, 0.7, -0.7));
-
-    Instance* lightInst = new Instance(sphere, nullptr, 
-        nullptr, diffuseBsdf, emission, lightTransform);
-
-    std::vector<Instance*> instances {lightInst, sphereInst};
+    PerspectiveCamera* camera = new PerspectiveCamera(
+        width,
+        height,
+        camTransform,
+        focalLength
+    );
 
     std::vector<Light*> lights {};
 
     Scene* scene = new Scene(instances, lights);
 
-    PathTracer* pathtracer = new PathTracer(2, 20);
+    PathTracer* pathtracer = new PathTracer(100, 100);
     
-    Renderer renderer(1000, 700, camera, scene, pathtracer);
+    Renderer renderer(512, 512, camera, scene, pathtracer);
     auto image = renderer.render();
 
-    savePNG(image, "image.png");
+    savePNG(image, "test.png");
 
     return 0;
 }

@@ -41,7 +41,7 @@ namespace pathtracer{
                 for(int j = 0; j < height; j++){
 
                     real x = ( (i + 0.5) / width ) * 2.0 - 1.0;
-                    real y = ( (j + 0.5) / height ) * 2.0 - 1.0;
+                    real y = 1.0 - ( (j + 0.5) / height ) * 2.0;
                     Vector2 uv(x, y);
 
                     Ray ray = m_camera->generateRay(uv);

@@ -1,4 +1,4 @@
-
+ 
 #ifndef PATH_TRACER_PATH_TRACER_HPP
 #define PATH_TRACER_PATH_TRACER_HPP
 
@@ -29,63 +29,46 @@ namespace pathtracer{
                 Vector3 color = Vector3(0.0);
                 Vector3 throughput = Vector3(1.0);
 
-                // First bounce is just direct light
-                Intersection it = scene.intersect(currRay);
+                for(int i = 1; i < m_depth; i++){
 
-                if(!it){
-                    color = Vector3(0.0);
-                }
-                else{
-                    color = it.evaluateEmission(-currRay.direction());
+                    Vector3 wo = -currRay.direction();
 
-                    // The surface point we bounce on at each iteration
-                    SurfacePoint sp = it;
-                    
-                    for(int i = 1; i < m_depth; i++){
-
-                        Vector3 wo = -currRay.direction();
-
-                        // ------ This next step is normal pathtracer ------
-                    
-                        MonteCarloEstimator est = MonteCarlo::sampleSolidAngle(wo, sp, scene);
-
-                        Vector3 le;
-
-                        if(est.visible()){
-                            // If not visible, it means the sample is 
-                            // invalid for some reason, so we will quit
-                            // after this sample.
-
-                            // Note that the new radiance is multiplied by the
-                            // throughput, including the weight we get
-                            // form the intersection.
-                            le = est.radiance() * throughput * est.weight();
-                        }
-                        else{
-                            le = Vector3(0.0) * throughput * est.weight();
-                        }
-
-                        // Finally, we add li and le to the color
-                        color = color + le;
-
-                        if(!est.visible() || 
-                            est.it().instance()->emission() != nullptr){
-                            // If we couldnt sample a next point, we can break,
-                            // as we can no longer trace a path.
-                            // Or if we hit an emissive surface.
-                            break;
-                        }
-
-                        // And we update the throughput
-                        throughput = throughput * est.weight();
-                        // The new ray starts at the last intersected point
-                        // and points towards the new intersected point.
-                        currRay = Ray(est.it().position(), est.wi());
-                        // And the new intersected point is the one we sampled.
-                        sp = est.it();
+                    // First we intersect the scene
+                    Intersection it = scene.intersect(currRay);
+                    // If no hits (we can break or sample envmap)
+                    if(!it){
+                        break;
                     }
-                }
 
+                    // If we have an emissive surface, add emission and break
+                    if(it.instance()->emission()){
+                        Vector3 emission = it.evaluateEmission(wo);
+                        color = color + emission * throughput;
+                        break;
+                    }
+
+                    // ------ This next step is normal pathtracer ------
+                    
+                    // If we didn't hit an emissive surface, we can
+                    // just update the throughput and move on.
+                    // Because this is a solid angle estimator, the
+                    // sampled point is always visible.
+                    BsdfSample sample = it.sampleBsdf(wo);
+                    Vector3 weight = sample.weight();
+
+                    // Russian roulette
+                    float p = Util::russianRoulette(throughput);
+                    if (Random::next() > p){
+                        break;
+                    }
+
+                    // And we update the throughput (along with RR probability)
+                    throughput = throughput * weight * (1.0f / p);
+                    // The new ray starts at the last intersected point
+                    // and points towards the new intersected point.
+                    currRay = Ray(it.position(), sample.wi());                
+                }
+                
                 averageLe = (averageLe * k + color) * (1.0 / (k+1.0));
 
             }

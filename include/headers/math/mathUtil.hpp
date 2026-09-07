@@ -9,10 +9,19 @@
 
 namespace pathtracer{
 
-
     class Util{
 
         public:  
+
+        static const Vector3 luminance(){
+            return Vector3(0.2126f, 0.7152f, 0.0722f);
+        }
+
+
+        static float russianRoulette(const Vector3& c, float max = 0.75f) {
+            return std::min(max, (float)c.dot(luminance()) * 2.0f);
+        }
+
 
         static int floor(real x){
             return static_cast<int>(x);

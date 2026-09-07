@@ -27,8 +27,6 @@ namespace pathtracer{
             // angle the normal makes with the outgoing ray of light.
             real cosine = Emission::cosineTerm(wo);
 
-           // std::cout << "cos: " << cosine << "\n";
-
             if(cosine <= 0) {
                 return Vector3::ORIGIN;
             }
