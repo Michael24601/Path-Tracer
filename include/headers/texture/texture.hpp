@@ -79,16 +79,16 @@ namespace pathtracer{
 
             // We then apply border handling on the integer vectors
             if(m_borderMode == BorderMode::CLAMP){
-                Border::clamp(floor, width, height);
-                Border::clamp(ceiling, width, height);
+                floor = Border::clamp(floor, width, height);
+                ceiling = Border::clamp(ceiling, width, height);
             }
             else if(m_borderMode == BorderMode::REPEAT){
-                Border::repeat(floor, width, height);
-                Border::repeat(ceiling, width, height);
+                floor = Border::repeat(floor, width, height);
+                ceiling = Border::repeat(ceiling, width, height);
             }
             else if(m_borderMode == BorderMode::MIRROR){
-                Border::mirror(floor, width, height);
-                Border::mirror(ceiling, width, height);
+                floor = Border::mirror(floor, width, height);
+                ceiling = Border::mirror(ceiling, width, height);
             }
 
             // Then we apply filtering

@@ -14,6 +14,9 @@
 #include "../shapes/triangle.hpp"
 #include "../emission/lambertianEmission.hpp"
 #include "../light/areaLight.hpp"
+#include "../shapes/mesh.hpp"
+#include "../light/pointLight.hpp"
+#include "../bsdf/mirrorBsdf.hpp"
 #include <fstream>
 
 namespace pathtracer{
@@ -52,7 +55,7 @@ namespace pathtracer{
 
         static Scene* parse(std::string filename){
 
-            std::ifstream file("filename");
+            std::ifstream file(filename);
             json data = json::parse(file);
 
             if (!file.is_open()){
@@ -63,7 +66,7 @@ namespace pathtracer{
             std::unordered_map<std::string, Bsdf*> materials;
             std::unordered_map<std::string, Shape*> shapes;
             // Instances can share an ID
-            std::unordered_map<std::string, std::vector<Instance*>> instances;
+            std::unordered_map<std::string, Instance*> instances;
             std::unordered_map<std::string, Light*> lights;
 
             // Only one copy needed
@@ -77,10 +80,11 @@ namespace pathtracer{
                     
                     if(data["materials"][i]["type"] == "diffuse"){
 
-                        Texture* texture;
-                        if(data["materials"][i]["albedo"]["type"] == "color"){
+                        Texture* texture = nullptr;
+                        if(data["materials"][i]["parameters"]["albedo"]["type"] == "color"){
 
-                            Vector3 color = parseVector3(data["materials"][i]["albedo"]["value"]);
+                            Vector3 color = parseVector3(
+                                data["materials"][i]["parameters"]["albedo"]["parameters"]["color"]);
                             // 1 by 1 texture for solid color
                             std::vector<std::vector<Vector3>> texArr{{color}};
                             texture = new Texture(texArr, Texture::BorderMode::CLAMP,
@@ -88,6 +92,11 @@ namespace pathtracer{
                         }
 
                         materials[id] = new DiffuseBsdf(texture);
+                    }
+                    else if(data["materials"][i]["type"] == "mirror"){
+                        
+                        real reflectance = data["materials"][i]["parameters"]["reflectance"];
+                        materials[id] = new MirrorBsdf(reflectance);
                     }
                 }
 
@@ -101,7 +110,7 @@ namespace pathtracer{
                     std::string id = inst["id"];
 
                     std::string materialID = inst["material"];
-                    if(!materials[materialID]){
+                    if(materials.find(materialID) == materials.end()){
                         LOG_ERROR("Could not find specified material: " + materialID);
                         exit(1);
                     }
@@ -114,7 +123,7 @@ namespace pathtracer{
                         }
                     }
 
-                    if(inst["shape"] == "sphere"){
+                    if(inst["type"] == "sphere"){
                         
                         Transform transform = parseTransform(
                             inst["parameters"]["transform"]
@@ -123,31 +132,32 @@ namespace pathtracer{
                         Instance* instance = new Instance(sphere, nullptr,
                             nullptr, materials[materialID], emission, transform);
 
-                        instances[id].push_back(instance);
+                        instances[id] = instance;
                     }
 
 
-                    if(inst["shape"] == "mesh"){
+                    if(inst["type"] == "mesh"){
                         
                         Transform transform = parseTransform(
                             inst["parameters"]["transform"]
                         );
 
+                        std::vector<Triangle> triangles;
+                        triangles.reserve(inst["parameters"]["vertices"].size());
+
                         // We need to loop over every triangle
                         for(int j = 0; j < inst["parameters"]["vertices"].size(); j++){
 
-                            Triangle* triangle = new Triangle(
+                            triangles.emplace_back(Triangle(
                                 parseVector3(inst["parameters"]["vertices"][j][0]),
                                 parseVector3(inst["parameters"]["vertices"][j][1]),
                                 parseVector3(inst["parameters"]["vertices"][j][2])
-                            );
-
-                            Instance* instance = new Instance(triangle, nullptr,
-                                nullptr, materials[materialID], emission, transform);
-
-                            instances[id].push_back(instance);
+                            ));
                         }
 
+                        Mesh* mesh = new Mesh(triangles);
+                        instances[id] = new Instance(mesh, nullptr,
+                            nullptr, materials[materialID], emission, transform);
                     }
                 }
             }
@@ -164,17 +174,46 @@ namespace pathtracer{
                         std::string instID = data["lights"][i]["parameters"]["instance"];
 
                         // Instance should have emission
-                        for(int j = 0; j < instances[instID].size(); j++){
-                            if(!instances[instID][j]->emission()){
-                                LOG_ERROR("Could not find specified emissive instance: " + instID);
-                                exit(1);
-                            }
-                            lights[id] = new AreaLight(instances[instID]);
+                        if(instances.find(instID) == instances.end()){
+                            LOG_ERROR("Could not find specified emissive instance: " + instID);
+                            exit(1);
                         }
+                        if(!instances[instID]->emission()){
+                            LOG_ERROR("Instance is not emissive: " + instID);
+                            exit(1);
+                        }
+                        lights[id] = new AreaLight(instances[instID]);
+
+                    }
+                    else if(data["lights"][i]["type"] == "point"){
+                        Vector3 power = parseVector3(data["lights"][i]["parameters"]["power"]);
+                        Vector3 pos = parseVector3(data["lights"][i]["parameters"]["position"]);
+                        lights[id] = new PointLight(pos, power);
                     }
                 }  
 
             }
+
+
+
+
+            // Vector creation
+            std::vector<Instance*> instanceVector;
+            instanceVector.reserve(instances.size());
+
+            for (const auto& [id, instance] : instances) {
+                instanceVector.push_back(instance);
+            }
+
+            std::vector<Light*> lightVector;
+            lightVector.reserve(lights.size());
+
+            for (const auto& [id, light] : lights) {
+                lightVector.push_back(light);
+            }
+
+            Scene* scene = new Scene(instanceVector, lightVector);
+            return scene;
         }
 
     };

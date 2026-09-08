@@ -58,7 +58,7 @@ namespace pathtracer{
 
                 // Note that NEE can't sample from emissive surfaces,
                 // but specifically from lights (emissive surfaces
-                // have to be considered an area light explicitely)
+                // have to be considered an area light explicitly)
                 if(scene.lightCount() <= 0){
                     break;
                 }

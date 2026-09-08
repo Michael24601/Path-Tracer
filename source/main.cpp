@@ -15,6 +15,7 @@
 #include "../include/headers/bsdf/mirrorBsdf.hpp"
 #include "../include/headers/shapes/triangle.hpp"
 #include "../include/cornellBox.hpp"
+#include "../include/headers/parser/parser.hpp"
 
 #include <nlohmann/json.hpp>
 
@@ -85,7 +86,7 @@ int main(){
         focalLength
     );
 
-    Scene* scene = new Scene(instances, lights);
+    Scene* scene = Parser::parse("data/cornellBox.json");
 
     PathTracerNEE* pathtracer = new PathTracerNEE(50);
     

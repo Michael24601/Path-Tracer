@@ -5,7 +5,7 @@ all:
 
 debug:
 	if not exist build mkdir build
-	g++ -O3 -DNDEBUG -fopenmp source/**/*.cpp -Iinclude/libs -o build/build.exe
+	g++ -g -O0 -fopenmp source/*.cpp -Iinclude/libs -o build/build.exe
 
 run: all
 
