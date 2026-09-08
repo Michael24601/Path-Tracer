@@ -1,5 +1,5 @@
 
-#include "include/headers/light/lightSample.hpp"
+#include "../include/headers/light/lightSample.hpp"
 
 namespace pathtracer{
 

@@ -33,6 +33,9 @@ namespace pathtracer{
 
         real pdf() const { return m_pdf; }
 
+        
+        void setPdf(real pdf) { m_pdf = pdf; }
+
     };
 
 }

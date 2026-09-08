@@ -115,7 +115,7 @@ namespace pathtracer{
         // Returns, in global coordinates, the area sample of sampling
         // a point on the surface of the instance.
         // The input is in global coordinates.
-        AreaSample evaluateAreaSample(const Vector3&) const;
+        AreaSample evaluateAreaSample(const SurfaceSample&) const;
         
     };
 

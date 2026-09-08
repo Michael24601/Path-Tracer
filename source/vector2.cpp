@@ -1,5 +1,5 @@
 
-#include "include/headers/math/vector2.hpp"
+#include "../include/headers/math/vector2.hpp"
 
 namespace pathtracer{
 

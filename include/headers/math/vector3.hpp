@@ -187,7 +187,24 @@ namespace pathtracer{
         }
 
 
-         // Element-wise >= operator
+        Vector3 elementWiseMinimum(const Vector3& v) const {
+            return Vector3(std::min(m_data[0], v.m_data[0]), 
+                std::min(m_data[1], v.m_data[1]),
+                std::min(m_data[2], v.m_data[2])
+            );
+        }
+
+
+        Vector3 elementWiseMaximum(const Vector3& v) const {
+            return Vector3(std::max(m_data[0], v.m_data[0]), 
+                std::max(m_data[1], v.m_data[1]),
+                std::max(m_data[2], v.m_data[2])
+            );
+        }
+
+
+
+        // Element-wise >= operator
         bool operator>=(const Vector3& other) const {
             return m_data[0] >= other.m_data[0] 
                 && m_data[1] >= other.m_data[1]

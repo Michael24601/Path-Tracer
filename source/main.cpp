@@ -6,15 +6,17 @@
 #include "../include/headers/bsdf/diffuseBsdf.hpp"
 #include "../include/headers/emission/lambertianEmission.hpp"
 #include "../include/headers/renderer/renderer.hpp"
+#include "../include/headers/renderer/pathTracerRenderer.hpp"
 #include "../include/headers/integrator/aovIntegrator.hpp"
 #include "../include/headers/integrator/pathTracer.hpp"
+#include "../include/headers/integrator/pathTracerNee.hpp"
 #include "../include/headers/light/pointLight.hpp"
 #include "../include/headers/light/areaLight.hpp"
 #include "../include/headers/bsdf/mirrorBsdf.hpp"
 #include "../include/headers/shapes/triangle.hpp"
+#include "../include/cornellBox.hpp"
 
-
-#include "data/cornellBox.hpp"
+#include <nlohmann/json.hpp>
 
 using namespace pathtracer;
 
@@ -62,6 +64,7 @@ void savePNG(const std::vector<std::vector<Vector3>>& image,
     );
 }
 
+
 int main(){
 
     real width = 0.025;
@@ -82,16 +85,14 @@ int main(){
         focalLength
     );
 
-    std::vector<Light*> lights {};
-
     Scene* scene = new Scene(instances, lights);
 
-    PathTracer* pathtracer = new PathTracer(100, 100);
+    PathTracerNEE* pathtracer = new PathTracerNEE(50);
     
-    Renderer renderer(512, 512, camera, scene, pathtracer);
+    PathTracerRenderer renderer(512, 512, camera, scene, pathtracer, 20);
     auto image = renderer.render();
 
-    savePNG(image, "test.png");
+    savePNG(image, "test_new.png");
 
     return 0;
 }

@@ -5,12 +5,13 @@
 #include "../camera/camera.hpp"
 #include "../core/scene.hpp"
 #include "../integrator/integrator.hpp"
+#include <omp.h>
 
 namespace pathtracer{
 
     class Renderer{
 
-    private:
+    protected:
 
         const Camera* m_camera;
         const Scene* m_scene;
@@ -37,19 +38,29 @@ namespace pathtracer{
 
             // We map these to the center of the pixels,
             // such that the image ranged between (-1, -1) and (1, 1).
-            for(int i = 0; i < width; i++){
-                for(int j = 0; j < height; j++){
-
-                    real x = ( (i + 0.5) / width ) * 2.0 - 1.0;
-                    real y = 1.0 - ( (j + 0.5) / height ) * 2.0;
-                    Vector2 uv(x, y);
-
-                    Ray ray = m_camera->generateRay(uv);
-                    c[j][i] = m_integrator->color(ray, *m_scene);
+            
+            // This is for multithreading 
+            #pragma omp parallel for
+            for(int j = 0; j < height; j++){
+                for(int i = 0; i < width; i++){
+                    c[j][i] = renderPixel(i, j);
                 }
             }
 
             return c;
+        }
+
+
+        // Default version just calls the integrator at midpoint of pixel
+        virtual Vector3 renderPixel(int i, int j) const {
+            real offsetX = 0.5, offsetY = 0.5;
+
+            real x = ((i + offsetX) / m_width) * 2.0 - 1.0;
+            real y = 1.0 - ((j + offsetY) / m_height) * 2.0;
+            Vector2 uv(x, y);
+
+            Ray ray = m_camera->generateRay(uv);
+            return m_integrator->color(ray, *m_scene);
         }
 
     };

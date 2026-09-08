@@ -44,7 +44,7 @@ namespace pathtracer{
             if (queue.empty()) {
                 return nullptr;
             }
-            return &queue.top();
+            return &(queue.top());
         }
 
 

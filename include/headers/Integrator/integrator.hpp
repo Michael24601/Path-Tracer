@@ -4,6 +4,7 @@
 #define PATH_TRACER_INTEGRATOR_HPP
 
 #include "../core/scene.hpp"
+#include "../logger.hpp"
 
 namespace pathtracer{
 

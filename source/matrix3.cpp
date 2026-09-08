@@ -1,5 +1,5 @@
 
-#include "include/headers/math/matrix3.hpp"
+#include "../include/headers/math/matrix3.hpp"
 
 namespace pathtracer{
 

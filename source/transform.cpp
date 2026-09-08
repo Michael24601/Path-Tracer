@@ -1,6 +1,6 @@
 
-#include "include/headers/core/transform.hpp"
-#include "include/headers/intersection/surfacePoint.hpp"
+#include "../include/headers/core/transform.hpp"
+#include "../include/headers/intersection/surfacePoint.hpp"
 
 namespace pathtracer{
 

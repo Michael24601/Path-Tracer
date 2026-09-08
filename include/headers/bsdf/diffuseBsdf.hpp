@@ -9,7 +9,13 @@
 
 namespace pathtracer{
 
+    // Depends on which type of sampling we are using, uniform or cosine
+    // weighted.
+    constexpr bool UNIFORM{false};
+
     class DiffuseBsdf: public Bsdf{
+
+    private:
 
         // The color a this sample point could either come from a texture 
         // or from an albedo. It is set from outside.
@@ -26,8 +32,12 @@ namespace pathtracer{
             // In a diffuse BSDF, we can just sample any
             // random direction in the hemisphere, and so long
             // as we sample uniformly, the pdf will be 1/2pi.
-            Vector3 direction = 
-                SquareToHemisphereCosine::transform(Random::next2D());
+            Vector3 direction; 
+            if(UNIFORM){
+                direction = SquareToHemisphereUniform::transform(Random::next2D());            } 
+            else{
+                direction = SquareToHemisphereCosine::transform(Random::next2D());
+            }
             direction.normalize();
 
             // The cosine term is the normal dot wi, and since we
@@ -44,14 +54,26 @@ namespace pathtracer{
             }
 
             // Cosine weighted
-            real pdf = SquareToHemisphereCosine::pdf(direction);
+            real pdf;
+            if(UNIFORM){
+                pdf = SquareToHemisphereUniform::pdf(direction);
+            }
+            else{
+                pdf = SquareToHemisphereCosine::pdf(direction);
+            }
 
             Vector3 albedo = m_albedo->sample(uv);
             Vector3 bsdf = albedo * INV_PI;
 
             // Since we know the cosines and PI cancel out, we can avoid
             // the division by the pdf.
-            Vector3 weight = albedo; 
+            Vector3 weight;
+            if(UNIFORM){
+                weight = bsdf * cosine * (1.0 / pdf); 
+            }
+            else{
+                weight = albedo;
+            }
 
             return BsdfSample(bsdf, direction, cosine, pdf, weight);
         }
@@ -60,7 +82,14 @@ namespace pathtracer{
         BsdfSample evaluate(const Vector3& wo, 
             const Vector3& wi, const Vector2& uv) const override{
 
-            real pdf = SquareToHemisphereCosine::pdf(wi);
+            real pdf;
+            if(UNIFORM){
+                pdf = SquareToHemisphereUniform::pdf(wi);
+            }
+            else{
+                pdf = SquareToHemisphereCosine::pdf(wi);
+            }
+
             Vector3 albedo = m_albedo->sample(uv);
             Vector3 bsdf = albedo * INV_PI;
             // The cosine term is the normal dot wi, and since we
@@ -79,7 +108,13 @@ namespace pathtracer{
                 return BsdfSample::INVALID;
             }
 
-            Vector3 weight = albedo;
+            Vector3 weight;
+            if(UNIFORM){
+                weight = bsdf * cosine * (1.0 / pdf); 
+            }
+            else{
+                weight = albedo;
+            }
 
             return BsdfSample(bsdf, wi, cosine, pdf, weight);
         }

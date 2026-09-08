@@ -123,9 +123,9 @@ namespace pathtracer{
         }
 
 
-        AreaSample evaluateAreaSample(const Vector3& point) const override{
-            real pdf = SquareToSphereUniform::pdf(point);
-            AreaSample sample(generateSurfacePoint(point), pdf);
+        AreaSample evaluateAreaSample(const SurfaceSample& point) const override{
+            real pdf = SquareToSphereUniform::pdf(point.point);
+            AreaSample sample(generateSurfacePoint(point.point), pdf);
             return sample;
         }
 

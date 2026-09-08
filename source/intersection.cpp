@@ -1,5 +1,5 @@
 
-#include "include/headers/intersection/intersection.hpp"
+#include "../include/headers/intersection/intersection.hpp"
 
 namespace pathtracer{
 

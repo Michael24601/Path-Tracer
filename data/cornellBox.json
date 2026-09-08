@@ -1,0 +1,15 @@
+{
+    "name": "Test Scene",
+    "width": 800,
+    "height": 600,
+    "samples": 64,
+    "materials": {
+        "red": {
+            "type": "diffuse",
+            "color": [1.0, 0.0, 0.0]
+        },
+        "mirror": {
+            "type": "mirror"
+        }
+    }
+}

@@ -1,5 +1,5 @@
 
-#include "include/headers/bsdf/bsdfSample.hpp"
+#include "../include/headers/bsdf/bsdfSample.hpp"
 
 namespace pathtracer{
 

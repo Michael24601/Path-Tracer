@@ -13,6 +13,14 @@ namespace pathtracer{
     class IntersectionList;
     class AreaSample;
 
+
+    // Contains point sampled from surface, and optionally
+    // a triangle index for meshes
+    struct SurfaceSample{
+        Vector3 point;
+        int triangleIndex;
+    };
+
     class Shape{
 
     public:
@@ -45,7 +53,7 @@ namespace pathtracer{
 
         // Returns the Area sample for a given point on the surface.
         // The point is expected in local coordinates.
-        virtual AreaSample evaluateAreaSample(const Vector3&) const = 0;
+        virtual AreaSample evaluateAreaSample(const SurfaceSample&) const = 0;
 
     };
 }

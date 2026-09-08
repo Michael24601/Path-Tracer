@@ -45,7 +45,7 @@ namespace pathtracer{
 
 
         LightSample evaluateLightSample(const Vector3& origin,
-            const Vector3& point) const override{
+            const SurfaceSample& point) const override{
             
             // Non intersectable light
             return LightSample::INVALID;

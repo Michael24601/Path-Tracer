@@ -24,7 +24,7 @@ namespace pathtracer{
         // Given a ray and a distance t along it, sets the intersection
         // object. The uv are the barycentric coordinates of the
         // intersected point.
-        Intersection generateIntersection(const Ray& ray, real t, 
+        SurfacePoint generateSurfacePoint(const Ray& ray, real t, 
             const Vector2& uv) const {
 
             Vector3 point = ray.at(t);
@@ -41,7 +41,7 @@ namespace pathtracer{
             tangent = (tangent - shadingNormal * 
                 shadingNormal.dot(tangent)).normalized();
 
-            return Intersection(t, point, geometryNormal, 
+            return SurfacePoint(point, geometryNormal, 
                 shadingNormal, tangent, uv, nullptr);
         }
 
@@ -72,7 +72,7 @@ namespace pathtracer{
         real getSurfaceArea() const override{
             Vector3 r0 = v1 - v0;
             Vector3 r1 = v2 - v0;
-            return (r0.cross(r1)).length();
+            return 0.5 * (r0.cross(r1)).length();
         }
 
 
@@ -118,7 +118,7 @@ namespace pathtracer{
 
             // Here we can conclude we have an intersection
             Vector2 uv(u, v);
-            list.push(generateIntersection(ray, t, uv));
+            list.push(Intersection(t, generateSurfacePoint(ray, t, uv)));
         }
 
             
@@ -139,7 +139,7 @@ namespace pathtracer{
             real pdf = 1.0 / getSurfaceArea();
 
             return AreaSample(
-                generateIntersection(
+                generateSurfacePoint(
                     Ray(point, Vector3(0, 0, 1)),
                     0,
                     uv
@@ -149,11 +149,11 @@ namespace pathtracer{
         }
 
 
-        AreaSample evaluateAreaSample(const Vector3& point) const override{
+        AreaSample evaluateAreaSample(const SurfaceSample& point) const override{
 
             Vector3 edge0 = v1 - v0;
             Vector3 edge1 = v2 - v0;
-            Vector3 relative = point - v0;
+            Vector3 relative = point.point - v0;
 
             real d00 = edge0.dot(edge0);
             real d01 = edge0.dot(edge1);
@@ -171,8 +171,8 @@ namespace pathtracer{
             real pdf = 1.0 / getSurfaceArea();
 
             return AreaSample(
-                generateIntersection(
-                    Ray(point, Vector3(0, 0, 1)),
+                generateSurfacePoint(
+                    Ray(point.point, Vector3(0, 0, 1)),
                     0,
                     uv
                 ),

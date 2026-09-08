@@ -15,6 +15,9 @@ namespace pathtracer{
 
     public:
 
+        AxisAlignedBox() : m_minCorner(0.0), m_maxCorner(0.0){}
+
+
         AxisAlignedBox(const Vector3& minCorner, const Vector3& maxCorner) : 
             m_minCorner(minCorner), m_maxCorner(maxCorner){
 

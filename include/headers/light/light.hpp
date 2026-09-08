@@ -29,7 +29,7 @@ namespace pathtracer{
         // light sample that would have been generated.
         // This only applies to intersectable lights.
         virtual LightSample evaluateLightSample(const Vector3&,
-            const Vector3&) const = 0;
+            const SurfaceSample&) const = 0;
 
 
 

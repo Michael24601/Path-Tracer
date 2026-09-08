@@ -1,6 +1,6 @@
 
-#include "include/headers/core/instance.hpp"
-#include "include/headers/intersection/areaSample.hpp"
+#include "../include/headers/core/instance.hpp"
+#include "../include/headers/intersection/areaSample.hpp"
 
 namespace pathtracer{
         
@@ -38,15 +38,16 @@ namespace pathtracer{
     }
 
 
-    AreaSample Instance::evaluateAreaSample(const Vector3& point) const{
+    AreaSample Instance::evaluateAreaSample(const SurfaceSample& surPoint) const{
         // First we transform the point to local
         // coordinates.
-        Vector3 localPoint = m_transform.inverseTransform(point);
+        Vector3 localPoint = m_transform.inverseTransform(surPoint.point);
+        SurfaceSample localSample{localPoint, surPoint.triangleIndex};
 
         // Then we evaluate the area sample.
         // Both the position and the pdf are in the shape's
         // local coordinates, so we can transform them.
-        AreaSample sample = m_shape->evaluateAreaSample(localPoint);
+        AreaSample sample = m_shape->evaluateAreaSample(localSample);
 
         // The transform matrix is used directly since we don't
         // want it normalized yet.

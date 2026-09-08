@@ -12,6 +12,7 @@
 #include <queue>
 #include <random>
 #include <iostream>
+#include <fstream>
 
 namespace pathtracer{
 

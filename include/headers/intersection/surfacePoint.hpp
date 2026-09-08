@@ -33,6 +33,10 @@ namespace pathtracer{
         // The shading frame that consists of the bitangent, tangent
         // and normals, where the normal is the z coordinate.
         Transform m_shadingFrame;
+
+        // Optional parameter, records which triangle in a mesh was
+        // intersected.
+        int m_triangleIndex;
         
 
     public:
@@ -42,7 +46,8 @@ namespace pathtracer{
             m_shadingNormal(Vector3::ORIGIN),
             m_tangent(Vector3::ORIGIN),
             m_uv(Vector2::ORIGIN),
-            m_instance(nullptr){}
+            m_instance(nullptr),
+            m_triangleIndex{-1}{}
 
 
         SurfacePoint(const Vector3& position, 
@@ -54,7 +59,8 @@ namespace pathtracer{
             m_shadingNormal(shadingNormal),
             m_tangent(tangent),
             m_uv(uv),
-            m_instance{instance} {};
+            m_instance{instance},
+            m_triangleIndex{-1} {};
 
 
         const Vector3& position() const { return m_position; }
@@ -73,6 +79,9 @@ namespace pathtracer{
 
         
         const Instance* instance() const {  return m_instance; }
+
+
+        int triangleIndex() const {  return m_triangleIndex; }
 
 
         void setPosition(const Vector3& pos) { m_position = pos; }
@@ -99,6 +108,9 @@ namespace pathtracer{
         void setInstance(const Instance* instance) { 
             m_instance = instance; 
         }
+
+
+        void setTriangleIndex(int index) { m_triangleIndex = index; }
 
 
         void computeShadingFrame(){

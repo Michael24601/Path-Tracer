@@ -61,11 +61,11 @@ namespace pathtracer{
         
         
         LightSample evaluateLightSample(const Vector3& origin,
-            const Vector3& point) const override{
+            const SurfaceSample& surPoint) const override{
             
             // We just evaluate the area sample of having chosen
             // this particular point.
-            AreaSample s = m_instance->evaluateAreaSample(point);
+            AreaSample s = m_instance->evaluateAreaSample(surPoint);
             Vector3 wi = (s.position() - origin).normalized();
 
             // The light sample expects the pdf in solid angles
