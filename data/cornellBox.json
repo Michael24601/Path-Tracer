@@ -169,7 +169,7 @@
         {
             "id": "right-wall",
             "type": "mesh",
-            "material": "diffuse-white",
+            "material": "diffuse-green",
             "parameters": {
                 "transform": [
                     1.0, 0.0, 0.0, 0.0,
@@ -356,6 +356,20 @@
                 "instance": "light"
             }
         }
-    ]
+    ],
+
+
+    "camera": {
+        "type": "perspective",
+        "parameters": {
+            "focal-length": 0.035,
+            "sensor-dimension": [0.025, 0.025],
+            "look-at": {
+                "eye": [278.0, 273.0, -800.0],
+                "target": [278.0, 273.0, 200.0],
+                "up": [0.0, 1.0, 0.0]
+            }
+        }
+    }
     
 }

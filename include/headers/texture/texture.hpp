@@ -26,7 +26,7 @@ namespace pathtracer{
         };
         
 
-    private:
+    protected:
 
         std::vector<std::vector<Vector3>> m_data;
         int width, height;
@@ -69,7 +69,7 @@ namespace pathtracer{
         // 0 and 1, as the borderMode will handle it, nor does it
         // need to lie on any particular pixel center as the filterMode
         // will handle that.
-        Vector3 sample(const Vector2& uv) const{
+        virtual Vector3 sample(const Vector2& uv) const{
 
             // First we precompute these values
             Vector2 imageUv = mapToImageSpace(uv);

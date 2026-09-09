@@ -106,6 +106,11 @@ namespace pathtracer{
         }
 
 
+        real mean() const{
+            return ONE_THIRD * (m_data[0] + m_data[1] + m_data[2]);
+        }
+
+
         // Element-wise absolute value of the vector
         Vector3 abs() const {
             return Vector3(std::abs(m_data[0]), std::abs(m_data[1]), 

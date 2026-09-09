@@ -17,6 +17,8 @@
 #include "../shapes/mesh.hpp"
 #include "../light/pointLight.hpp"
 #include "../bsdf/mirrorBsdf.hpp"
+#include "../camera/perspectiveCamera.hpp"
+#include "../texture/color.hpp"
 #include <fstream>
 
 namespace pathtracer{
@@ -38,6 +40,14 @@ namespace pathtracer{
         }
 
 
+        static Vector2 parseVector2(const json& value){
+            return Vector2(
+                value[0],
+                value[1]
+            );
+        }
+
+
         static Transform parseTransform(const json& value){
             // We assume the transform matrix is defined row by row,
             // But matrix is defined column by column
@@ -53,7 +63,7 @@ namespace pathtracer{
 
     public:
 
-        static Scene* parse(std::string filename){
+        static std::pair<Scene*, Camera*> parse(std::string filename){
 
             std::ifstream file(filename);
             json data = json::parse(file);
@@ -65,9 +75,10 @@ namespace pathtracer{
 
             std::unordered_map<std::string, Bsdf*> materials;
             std::unordered_map<std::string, Shape*> shapes;
-            // Instances can share an ID
             std::unordered_map<std::string, Instance*> instances;
             std::unordered_map<std::string, Light*> lights;
+
+            Camera* camera;
 
             // Only one copy needed
             Sphere* sphere = new Sphere();
@@ -85,10 +96,7 @@ namespace pathtracer{
 
                             Vector3 color = parseVector3(
                                 data["materials"][i]["parameters"]["albedo"]["parameters"]["color"]);
-                            // 1 by 1 texture for solid color
-                            std::vector<std::vector<Vector3>> texArr{{color}};
-                            texture = new Texture(texArr, Texture::BorderMode::CLAMP,
-                                Texture::FilterMode::NEAREST);
+                            texture = new Color(color);
                         }
 
                         materials[id] = new DiffuseBsdf(texture);
@@ -194,7 +202,24 @@ namespace pathtracer{
 
             }
 
+            
+            if(data.contains("camera")){
+                    
+                if(data["camera"]["type"] == "perspective"){
 
+                    Vector3 eye = parseVector3(data["camera"]["parameters"]["look-at"]["eye"]);
+                    Vector3 target = parseVector3(data["camera"]["parameters"]["look-at"]["target"]);
+                    Vector3 up = parseVector3(data["camera"]["parameters"]["look-at"]["up"]);
+
+                    Vector2 dim = parseVector2(data["camera"]["parameters"]["sensor-dimension"]);
+                    real focalLength = data["camera"]["parameters"]["focal-length"];
+
+                    camera = new PerspectiveCamera(dim.x(), dim.y(),
+                        Camera::lookAt(eye, target, up),
+                        focalLength);
+                }
+
+            }
 
 
             // Vector creation
@@ -213,7 +238,8 @@ namespace pathtracer{
             }
 
             Scene* scene = new Scene(instanceVector, lightVector);
-            return scene;
+            
+            return std::make_pair(scene, camera);
         }
 
     };

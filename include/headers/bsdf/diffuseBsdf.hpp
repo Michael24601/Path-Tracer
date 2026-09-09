@@ -42,14 +42,14 @@ namespace pathtracer{
 
             // The cosine term is the normal dot wi, and since we
             // are in local coordinates, the normal is the z axis.
-            real cosine = Bsdf::cosineTerm(direction);
+            real cosine = Bsdf::cosineTheta(direction);
 
             // We only scatter light in the upper hemisphere
             // above the point, not below the point (inside the object).
             // So cosine should be positive.
             // Wi is sampled in teh upper hemisphere, so it's always
             // positive, but we need to check this for wo.
-            if(Bsdf::cosineTerm(wo) <= 0) {
+            if(Bsdf::cosineTheta(wo) <= 0) {
                 return BsdfSample::INVALID;
             }
 
@@ -94,7 +94,7 @@ namespace pathtracer{
             Vector3 bsdf = albedo * INV_PI;
             // The cosine term is the normal dot wi, and since we
             // are in local coordinates, the normal is the z axis.
-            real cosine = Bsdf::cosineTerm(wi);
+            real cosine = Bsdf::cosineTheta(wi);
 
             // If the direction is the wrong way (diffuse
             // only scatters in upper hemisphere)
@@ -104,7 +104,7 @@ namespace pathtracer{
 
             // In this case, both wi and wo are given to us,
             // so we make sure they are on the same side.
-            if(Bsdf::cosineTerm(wo) <= 0 || cosine <= 0){
+            if(Bsdf::cosineTheta(wo) <= 0 || cosine <= 0){
                 return BsdfSample::INVALID;
             }
 

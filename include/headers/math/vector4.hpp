@@ -3,6 +3,7 @@
 #define PATH_TRACER_VECTOR4_HPP
 
 #include "../config.hpp"
+#include "vector3.hpp"
 #include "constants.hpp"
 
 namespace pathtracer{
@@ -24,6 +25,14 @@ namespace pathtracer{
             m_data[0] = x;
             m_data[1] = y;
             m_data[2] = z;
+            m_data[3] = w;
+        }
+
+
+        Vector4(const Vector3& v, real w){
+            m_data[0] = v.x();
+            m_data[1] = v.y();
+            m_data[2] = v.z();
             m_data[3] = w;
         }
 

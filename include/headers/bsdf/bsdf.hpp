@@ -9,25 +9,46 @@ namespace pathtracer{
 
     class Bsdf{
 
-    protected:
-
-        // The cosine term is the normal dot wi, and since we
-        // are in local coordinates, the normal is the z axis.
-        static real cosineTerm(const Vector3& wi) {
-            return wi.z();
-        }    
-        
-        
-        // This returns the vector reflected around the normal,
-        // which in local coordinates is always (0, 0, 1).
-        static Vector3 reflect(const Vector3& wo){
-            return Vector3(-wo.x(), -wo.y(), wo.z());
-        }
-
 
     public:
 
         Bsdf(){}
+
+
+        // The cosine term is the normal dot wi, and since we
+        // are in local coordinates, the normal is the z axis.
+        static real cosineTheta(const Vector3& w) {
+            return w.z();
+        }    
+
+
+        // The cosine term is the normal dot wi, and since we
+        // are in local coordinates, the normal is the z axis.
+        static real absCosineTheta(const Vector3& w) {
+            return std::abs(w.z());
+        }
+
+
+        static float cosinePhiSineTheta(const Vector3& w) { 
+            return w.x(); 
+        }
+        
+        static float sinePhiSineTheta(const Vector3& w) { 
+            return w.y(); 
+        }
+        
+        
+        // This returns the vector reflected around the normal,
+        // which in local coordinates is always (0, 0, 1).
+        static Vector3 reflect(const Vector3& w){
+            return Vector3(-w.x(), -w.y(), w.z());
+        }
+
+
+        // Reflects around a given normal
+        static Vector3 reflect(const Vector3 &w, const Vector3 &n) {
+            return n * 2 * n.dot(w) - w;
+        }
 
         
         // In general, we can either sample a point directly

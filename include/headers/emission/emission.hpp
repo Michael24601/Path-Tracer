@@ -15,7 +15,7 @@ namespace pathtracer{
         
         // The cosine term is the normal dot wo, and since we
         // are in local coordinates, the normal is the z axis.
-        static real cosineTerm(const Vector3& wo) {
+        static real cosineTheta(const Vector3& wo) {
             return wo.z();
         }    
 

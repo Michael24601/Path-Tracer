@@ -22,6 +22,8 @@ namespace pathtracer{
     constexpr real HALF_PI = PI * 0.5;
     constexpr real TWO_PI = PI * 2.0;
 
+    constexpr real ONE_THIRD = 0.33333333333333333333;
+
 }
 
 #endif

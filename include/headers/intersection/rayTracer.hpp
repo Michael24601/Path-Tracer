@@ -10,6 +10,30 @@ namespace pathtracer{
 
     class RayTracer{
 
+
+    private:
+
+        
+        static void normalMapping(Intersection& it, const Instance* const inst){
+
+            if(inst->normalTexture()){
+
+                Vector3 normal = inst->normalTexture()->sample(it.uv());
+                // From [0,1] to [-1,1]
+                normal = normal * 2.0f - Vector3(1.0f);
+
+                // We need to map normal from shading frame to world coordinates
+                // Note that we can use transform instead of transformNormal
+                // since the frame is an orthogonal matrix.
+                normal = it.shadingFrame().transform(normal).normalized();
+                // Then the frame is updated
+                it.setShadingNormal(normal);
+                // Frame is recomputed
+                it.computeShadingFrame();
+            }
+        }
+
+
     public:
 
         // Intersects a ray with a shape instance. If we have a
@@ -22,6 +46,8 @@ namespace pathtracer{
             Ray localRay = inv.transform(ray);
 
             // Then we intersect the shape
+            // This is a priority queue so top is always the closest
+            // current hit.
             IntersectionList list; 
             instance->shape()->intersect(localRay, list);
 
@@ -80,6 +106,10 @@ namespace pathtracer{
                 oldIt = Intersection(newT, newIt);
                 // We also compute the shading frame now
                 oldIt.computeShadingFrame();
+
+                // Since we found the closest hit, we can now do normal mapping
+                normalMapping(oldIt, instance);
+
                 break;
             }
         }

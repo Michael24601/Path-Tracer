@@ -22,7 +22,7 @@ namespace pathtracer{
             const override{
 
             // We only scatter light in the upper hemisphere.
-            if(Bsdf::cosineTerm(wo) <= 0) {
+            if(Bsdf::cosineTheta(wo) <= 0) {
                 return BsdfSample::INVALID;
             }
 
@@ -37,12 +37,12 @@ namespace pathtracer{
             // so we'll place 1 as a placeholder.
             real pdf = 1.0;
 
-            real cosine = cosineTerm(direction);
+            real cosine = cosineTheta(direction);
 
             Vector3 bsdf = m_reflectance;
             Vector3 weight = m_reflectance;
 
-            return BsdfSample(bsdf, direction, cosine, pdf, weight);
+            return BsdfSample(bsdf, direction, cosine, pdf, weight, true);
         }
 
 

@@ -68,25 +68,9 @@ void savePNG(const std::vector<std::vector<Vector3>>& image,
 
 int main(){
 
-    real width = 0.025;
-    real height = 0.025;
-
-    Transform camTransform = Camera::lookAt(
-        Vector3(278.0, 273.0, -800.0),
-        Vector3(278.0, 273.0, 200.0),
-        Vector3(0.0, 1.0, 0.0)
-    );
-
-    real focalLength = 0.035;
-
-    PerspectiveCamera* camera = new PerspectiveCamera(
-        width,
-        height,
-        camTransform,
-        focalLength
-    );
-
-    Scene* scene = Parser::parse("data/cornellBox.json");
+    auto parsed = Parser::parse("data/cornellBox.json");
+    Scene* scene = parsed.first;
+    Camera* camera = parsed.second;
 
     PathTracerNEE* pathtracer = new PathTracerNEE(50);
     

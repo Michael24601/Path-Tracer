@@ -81,6 +81,9 @@ namespace pathtracer{
         const Instance* instance() const {  return m_instance; }
 
 
+        const Transform& shadingFrame() const {  return m_shadingFrame; }
+
+
         int triangleIndex() const {  return m_triangleIndex; }
 
 
