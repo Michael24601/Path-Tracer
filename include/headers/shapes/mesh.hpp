@@ -84,9 +84,10 @@ namespace pathtracer{
 
 
         AreaSample evaluateAreaSample(const SurfaceSample& point) const override{
+            int index = point.triangleIndex;
             AreaSample sample = 
-                triangles[point.triangleIndex].evaluateAreaSample(point);
-            real selectionPdf = UniformTriangle::pdf(triangles, point.triangleIndex);
+                triangles[index].evaluateAreaSample(point);
+            real selectionPdf = UniformTriangle::pdf(triangles, index);
             sample.setPdf(sample.pdf() * selectionPdf);
             return sample;
         }

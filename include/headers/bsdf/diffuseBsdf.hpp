@@ -119,7 +119,10 @@ namespace pathtracer{
             return BsdfSample(bsdf, wi, cosine, pdf, weight);
         }
         
-
+        bool isSpecular() const override{
+            return false;
+        }
+        
     };
 
 }

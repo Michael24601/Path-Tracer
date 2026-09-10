@@ -1,0 +1,311 @@
+
+{
+
+    "materials" : [
+        {
+            "id": "diffuse-white",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.725, 0.71, 0.68]
+                    }
+                }
+            }
+
+        },
+        {
+            "id": "diffuse-green",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.14, 0.45, 0.091]
+                    }
+                }
+            }
+        },
+        {
+            "id": "diffuse-red",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.63, 0.065, 0.05]
+                    }
+                }
+            }
+        },
+        {
+            "id": "light-bsdf",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.0, 0.0, 0.0]
+                    }
+                }
+            }
+        },
+        {
+            "id": "mirror-bsdf",
+            "type": "mirror",
+            "parameters": {
+                "reflectance": 0.95
+            }
+        },
+        {
+            "id": "glass",
+            "type": "dielectric",
+            "parameters": {
+                "ior": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [1.8, 1.8, 1.8]
+                    }
+                },
+                "reflectance": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [1.0, 1.0, 1.0]
+                    }
+                },
+                "transmittance": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [1.0, 1.0, 1.0]
+                    }
+                }
+            }
+        }
+    ],
+
+    "instances": [
+        {
+            "id": "ceiling",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0
+                ],
+                "vertices": [
+                    [
+                        [1.0, 1.59, -1.04],
+                        [1.0, 1.59, 0.99],
+                        [-1.02, 1.59, 0.99]
+                    ],
+                    [
+                        [-1.02, 1.59, 0.99],
+                        [-1.02, 1.59, -1.04],
+                        [1.0, 1.59, -1.04]
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "floor",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0
+                ],
+                "vertices": [
+                    [
+                        [1.0, 0.0, -1.04],
+                        [-0.99, 0.0, -1.04],
+                        [-1.01, 0.0, 0.99]
+                    ],
+                    [
+                        [-1.01, 0.0, 0.99],
+                        [1.0, 0.0, 0.99],
+                        [1.0, 0.0, -1.04]
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "light",
+            "type": "mesh",
+            "material": "light-bsdf",
+            "emission": {
+                "type": "lambertian",
+                "parameters": {
+                    "power": [100.0, 100.0, 100.0]
+                }
+            },
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0
+                ],
+                "vertices": [
+                    [
+                        [0.05426, 1.578, -0.077912],
+                        [0.05426, 1.578, 0.017913],
+                        [-0.06426, 1.578, 0.017913]
+                    ],
+                    [
+                        [-0.06426, 1.578, 0.017913],
+                        [-0.06426, 1.578, -0.077912],
+                        [0.05426, 1.578, -0.077912]
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "back-wall",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0
+                ],
+                "vertices": [
+                    [
+                        [1.0, 1.59, -1.04],
+                        [-1.02, 1.59, -1.04],
+                        [-0.99, 0.0, -1.04]
+                    ],
+                    [
+                        [-0.99, 0.0, -1.04],
+                        [1.0, 0.0, -1.04],
+                        [1.0, 1.59, -1.04]
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "right-wall",
+            "type": "mesh",
+            "material": "mirror-bsdf",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0
+                ],
+                "vertices": [
+                    [
+                        [1.0, 1.59, 0.99],
+                        [1.0, 1.59, -1.04],
+                        [1.0, 0.0, -1.04]
+                    ],
+                    [
+                        [1.0, 0.0, -1.04],
+                        [1.0, 0.0, 0.99],
+                        [1.0, 1.59, 0.99]
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "left-wall",
+            "type": "mesh",
+            "material": "diffuse-red",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0
+                ],
+                "vertices": [
+                    [
+                        [-1.02, 1.59, -1.04],
+                        [-1.02, 1.59, 0.99],
+                        [-1.01, 0.0, 0.99]
+                    ],
+                    [
+                        [-1.01, 0.0, 0.99],
+                        [-0.99, 0.0, -1.04],
+                        [-1.02, 1.59, -1.04]
+                    ]
+                ]
+            }
+        },
+        {
+            "id": "mirror-sphere",
+            "type": "sphere",
+            "material": "mirror-bsdf",
+            "parameters": {
+                "transform": [
+                    0.3, 0.0, 0.0, -0.4,
+                    0.0, 0.3, 0.0, 0.3,
+                    0.0, 0.0, 0.3, -0.15,
+                    0.0, 0.0, 0.0, 1.0
+                ]
+            }
+        },
+        {
+            "id": "dielectric-sphere",
+            "type": "sphere",
+            "material": "glass",
+            "parameters": {
+                "transform": [
+                    0.3, 0.0, 0.0, 0.4,
+                    0.0, 0.3, 0.0, 0.3,
+                    0.0, 0.0, 0.3, 0.35,
+                    0.0, 0.0, 0.0, 1.0
+                ]
+            }
+        }
+    ],
+
+
+    "lights": [
+        {
+            "id": "ceiling-light",
+            "type": "area",
+            "parameters": {
+                "instance": "light"
+            }
+        }
+    ],
+
+    "camera": {
+        "type": "perspective",
+        "parameters": {
+            "focal-length": 0.0216506,
+            "sensor-dimension": [0.025, 0.0201172],
+            "look-at": {
+                "eye": [0, 0.75, 2.5],
+                "target": [0, 0.75, -100],
+                "up": [0, 1, 0]
+            }
+        }
+    },
+    
+    "renderer": {
+        "type": "path-tracer-renderer",
+        "parameters": {
+            "pixel-resolution": [512, 412],
+            "sample-count": 20
+        },
+        "integrator": {
+            "type": "path-tracer-nee-mis",
+            "parameters": {
+                "max-depth": 100
+            }
+        }
+    }
+
+
+}

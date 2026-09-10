@@ -55,6 +55,10 @@ namespace pathtracer{
         }
         
 
+        bool isSpecular() const override{
+            return true;
+        }
+
     };
 
 }

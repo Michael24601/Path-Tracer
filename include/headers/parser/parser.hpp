@@ -19,6 +19,13 @@
 #include "../bsdf/mirrorBsdf.hpp"
 #include "../camera/perspectiveCamera.hpp"
 #include "../texture/color.hpp"
+#include "../bsdf/dielectricBsdf.hpp"
+#include "../renderer/renderer.hpp"
+#include "../renderer/pathTracerRenderer.hpp"
+#include "../integrator/aovIntegrator.hpp"
+#include "../integrator/pathTracer.hpp"
+#include "../integrator/pathTracerNee.hpp"
+#include "../integrator/pathTracerNeeMis.hpp"
 #include <fstream>
 
 namespace pathtracer{
@@ -48,6 +55,14 @@ namespace pathtracer{
         }
 
 
+        static Vector2i parseVector2i(const json& value){
+            return Vector2i(
+                value[0],
+                value[1]
+            );
+        }
+
+
         static Transform parseTransform(const json& value){
             // We assume the transform matrix is defined row by row,
             // But matrix is defined column by column
@@ -63,25 +78,50 @@ namespace pathtracer{
 
     public:
 
-        static std::pair<Scene*, Camera*> parse(std::string filename){
+        static Renderer* parse(std::string filename){
 
             std::ifstream file(filename);
-            json data = json::parse(file);
 
             if (!file.is_open()){
                 LOG_ERROR("File could not be opened");
                 exit(1);
             }
 
+            json data = json::parse(file);
+
             std::unordered_map<std::string, Bsdf*> materials;
             std::unordered_map<std::string, Shape*> shapes;
             std::unordered_map<std::string, Instance*> instances;
             std::unordered_map<std::string, Light*> lights;
-
             Camera* camera;
+            Integrator* integrator;
+            Renderer* renderer; 
 
             // Only one copy needed
             Sphere* sphere = new Sphere();
+
+       
+            if(data.contains("camera")){
+                    
+                if(data["camera"]["type"] == "perspective"){
+
+                    Vector3 eye = parseVector3(data["camera"]["parameters"]["look-at"]["eye"]);
+                    Vector3 target = parseVector3(data["camera"]["parameters"]["look-at"]["target"]);
+                    Vector3 up = parseVector3(data["camera"]["parameters"]["look-at"]["up"]);
+
+                    Vector2 dim = parseVector2(data["camera"]["parameters"]["sensor-dimension"]);
+                    real focalLength = data["camera"]["parameters"]["focal-length"];
+
+                    camera = new PerspectiveCamera(dim.x(), dim.y(),
+                        Camera::lookAt(eye, target, up),
+                        focalLength);
+                }
+            }
+            else{
+                LOG_ERROR("No camera in: " + filename);
+                exit(1);
+            }
+
 
             if(data.contains("materials")){
 
@@ -106,6 +146,33 @@ namespace pathtracer{
                         real reflectance = data["materials"][i]["parameters"]["reflectance"];
                         materials[id] = new MirrorBsdf(reflectance);
                     }
+                    else if(data["materials"][i]["type"] == "dielectric"){
+
+                        Texture* ior = nullptr;
+                        Texture* reflectance = nullptr;
+                        Texture* transmittance = nullptr;
+
+                        if(data["materials"][i]["parameters"]["ior"]["type"] == "color"){
+                            Vector3 value = parseVector3(
+                                data["materials"][i]["parameters"]["ior"]["parameters"]["color"]);
+                            ior = new Color(value);
+                        }
+
+                        if(data["materials"][i]["parameters"]["reflectance"]["type"] == "color"){
+                            Vector3 color = parseVector3(
+                                data["materials"][i]["parameters"]["reflectance"]["parameters"]["color"]);
+                            reflectance = new Color(color);
+                        }
+
+                        if(data["materials"][i]["parameters"]["transmittance"]["type"] == "color"){
+                            Vector3 color = parseVector3(
+                                data["materials"][i]["parameters"]["transmittance"]["parameters"]["color"]);
+                            transmittance = new Color(color);
+                        }
+
+                        materials[id] = new DielectricBsdf(ior, reflectance, transmittance);
+                    }
+
                 }
 
             }
@@ -202,25 +269,6 @@ namespace pathtracer{
 
             }
 
-            
-            if(data.contains("camera")){
-                    
-                if(data["camera"]["type"] == "perspective"){
-
-                    Vector3 eye = parseVector3(data["camera"]["parameters"]["look-at"]["eye"]);
-                    Vector3 target = parseVector3(data["camera"]["parameters"]["look-at"]["target"]);
-                    Vector3 up = parseVector3(data["camera"]["parameters"]["look-at"]["up"]);
-
-                    Vector2 dim = parseVector2(data["camera"]["parameters"]["sensor-dimension"]);
-                    real focalLength = data["camera"]["parameters"]["focal-length"];
-
-                    camera = new PerspectiveCamera(dim.x(), dim.y(),
-                        Camera::lookAt(eye, target, up),
-                        focalLength);
-                }
-
-            }
-
 
             // Vector creation
             std::vector<Instance*> instanceVector;
@@ -238,8 +286,38 @@ namespace pathtracer{
             }
 
             Scene* scene = new Scene(instanceVector, lightVector);
+
+
+            if(data.contains("renderer")){
+
+                Vector2i resolution = parseVector2i(data["renderer"]["parameters"]["pixel-resolution"]);
+                
+                if(data["renderer"]["integrator"]["type"] == "path-tracer"){
+                    int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
+                    integrator = new PathTracer(maxDepth);
+                }
+                else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee"){
+                    int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
+                    integrator = new PathTracerNee(maxDepth);
+                }
+                else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-mis"){
+                    int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
+                    integrator = new PathTracerNeeMis(maxDepth);
+                }
+
+                if(data["renderer"]["type"] == "path-tracer-renderer"){
+                    int sampleCount = data["renderer"]["parameters"]["sample-count"];
+                    renderer = new PathTracerRenderer(
+                        resolution.x(), resolution.y(), camera, scene, 
+                        integrator, sampleCount);
+                }
+            }
+            else{
+                LOG_ERROR("No renderer in: " + filename);
+                exit(1);
+            }
             
-            return std::make_pair(scene, camera);
+            return renderer;
         }
 
     };

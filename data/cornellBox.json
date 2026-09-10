@@ -365,9 +365,23 @@
             "focal-length": 0.035,
             "sensor-dimension": [0.025, 0.025],
             "look-at": {
-                "eye": [278.0, 273.0, -800.0],
-                "target": [278.0, 273.0, 200.0],
-                "up": [0.0, 1.0, 0.0]
+                "eye": [278, 273, -800],
+                "target": [278, 273, -799],
+                "up": [0, 1, 0]
+            }
+        }
+    },
+    
+    "renderer": {
+        "type": "path-tracer-renderer",
+        "parameters": {
+            "pixel-resolution": [512, 512],
+            "sample-count": 20
+        },
+        "integrator": {
+            "type": "path-tracer-nee-mis",
+            "parameters": {
+                "max-depth": 20
             }
         }
     }

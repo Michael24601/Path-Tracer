@@ -23,6 +23,9 @@ namespace pathtracer{
             transformDirection(it.tangent()),
             it.uv(),
             it.instance());
+
+        // Not in constructor must be set explicitely
+        res.setTriangleIndex(it.triangleIndex());
             
         return res;
     }

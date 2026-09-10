@@ -50,6 +50,19 @@ namespace pathtracer{
             return n * 2 * n.dot(w) - w;
         }
 
+
+        // Refracts a vector given ior and normal
+        static Vector3 refract(const Vector3& w, const Vector3& n, real eta) {
+            const real invEta = 1 / eta;
+            const real k = 1 - (invEta * invEta) * (1 - (n.dot(w) * n.dot(w)));
+            if (k < 0) {
+                // total internal reflection
+                return Vector3(0.0);
+            }
+            const real cosTheta = n.dot(w);
+            return n * (invEta * cosTheta - copysign(sqrt(k), cosTheta)) - w * invEta;
+        }
+
         
         // In general, we can either sample a point directly
         // on the surface of an object, after choosing said object,
@@ -76,6 +89,9 @@ namespace pathtracer{
         virtual BsdfSample evaluate(const Vector3& wo, 
             const Vector3& wi, const Vector2& uv) const = 0;
         
+
+        // Has a delta distribution
+        virtual bool isSpecular() const = 0;
 
     };
 

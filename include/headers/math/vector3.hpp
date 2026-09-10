@@ -224,6 +224,13 @@ namespace pathtracer{
         }
 
 
+        bool operator!=(const Vector3& other) const {
+            return m_data[0] != other.m_data[0] 
+                || m_data[1] != other.m_data[1]
+                || m_data[2] != other.m_data[2];
+        }
+
+
         std::string toString() const{
             return "Vector(" + std::to_string(m_data[0]) 
                 + " " + std::to_string(m_data[1]) + " " 

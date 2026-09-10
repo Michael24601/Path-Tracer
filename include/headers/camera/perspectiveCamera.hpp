@@ -25,15 +25,15 @@ namespace pathtracer{
         // We assume the point ranges from -1 to 1
         Ray generateRay(const Vector2& point) const override {
             // In local space, we always assume that the aperture
-            // is at (0, 0, 0), and that the direction is z, so that
-            // the image plane center is at (0, 0, focalLength).
+            // is at (0, 0, 0), and that the direction is -z, so that
+            // the image plane center is at (0, 0, -focalLength).
 
             // Then we know that the given pixel will be an offset of 
             // width/2 and height/2 times the given point coordinate.
             Vector3 pixel = Vector3(
                 point.x() * m_width * 0.5,
                 point.y() * m_height * 0.5,
-                m_focalLength
+                -m_focalLength
             );
 
             // We then transform this point and the origin

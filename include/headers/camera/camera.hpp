@@ -27,7 +27,9 @@ namespace pathtracer{
             Vector3 r = f.cross(up).normalized();
             Vector3 u = r.cross(f);
 
-            Matrix3 rotation(r, u, f);
+            // NOTE: we have -f here instead of f since camera points at
+            // -z by convention.
+            Matrix3 rotation(r, u, -f);
 
             return Transform(rotation, eye);
         }

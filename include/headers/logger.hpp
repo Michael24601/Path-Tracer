@@ -7,6 +7,8 @@
 #include <chrono>
 #include <iomanip>
 #include <unordered_map>
+#include <mutex>
+
 
 namespace pe {
 
@@ -28,6 +30,8 @@ private:
     // Keeps track of logs, ensures the same message is not spammed
     static std::unordered_map<std::string, float> lastLogged;
 
+    static std::mutex mutex;
+
     static double getTime(){
         using namespace std::chrono;
         static auto start = high_resolution_clock::now();
@@ -42,6 +46,9 @@ private:
         int line,
         const char* function
     ){
+
+        std::lock_guard<std::mutex> lock(mutex);
+
         if (!output){
             return;
         }
@@ -88,6 +95,7 @@ private:
 public:
 
     static void setOutput(std::ostream& stream){
+        std::lock_guard<std::mutex> lock(mutex);
         output = &stream;
     }
 

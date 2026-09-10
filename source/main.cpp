@@ -66,18 +66,18 @@ void savePNG(const std::vector<std::vector<Vector3>>& image,
 }
 
 
-int main(){
+int main(int argc, char* argv[]) {
 
-    auto parsed = Parser::parse("data/cornellBox.json");
-    Scene* scene = parsed.first;
-    Camera* camera = parsed.second;
+    if(argc != 3) {
+        LOG_ERROR("Invalid arguments");
+        return 1;
+    }
 
-    PathTracerNEE* pathtracer = new PathTracerNEE(50);
-    
-    PathTracerRenderer renderer(512, 512, camera, scene, pathtracer, 20);
-    auto image = renderer.render();
+    std::string name = std::string("data/") + argv[1];
+    Renderer* renderer = Parser::parse(name);
+    auto image = renderer->render();
 
-    savePNG(image, "test_new.png");
+    savePNG(image, argv[2]);
 
     return 0;
 }

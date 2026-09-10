@@ -1,0 +1,137 @@
+{
+    "materials": [
+        {
+            "id": "glass",
+            "type": "dielectric",
+            "parameters": {
+                "ior": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [1.4, 1.4, 1.4]
+                    }
+                },
+                "reflectance": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.0, 0.0, 0.0]
+                    }
+                },
+                "transmittance": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.7, 0.8, 1.0]
+                    }
+                }
+            }
+        },
+        {
+            "id": "light-material",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.0, 0.0, 0.0]
+                    }
+                }
+            }
+        }
+    ],
+
+    "instances": [
+        {
+            "id": "light-small",
+            "type": "sphere",
+            "material": "light-material",
+            "emission": {
+                "type": "lambertian",
+                "parameters": {
+                    "power": [0.2, 0.7, 3.0]
+                }
+            },
+            "parameters": {
+                "transform": [
+                    2.0, 0.0, 0.0, -1.0,
+                    0.0, 2.0, 0.0, 0.0,
+                    0.0, 0.0, 2.0, 5.0,
+                    0.0, 0.0, 0.0, 1.0
+                ]
+            }
+        },
+        {
+            "id": "light-large",
+            "type": "sphere",
+            "material": "light-material",
+            "emission": {
+                "type": "lambertian",
+                "parameters": {
+                    "power": [0.1, 0.1, 0.1]
+                }
+            },
+            "parameters": {
+                "transform": [
+                    20.0, 0.0, 0.0, -10.0,
+                    0.0, 20.0, 0.0, 0.0,
+                    0.0, 0.0, 20.0, 25.0,
+                    0.0, 0.0, 0.0, 1.0
+                ]
+            }
+        },
+        {
+            "id": "glass-rectangle-front",
+            "type": "rectangle",
+            "material": "glass",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 1.1,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0
+                ]
+            }
+        },
+        {
+            "id": "glass-rectangle-back",
+            "type": "rectangle",
+            "material": "glass",
+            "parameters": {
+                "transform": [
+                    -1.0, 0.0, 0.0, 1.1,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, -1.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0
+                ]
+            }
+        }
+    ],
+
+    "lights": [],
+
+   "camera": {
+        "type": "perspective",
+        "parameters": {
+            "focal-length": 0.035,
+            "sensor-dimension": [0.025478, 0.015098],
+            "look-at": {
+                "eye": [1.746099, 0.0, -5.743792],
+                "target": [1.487280, 0.0, -4.777866],
+                "up": [0.0, 1.0, 0.0]
+            }
+        }
+    },
+
+    "renderer": {
+        "type": "path-tracer-renderer",
+        "parameters": {
+            "pixel-resolution": [540, 320],
+            "sample-count": 50
+        },
+        "integrator": {
+            "type": "path-tracer",
+            "parameters": {
+                "max-depth": 20
+            }
+        }
+    }
+    
+}
