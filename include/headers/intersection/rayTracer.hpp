@@ -23,9 +23,15 @@ namespace pathtracer{
                 normal = normal * 2.0f - Vector3(1.0f);
 
                 // We need to map normal from shading frame to world coordinates
-                // Note that we can use transform instead of transformNormal
-                // since the frame is an orthogonal matrix.
-                normal = it.shadingFrame().transform(normal).normalized();
+                // We can't use normal transform since it applies translation
+                // (not suitable for directions).
+                // We should in theory use transformNormal which was designed
+                // for normals, but since shadingFrame is always orthogonal,
+                // transformDirection is equivalent, while much cheaper to
+                // compute, so we will use that.
+                // We can also use transformNormal, but it is more expensive
+                // and adds nothing in this specific case.
+                normal = it.shadingFrame().transformDirection(normal);
                 // Then the frame is updated
                 it.setShadingNormal(normal);
                 // Frame is recomputed

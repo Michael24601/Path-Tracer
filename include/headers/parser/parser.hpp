@@ -8,6 +8,7 @@
 #include "../core/instance.hpp"
 #include "../bsdf/bsdf.hpp"
 #include "../bsdf/diffuseBsdf.hpp"
+#include "../bsdf/principledBsdf.hpp"
 #include "../light/light.hpp"
 #include "../texture/texture.hpp"
 #include "../shapes/sphere.hpp"
@@ -65,39 +66,50 @@ namespace pathtracer{
         }
 
 
-        // Expects parameters of a texture
-        static Texture* parseTexture(const json& value){
+        // Expects json of a texture
+        static Texture* parseTexture(const json& texture){
 
-            std::string filename = value["file-name"];
-            Texture::BorderMode bm;
-            Texture::FilterMode fm;
+            const json& value = texture["parameters"];
+            if(texture["type"] == "texture"){
 
-            if(value["border-mode"] == "repeat"){
-                bm = Texture::BorderMode::REPEAT;
+                std::string filename = value["file-name"];
+                Texture::BorderMode bm;
+                Texture::FilterMode fm;
+
+                if(value["border-mode"] == "repeat"){
+                    bm = Texture::BorderMode::REPEAT;
+                }
+                else if(value["border-mode"] == "clamp"){
+                    bm = Texture::BorderMode::CLAMP;
+                }
+                else if(value["border-mode"] == "mirror"){
+                    bm = Texture::BorderMode::MIRROR;
+                }
+                else{
+                    LOG_ERROR("Invalid border-mode specified for: " + filename);
+                    exit(1);
+                }
+
+                if(value["filter-mode"] == "nearest"){
+                    fm = Texture::FilterMode::NEAREST;
+                }
+                else if (value["filter-mode"] == "bilinear"){
+                    fm = Texture::FilterMode::BILINEAR;
+                }
+                else{
+                    LOG_ERROR("Invalid filter-mode specified for: " + filename);
+                    exit(1);
+                }
+                return new Texture(ImageIo::loadImage(filename), bm, fm);
             }
-            else if(value["border-mode"] == "clamp"){
-                bm = Texture::BorderMode::CLAMP;
-            }
-            else if(value["border-mode"] == "mirror"){
-                bm = Texture::BorderMode::MIRROR;
+            else if(texture["type"] == "color"){
+                Vector3 color = parseVector3(value["color"]);
+                return new Color(color);
             }
             else{
-                LOG_ERROR("Invalid border-mode specified for: " + filename);
+                LOG_ERROR("Texture is not in a valid format.");
                 exit(1);
             }
-
-            if(value["filter-mode"] == "nearest"){
-                fm = Texture::FilterMode::NEAREST;
-            }
-            else if (value["filter-mode"] == "bilinear"){
-                fm = Texture::FilterMode::BILINEAR;
-            }
-            else{
-                LOG_ERROR("Invalid filter-mode specified for: " + filename);
-                exit(1);
-            }
-
-            return new Texture(ImageIo::loadImage(filename), bm, fm);
         }
 
 
@@ -169,16 +181,7 @@ namespace pathtracer{
                     
                     if(data["materials"][i]["type"] == "diffuse"){
 
-                        Texture* texture = nullptr;
-                        if(data["materials"][i]["parameters"]["albedo"]["type"] == "color"){
-
-                            Vector3 color = parseVector3(
-                                data["materials"][i]["parameters"]["albedo"]["parameters"]["color"]);
-                            texture = new Color(color);
-                        }
-                        if(data["materials"][i]["parameters"]["albedo"]["type"] == "texture"){
-                            texture = parseTexture(data["materials"][i]["parameters"]["albedo"]["parameters"]);
-                        }
+                        Texture* texture = parseTexture(data["materials"][i]["parameters"]["albedo"]);
 
                         materials[id] = new DiffuseBsdf(texture);
                     }
@@ -189,29 +192,35 @@ namespace pathtracer{
                     }
                     else if(data["materials"][i]["type"] == "dielectric"){
 
-                        Texture* ior = nullptr;
-                        Texture* reflectance = nullptr;
-                        Texture* transmittance = nullptr;
-
-                        if(data["materials"][i]["parameters"]["ior"]["type"] == "color"){
-                            Vector3 value = parseVector3(
-                                data["materials"][i]["parameters"]["ior"]["parameters"]["color"]);
-                            ior = new Color(value);
-                        }
-
-                        if(data["materials"][i]["parameters"]["reflectance"]["type"] == "color"){
-                            Vector3 color = parseVector3(
-                                data["materials"][i]["parameters"]["reflectance"]["parameters"]["color"]);
-                            reflectance = new Color(color);
-                        }
-
-                        if(data["materials"][i]["parameters"]["transmittance"]["type"] == "color"){
-                            Vector3 color = parseVector3(
-                                data["materials"][i]["parameters"]["transmittance"]["parameters"]["color"]);
-                            transmittance = new Color(color);
-                        }
+                        Texture* ior = parseTexture(data["materials"][i]["parameters"]["ior"]);
+                        Texture* reflectance = parseTexture(data["materials"][i]["parameters"]["reflectance"]);
+                        Texture* transmittance = parseTexture(data["materials"][i]["parameters"]["transmittance"]);
 
                         materials[id] = new DielectricBsdf(ior, reflectance, transmittance);
+                    }
+                    else if(data["materials"][i]["type"] == "principled"){
+
+                        Texture* baseColor = nullptr;
+                        // Default values
+                        Texture* roughness = new Color(Vector3(0.0));
+                        Texture* metallic = new Color(Vector3(0.0));
+                        Texture* specular = new Color(Vector3(0.0));
+
+                        baseColor = parseTexture(data["materials"][i]["parameters"]["base-color"]);
+
+                        if(data["materials"][i]["parameters"].contains("roughness")){
+                            roughness = parseTexture(data["materials"][i]["parameters"]["roughness"]);
+                        }
+
+                        if(data["materials"][i]["parameters"].contains("metallic")){
+                            metallic = parseTexture(data["materials"][i]["parameters"]["metallic"]);
+                        }
+
+                        if(data["materials"][i]["parameters"].contains("specular")){
+                            specular = parseTexture(data["materials"][i]["parameters"]["specular"]);
+                        }
+
+                        materials[id] = new PrincipledBsdf(baseColor, roughness, metallic, specular);
                     }
 
                 }
@@ -239,11 +248,22 @@ namespace pathtracer{
                         }
                     }
 
+                    Transform transform = Transform::IDENTITY;
+                    if(inst["parameters"].contains("transform")){
+                        transform = parseTransform(inst["parameters"]["transform"]);
+                    }
+
+                    Texture* normalMap = nullptr;
+                    if(inst["parameters"].contains("normal-map")){
+                        normalMap = parseTexture(inst["parameters"]["normal-map"]);
+                    }
+
+                    Texture* alphaMask = nullptr;
+                    if(inst["parameters"].contains("alpha-mask")){
+                        alphaMask = parseTexture(inst["parameters"]["alpha-mask"]);
+                    }
+
                     if(inst["type"] == "sphere"){
-                        
-                        Transform transform = parseTransform(
-                            inst["parameters"]["transform"]
-                        );
 
                         Instance* instance = new Instance(sphere, nullptr,
                             nullptr, materials[materialID], emission, transform);
@@ -253,11 +273,7 @@ namespace pathtracer{
 
 
                     if(inst["type"] == "mesh"){
-                        
-                        Transform transform = parseTransform(
-                            inst["parameters"]["transform"]
-                        );
-
+    
                         Mesh* mesh;
 
                         if(inst["parameters"]["vertex-data"]["format"] == "raw-array"){
@@ -281,8 +297,8 @@ namespace pathtracer{
                             mesh = ObjLoader::loadMesh(filename);
                         }
 
-                        instances[id] = new Instance(mesh, nullptr,
-                            nullptr, materials[materialID], emission, transform);
+                        instances[id] = new Instance(mesh, alphaMask,
+                            normalMap, materials[materialID], emission, transform);
                     }
                 }
             }

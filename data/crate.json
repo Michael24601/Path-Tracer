@@ -1,0 +1,126 @@
+
+{
+    "materials" : [
+        {
+            "id": "crate-bsdf",
+            "type": "principled",
+            "parameters": {
+                "base-color": {
+                    "type": "texture",
+                    "parameters": {
+                        "file-name": "data/textures/Diffuse.png",
+                        "border-mode": "clamp",
+                        "filter-mode": "bilinear"
+                    }
+                },
+                "specular": {
+                    "type": "texture",
+                    "parameters": {
+                        "file-name": "data/textures/Diffuse_Specular.png",
+                        "border-mode": "clamp",
+                        "filter-mode": "bilinear"
+                    }
+                },
+                "roughness": {
+                    "type": "texture",
+                    "parameters": {
+                        "file-name": "data/textures/Diffuse_Roughness.png",
+                        "border-mode": "clamp",
+                        "filter-mode": "bilinear"
+                    }
+                }
+            }
+        },
+        {
+            "id": "diffuse-bsdf",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "texture",
+                    "parameters": {
+                        "file-name": "data/textures/Diffuse.png",
+                        "border-mode": "clamp",
+                        "filter-mode": "bilinear"
+                    }
+                }
+            }
+        }
+    ],
+
+    "instances" : [
+        {
+            "id": "crate",
+            "type": "mesh",
+            "material": "crate-bsdf",
+            "parameters": {
+                "transform": [
+                    100.0, 0.0, 0.0, 250.0,
+                    0.0, 100.0, 0.0, 250.0,
+                    0.0, 0.0, 100.0, 0.0
+                ],
+                "vertex-data": { 
+                    "format": "obj",
+                    "parameters": {
+                        "file-name": "data/models/Crate.obj"
+                    }
+                },
+                "normal-map": {
+                    "type": "texture",
+                    "parameters": {
+                        "file-name": "data/textures/Diffuse_Normal.png",
+                        "border-mode": "clamp",
+                        "filter-mode": "bilinear"
+                    }
+                }
+            }
+        }
+    ],
+
+    "lights": [
+        {
+            "id": "light-1",
+            "type": "point",
+            "parameters": {
+                "position": [200, 400, 0.0],
+                "power": [100000, 100000, 100000]
+            }
+        },
+        {
+            "id": "light-2",
+            "type": "point",
+            "parameters": {
+                "position": [200, 300, -400.0],
+                "power": [100000, 100000, 100000]
+            }
+        }
+    ],
+
+
+    "camera": {
+        "type": "perspective",
+        "parameters": {
+            "focal-length": 0.035,
+            "sensor-dimension": [0.025, 0.025],
+            "look-at": {
+                "eye": [278, 273, -800],
+                "target": [278, 273, -799],
+                "up": [0, 1, 0]
+            }
+        }
+    },
+    
+    "renderer": {
+        "type": "path-tracer-renderer",
+        "parameters": {
+            "pixel-resolution": [512, 512],
+            "sample-count": 20
+        },
+        "integrator": {
+            "type": "path-tracer-nee",
+            "parameters": {
+                "max-depth": 20
+            }
+        }
+    }
+    
+}

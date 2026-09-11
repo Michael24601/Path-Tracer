@@ -190,7 +190,7 @@ namespace pathtracer{
     };
 
 
-    class Principled : public Bsdf {
+    class PrincipledBsdf : public Bsdf {
 
     private:
 
@@ -243,7 +243,7 @@ namespace pathtracer{
     public:
 
 
-        Principled(Texture* baseColor, Texture* roughness,
+        PrincipledBsdf(Texture* baseColor, Texture* roughness,
             Texture* metallic, Texture* specular) : 
             m_baseColor(baseColor),
             m_roughness(roughness),
