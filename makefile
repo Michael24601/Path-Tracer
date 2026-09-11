@@ -19,7 +19,7 @@ build-run: all
 
 # Runs using gdb for debugging
 run-debug:
-	gdb -q build/build.exe  
+	gdb -q build/build.exe $(ARGS)
 
 # Deletes the build
 clean:

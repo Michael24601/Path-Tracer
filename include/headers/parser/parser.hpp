@@ -26,6 +26,8 @@
 #include "../integrator/pathTracer.hpp"
 #include "../integrator/pathTracerNee.hpp"
 #include "../integrator/pathTracerNeeMis.hpp"
+#include "../imageIo/imageIo.hpp"
+#include "objLoader.hpp"
 #include <fstream>
 
 namespace pathtracer{
@@ -60,6 +62,42 @@ namespace pathtracer{
                 value[0],
                 value[1]
             );
+        }
+
+
+        // Expects parameters of a texture
+        static Texture* parseTexture(const json& value){
+
+            std::string filename = value["file-name"];
+            Texture::BorderMode bm;
+            Texture::FilterMode fm;
+
+            if(value["border-mode"] == "repeat"){
+                bm = Texture::BorderMode::REPEAT;
+            }
+            else if(value["border-mode"] == "clamp"){
+                bm = Texture::BorderMode::CLAMP;
+            }
+            else if(value["border-mode"] == "mirror"){
+                bm = Texture::BorderMode::MIRROR;
+            }
+            else{
+                LOG_ERROR("Invalid border-mode specified for: " + filename);
+                exit(1);
+            }
+
+            if(value["filter-mode"] == "nearest"){
+                fm = Texture::FilterMode::NEAREST;
+            }
+            else if (value["filter-mode"] == "bilinear"){
+                fm = Texture::FilterMode::BILINEAR;
+            }
+            else{
+                LOG_ERROR("Invalid filter-mode specified for: " + filename);
+                exit(1);
+            }
+
+            return new Texture(ImageIo::loadImage(filename), bm, fm);
         }
 
 
@@ -137,6 +175,9 @@ namespace pathtracer{
                             Vector3 color = parseVector3(
                                 data["materials"][i]["parameters"]["albedo"]["parameters"]["color"]);
                             texture = new Color(color);
+                        }
+                        if(data["materials"][i]["parameters"]["albedo"]["type"] == "texture"){
+                            texture = parseTexture(data["materials"][i]["parameters"]["albedo"]["parameters"]);
                         }
 
                         materials[id] = new DiffuseBsdf(texture);
@@ -217,20 +258,29 @@ namespace pathtracer{
                             inst["parameters"]["transform"]
                         );
 
-                        std::vector<Triangle> triangles;
-                        triangles.reserve(inst["parameters"]["vertices"].size());
+                        Mesh* mesh;
 
-                        // We need to loop over every triangle
-                        for(int j = 0; j < inst["parameters"]["vertices"].size(); j++){
+                        if(inst["parameters"]["vertex-data"]["format"] == "raw-array"){
+                            std::vector<Triangle> triangles;
+                            triangles.reserve(inst["parameters"]["vertex-data"]["parameters"]["vertices"].size());
 
-                            triangles.emplace_back(Triangle(
-                                parseVector3(inst["parameters"]["vertices"][j][0]),
-                                parseVector3(inst["parameters"]["vertices"][j][1]),
-                                parseVector3(inst["parameters"]["vertices"][j][2])
-                            ));
+                            // We need to loop over every triangle
+                            for(int j = 0; j < inst["parameters"]["vertex-data"]["parameters"]["vertices"].size(); j++){
+
+                                triangles.emplace_back(Triangle(
+                                    parseVector3(inst["parameters"]["vertex-data"]["parameters"]["vertices"][j][0]),
+                                    parseVector3(inst["parameters"]["vertex-data"]["parameters"]["vertices"][j][1]),
+                                    parseVector3(inst["parameters"]["vertex-data"]["parameters"]["vertices"][j][2])
+                                ));
+                            }
+
+                            mesh = new Mesh(triangles);
+                        }
+                        else if(inst["parameters"]["vertex-data"]["format"] == "obj"){
+                            std::string filename = inst["parameters"]["vertex-data"]["parameters"]["file-name"];
+                            mesh = ObjLoader::loadMesh(filename);
                         }
 
-                        Mesh* mesh = new Mesh(triangles);
                         instances[id] = new Instance(mesh, nullptr,
                             nullptr, materials[materialID], emission, transform);
                     }
@@ -292,7 +342,13 @@ namespace pathtracer{
 
                 Vector2i resolution = parseVector2i(data["renderer"]["parameters"]["pixel-resolution"]);
                 
-                if(data["renderer"]["integrator"]["type"] == "path-tracer"){
+                if(data["renderer"]["integrator"]["type"] == "aov-integrator"){
+                    std::string var = data["renderer"]["integrator"]["parameters"]["render-variable"];
+                    if(var == "normal"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::NORMAL);
+                    }
+                }
+                else if(data["renderer"]["integrator"]["type"] == "path-tracer"){
                     int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
                     integrator = new PathTracer(maxDepth);
                 }
@@ -310,6 +366,10 @@ namespace pathtracer{
                     renderer = new PathTracerRenderer(
                         resolution.x(), resolution.y(), camera, scene, 
                         integrator, sampleCount);
+                }
+                else if(data["renderer"]["type"] == "renderer"){
+                    renderer = new Renderer(resolution.x(), resolution.y(), 
+                        camera, scene, integrator);
                 }
             }
             else{

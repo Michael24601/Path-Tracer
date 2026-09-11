@@ -18,14 +18,17 @@ namespace pathtracer{
         // given.
         Vector3 v0, v1, v2;
         Vector3 n0, n1, n2;
+        // UV coordinates of each triangle vertex
+        Vector2 uv0, uv1, uv2;
         bool m_shadingNormals;
+        bool m_uvCoordinates;
 
         
         // Given a ray and a distance t along it, sets the intersection
         // object. The uv are the barycentric coordinates of the
         // intersected point.
         SurfacePoint generateSurfacePoint(const Ray& ray, real t, 
-            const Vector2& uv) const {
+            const Vector2& barycentric) const {
 
             Vector3 point = ray.at(t);
 
@@ -33,13 +36,21 @@ namespace pathtracer{
             // unless no vertex normals are given.
             Vector3 geometryNormal = ((v1-v0).cross(v2-v0)).normalized();
             Vector3 shadingNormal = m_shadingNormals 
-                ? Barycentric::interpolate(n0, n1, n2, uv)
+                ? Barycentric::interpolate(n0, n1, n2, barycentric)
                 : geometryNormal;
 
             // Tangent calculation
             Vector3 tangent = (v1 - v0).normalized();
             tangent = (tangent - shadingNormal * 
                 shadingNormal.dot(tangent)).normalized();
+
+            
+            // The uv (texture) coordinates can be specified, otherwise
+            // we use the barycentric coordinates of the intersection
+            // as a fallback.
+            Vector2 uv = m_uvCoordinates
+                ? Barycentric::interpolate(uv0, uv1, uv2, barycentric)
+                : barycentric;
 
             return SurfacePoint(point, geometryNormal, 
                 shadingNormal, tangent, uv, nullptr);
@@ -61,6 +72,30 @@ namespace pathtracer{
             const Vector3& n0, const Vector3& n1, const Vector3& n2) : 
             v0{v0}, v1{v1}, v2{v2}, n0{n0}, n1{n1}, n2{n2}, 
             m_shadingNormals{true} {
+
+                // Ensures points are not colinear
+                Vector3 n = (v1-v0).cross(v2-v0);
+                assert ((n.lengthSquared() > EPSILON) && "Degenerate triangle");
+            }
+
+
+        Triangle(const Vector3& v0, const Vector3& v1, const Vector3& v2,
+            const Vector2& uv0, const Vector2& uv1, const Vector2& uv2) : 
+            v0{v0}, v1{v1}, v2{v2}, uv0{uv0}, uv1{uv1}, uv2{uv2}, 
+            m_uvCoordinates{true} {
+
+                // Ensures points are not colinear
+                Vector3 n = (v1-v0).cross(v2-v0);
+                assert ((n.lengthSquared() > EPSILON) && "Degenerate triangle");
+            }
+
+        
+        Triangle(const Vector3& v0, const Vector3& v1, const Vector3& v2,
+            const Vector3& n0, const Vector3& n1, const Vector3& n2,
+            const Vector2& uv0, const Vector2& uv1, const Vector2& uv2) : 
+            v0{v0}, v1{v1}, v2{v2}, n0{n0}, n1{n1}, n2{n2},
+            uv0{uv0}, uv1{uv1}, uv2{uv2}, 
+            m_shadingNormals{true}, m_uvCoordinates{true} {
 
                 // Ensures points are not colinear
                 Vector3 n = (v1-v0).cross(v2-v0);
@@ -117,8 +152,9 @@ namespace pathtracer{
             float t = dett * invDet;
 
             // Here we can conclude we have an intersection
-            Vector2 uv(u, v);
-            list.push(Intersection(t, generateSurfacePoint(ray, t, uv)));
+            Vector2 barycentric(u, v);
+
+            list.push(Intersection(t, generateSurfacePoint(ray, t, barycentric)));
         }
 
             
@@ -132,9 +168,8 @@ namespace pathtracer{
             real b1 = sqrtU * (1.0 - random.y());
             real b2 = sqrtU * random.y();
 
-            Vector2 uv(b1, b2);
-
-            Vector3 point = Barycentric::interpolate(v0, v1, v2, uv);
+            Vector2 barycentric(b1, b2);
+            Vector3 point = Barycentric::interpolate(v0, v1, v2, barycentric);
 
             real pdf = 1.0 / getSurfaceArea();
 
@@ -142,7 +177,7 @@ namespace pathtracer{
                 generateSurfacePoint(
                     Ray(point, Vector3(0, 0, 1)),
                     0,
-                    uv
+                    barycentric
                 ),
                 pdf
             );
@@ -163,10 +198,9 @@ namespace pathtracer{
 
             real denominator = d00 * d11 - d01 * d01;
 
-            real u = (d11 * d20 - d01 * d21) / denominator;
-            real v = (d00 * d21 - d01 * d20) / denominator;
-
-            Vector2 uv(u, v);
+            real b0 = (d11 * d20 - d01 * d21) / denominator;
+            real b1 = (d00 * d21 - d01 * d20) / denominator;
+            Vector2 barycentric(b0, b1);
 
             real pdf = 1.0 / getSurfaceArea();
 
@@ -174,7 +208,7 @@ namespace pathtracer{
                 generateSurfacePoint(
                     Ray(point.point, Vector3(0, 0, 1)),
                     0,
-                    uv
+                    barycentric
                 ),
                 pdf
             );
