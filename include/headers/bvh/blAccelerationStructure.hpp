@@ -7,6 +7,11 @@
 
 namespace pathtracer{
     
+    // This is a bottom level acceleration structure (determines
+    // closest hit among triangles of a mesh, not among different
+    // instances).
+    // That means the ray does not need to be transformed when
+    // intersecting different primitives for instance.
     class BlAccelerationStructure{
 
     private:
@@ -283,6 +288,79 @@ namespace pathtracer{
         }
 
 
+        // Finds the closest intersection and returns it if it is
+        // closer than oldT (the previous intersection).
+        // We assume the ray is in the correct space.
+        // OldT is passed by reference in order to keep track of it
+        // on all branches.
+        Intersection intersectNode(const NodePtr node, real& oldT, 
+            const std::vector<Triangle>& shapes, const Ray& ray) const {
+
+            // If the node is a leaf, we just text the shapes inside it
+            if (node->isLeaf()) {
+
+                Intersection result;
+
+                for (int i = node->firstShape(); i <= node->lastShape(); i++) {
+                    Intersection it = shapes[m_shapeIndexes[i]].intersect(ray, oldT);
+                    if(it && it.t() < oldT && it.t() > SHADOW_EPSILON){
+                        oldT = it.t();
+                        result = it;
+                    }
+                }
+
+                return result;
+            }
+
+            // Otherwise, we check which of the children is closer
+            // and test them first. We then use whatever t we have
+            // to exclude other parts of the tree.
+
+            real leftT = node->left()->aabb().intersect(ray);
+            real rightT = node->right()->aabb().intersect(ray);
+
+            Intersection result;
+
+            if (leftT < rightT) {
+                if (leftT < oldT){
+                    // oldT is updated here
+                    Intersection it = intersectNode(node->left(), oldT, shapes, ray);
+                    // Result is only valid (true) if it was closer than oldT
+                    if(it){
+                        result = it;
+                    }
+                }
+                if (rightT < oldT){
+                    // oldT is updated here
+                    Intersection it = intersectNode(node->right(), oldT, shapes, ray);
+                    // Result is only valid (true) if it was closer than oldT
+                    if(it){
+                        result = it;
+                    }
+                }
+            } else {
+                if (rightT < oldT){
+                    // oldT is updated here
+                    Intersection it = intersectNode(node->right(), oldT, shapes, ray);
+                    // Result is only valid (true) if it was closer than oldT
+                    if(it){
+                        result = it;
+                    }
+                }
+                if (leftT < oldT){
+                    // oldT is updated here
+                    Intersection it = intersectNode(node->left(), oldT, shapes, ray);
+                    // Result is only valid (true) if it was closer than oldT
+                    if(it){
+                        result = it;
+                    }
+                }
+            }
+
+            return result;
+
+        }
+
 
     public:
 
@@ -290,7 +368,7 @@ namespace pathtracer{
         BlAccelerationStructure(const std::vector<Triangle>& shapes){
 
             // First we set a (sorted) m_shapesIndexes
-            m_shapeIndexes.reserve(shapes.size());
+            m_shapeIndexes.resize(shapes.size());
             for(int i = 0; i < shapes.size(); i++){
                 m_shapeIndexes[i] = i;
             }
@@ -301,7 +379,12 @@ namespace pathtracer{
         }
 
 
+        Intersection intersect(real oldT, const std::vector<Triangle>& shapes, 
+            const Ray& ray) const {
 
+            real copyT = oldT;
+            return intersectNode(m_root, copyT, shapes, ray);
+        }
      
         
     };

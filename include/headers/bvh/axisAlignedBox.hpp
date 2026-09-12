@@ -48,7 +48,7 @@ namespace pathtracer{
         const Vector3& maxCorner() const { return m_maxCorner; } 
 
         
-        bool intersect(const Ray& ray, real& t) const{
+        real intersect(const Ray& ray) const{
 
             // First we intersect every single plane in the AABB,
             // and return the distances.
@@ -66,16 +66,15 @@ namespace pathtracer{
 
             // This condition ensures we intersected the planes inside the AABB
             if (tNear > tFar){
-                return false;
+                return REAL_INFINITY;
             }
 
             // This ensures we don't intersect the box from behind the ray
             if (tFar < 0){
-                return false;
+                return REAL_INFINITY;
             }
 
-            t = tNear;
-            return true;
+            return tNear;
         }
 
     };

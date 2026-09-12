@@ -4,6 +4,7 @@
 
 #include "triangle.hpp"
 #include "meshUtil.hpp"
+#include "../bvh/blAccelerationStructure.hpp"
 
 namespace pathtracer{
 
@@ -18,9 +19,11 @@ namespace pathtracer{
         real m_surfaceArea;
         AxisAlignedBox m_box;
 
+        BlAccelerationStructure m_bvh;
+
     public:
 
-        Mesh(const std::vector<Triangle>& triangles) {
+        Mesh(const std::vector<Triangle>& triangles) : m_bvh(triangles) {
             this->triangles = triangles;
             
             // The surface area is just the triangle sum
@@ -56,19 +59,8 @@ namespace pathtracer{
         
         // Intersects the shape with a ray
         Intersection intersect(const Ray& ray, real oldT) const override{
-
-            // Not a hit by default
-            Intersection result;
-            
-            // Replace later with a bottom level acceleration structure
-            for(int i = 0; i < triangles.size(); i++){
-                Intersection it = triangles[i].intersect(ray, oldT);
-                if(it && it.t() < oldT && it.t() < result.t()){
-                    result = it;
-                }
-            }
-
-            return result;
+            Intersection it = m_bvh.intersect(oldT, triangles, ray);
+            return it;
         }
 
             
