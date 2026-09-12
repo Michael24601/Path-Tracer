@@ -4,7 +4,7 @@
 
 #include "shape.hpp"
 #include "../math/constants.hpp"
-#include "../intersection/IntersectionList.hpp"
+#include "../intersection/intersection.hpp"
 #include "../intersection/areaSample.hpp"
 
 namespace pathtracer{
@@ -117,9 +117,18 @@ namespace pathtracer{
             return AxisAlignedBox(minimumPoint, maximumPoint);
         }
 
+
+        Vector3 getCentroid() const override{
+            // Just the vertex average
+            return (v0 + v1 + v2) * ONE_THIRD;
+        }
+
         
         // Intersects the shape with a ray
-        void intersect(const Ray& ray, IntersectionList& list) const override{
+        Intersection intersect(const Ray& ray, real oldT) const override{
+
+            Intersection intersection;
+
             // We can set the parametric ray equation equal to
             // the parametric plane equation, get an intersection,
             // and then ensure it is inside the triangle
@@ -133,28 +142,31 @@ namespace pathtracer{
             Vector3 rayE1Cross = ray.direction().cross(edge1);
             Vector3 originE0Cross = (origin - v0).cross(edge0);
 
-            float det = edge0.dot(rayE1Cross);
+            real det = edge0.dot(rayE1Cross);
 
             // It's better not to use == with floating point numbers
-            if(abs(det) < EPSILON) return;
+            if(abs(det) < EPSILON) return intersection;
 
-            float invDet = 1.0f / det;
+            real invDet = 1.0f / det;
             
-            float detu = (origin - v0).dot(rayE1Cross);
-            float u = detu * invDet;
-            if(u < 0.0f || u > 1.0f) return;
+            real detu = (origin - v0).dot(rayE1Cross);
+            real u = detu * invDet;
+            if(u < 0.0f || u > 1.0f) return intersection;
 
-            float detv = ray.direction().dot(originE0Cross);
-            float v = detv * invDet;
-            if(v < 0.0f || u + v > 1.0f) return;
+            real detv = ray.direction().dot(originE0Cross);
+            real v = detv * invDet;
+            if(v < 0.0f || u + v > 1.0f) return intersection;
 
-            float dett = edge1.dot(originE0Cross);
-            float t = dett * invDet;
+            real dett = edge1.dot(originE0Cross);
+            real t = dett * invDet;
 
-            // Here we can conclude we have an intersection
-            Vector2 barycentric(u, v);
+            if(t > SHADOW_EPSILON && t < oldT){
+                // Here we can conclude we have an intersection
+                Vector2 barycentric(u, v);
+                return Intersection(t, generateSurfacePoint(ray, t, barycentric));
+            }
 
-            list.push(Intersection(t, generateSurfacePoint(ray, t, barycentric)));
+            return intersection;
         }
 
             

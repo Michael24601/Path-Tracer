@@ -15,8 +15,8 @@ namespace pathtracer{
         std::vector<Triangle> triangles;
 
         // Surface area and bounding box stored since expensive to compute
-        real surfaceArea;
-        AxisAlignedBox box;
+        real m_surfaceArea;
+        AxisAlignedBox m_box;
 
     public:
 
@@ -24,48 +24,51 @@ namespace pathtracer{
             this->triangles = triangles;
             
             // The surface area is just the triangle sum
-            surfaceArea = 0;
+            m_surfaceArea = 0;
             for(int i = 0; i < triangles.size(); i++){
-                surfaceArea += triangles[i].getSurfaceArea();
+                m_surfaceArea += triangles[i].getSurfaceArea();
             }
 
             // The axis aligned box
-            Vector3 min = Vector3(INFINITY, INFINITY, INFINITY);
-            Vector3 max = Vector3(-INFINITY, -INFINITY, -INFINITY);
             for(int i = 0; i < triangles.size(); i++){
                 AxisAlignedBox b = triangles[i].getBoundingBox();
-                min = min.elementWiseMinimum(b.minCorner());
-                max = max.elementWiseMaximum(b.maxCorner());
+                m_box.extend(b);
             }
-            box = AxisAlignedBox(min, max);
         }
 
 
 
         real getSurfaceArea() const override{
-            return surfaceArea;
+            return m_surfaceArea;
         }
 
 
         AxisAlignedBox getBoundingBox() const override{
-            return box;
+            return m_box;
+        }
+
+
+        Vector3 getCentroid() const override{
+            // The centroid of the mesh is that of its box
+            return (m_box.minCorner() + m_box.maxCorner()) / 2.0f;;
         }
 
         
         // Intersects the shape with a ray
-        void intersect(const Ray& ray, IntersectionList& list) const override{
+        Intersection intersect(const Ray& ray, real oldT) const override{
+
+            // Not a hit by default
+            Intersection result;
+            
             // Replace later with a bottom level acceleration structure
             for(int i = 0; i < triangles.size(); i++){
-                IntersectionList temp;
-                triangles[i].intersect(ray, temp);
-                // A triangle only generates one intersection, so it has to
-                // be this one.
-                if(!temp.empty()){
-                    Intersection it = Intersection(*(temp.top()));
-                    it.setTriangleIndex(i);
-                    list.push(it);
+                Intersection it = triangles[i].intersect(ray, oldT);
+                if(it && it.t() < oldT && it.t() < result.t()){
+                    result = it;
                 }
-            }   
+            }
+
+            return result;
         }
 
             

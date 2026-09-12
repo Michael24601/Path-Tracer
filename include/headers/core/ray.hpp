@@ -29,6 +29,12 @@ namespace pathtracer{
 
         const Vector3& direction() const { return m_direction; }
 
+
+        void setOrigin(const Vector3& origin) { m_origin = origin; }
+
+
+        void setDirection(const Vector3& direction) { m_direction = direction; }
+
         
         // Returns the point that is a distance t along the ray
         Vector3 at(real t) const {

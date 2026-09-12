@@ -71,6 +71,12 @@
                         "border-mode": "clamp",
                         "filter-mode": "bilinear"
                     }
+                },
+                "alpha-mask": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.05, 0.05, 0.05]
+                    }
                 }
             }
         }

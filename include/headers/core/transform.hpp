@@ -93,6 +93,11 @@ namespace pathtracer{
         }
 
 
+        Vector3 transformDirectionKeepScale(const Vector3& direction) const{
+            return (m_transform * direction);
+        }
+
+
         // Transforms a direction
         Vector3 inverseTransformDirection(const Vector3& direction) const{
             Matrix3 m = m_transform.inverse();
@@ -117,6 +122,14 @@ namespace pathtracer{
         Ray transform(const Ray& ray) const{
             Ray r(transform(ray.origin()), 
                 transformDirection(ray.direction()));
+            return r;
+        }
+
+
+        // Transforms a ray but does not normalize the direction
+        Ray transformKeepScale(const Ray& ray) const{
+            Ray r(transform(ray.origin()), 
+                transformDirectionKeepScale(ray.direction()));
             return r;
         }
 

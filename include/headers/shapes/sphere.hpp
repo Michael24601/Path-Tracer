@@ -4,7 +4,7 @@
 
 #include "shape.hpp"
 #include "../math/constants.hpp"
-#include "../intersection/IntersectionList.hpp"
+#include "../intersection/intersection.hpp"
 #include "../intersection/areaSample.hpp"
 
 namespace pathtracer{
@@ -64,9 +64,15 @@ namespace pathtracer{
             return AxisAlignedBox(Vector3(-1.0), Vector3(1.0));
         }
 
+
+        Vector3 getCentroid() const override{
+            // In local coordinates, the centroid is the origin.
+            return Vector3::ORIGIN;
+        }
+
         
         // Intersects the shape with a ray
-        void intersect(const Ray& ray, IntersectionList& list) const override{
+        Intersection intersect(const Ray& ray, real oldT) const override{
             // Solving for the sphere intersection can be done
             // by plugging the parametric ray equation into the implicit
             // unit sphere equation:
@@ -75,6 +81,9 @@ namespace pathtracer{
             // t^2||d||^2 + 2t<d, o> + ||o||^2 - 1 = 0
             // at^2 + bt + c = 0
             // Which can be solved by checking the discriminant.
+
+            // No hit by default
+            Intersection intersection;
             
             // The norm of the direction is 1
             real a = 1;
@@ -84,26 +93,34 @@ namespace pathtracer{
             real discriminant = b * b - 4 * a * c;
 
             if(discriminant < 0){
-                return;
+                return intersection;
             }
             else if (discriminant < EPSILON){
                 // Only one solution, which is -b/2a
                 real t = -b / (2.0 * a);
-                Vector3 point = ray.at(t);
-                list.push(Intersection(t, generateSurfacePoint(point)));
+
+                if(t > SHADOW_EPSILON && t < oldT){
+                    Vector3 point = ray.at(t);
+                    return Intersection(t, generateSurfacePoint(point));
+                }
             }
             else{
-                // In this case we have two solutions
+                // In this case we have two solutions, with t0 being closer
                 real sqrtDiscriminant = sqrtReal(discriminant);
                 real t0 = (-b - sqrtDiscriminant) / (2.0 * a);
                 real t1 = (-b + sqrtDiscriminant) / (2.0 * a);
-
                 Vector3 point0 = ray.at(t0);
                 Vector3 point1 = ray.at(t1);
-                list.push(Intersection(t0, generateSurfacePoint(point0)));
-                list.push(Intersection(t1, generateSurfacePoint(point1)));
 
+                if(t0 > SHADOW_EPSILON && t0 < oldT){
+                    return Intersection(t0, generateSurfacePoint(point0));
+                }
+                else if(t1 > SHADOW_EPSILON && t1 < oldT){
+                    return Intersection(t1, generateSurfacePoint(point1));;
+                }
             }
+
+            return intersection;
         }
 
 

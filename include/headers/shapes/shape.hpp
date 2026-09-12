@@ -10,7 +10,7 @@
 namespace pathtracer{
 
     // Forward declaration
-    class IntersectionList;
+    class Intersection;
     class AreaSample;
 
 
@@ -38,13 +38,20 @@ namespace pathtracer{
         virtual AxisAlignedBox getBoundingBox() const = 0;
 
 
+        // Returns the centroid
+        virtual Vector3 getCentroid() const = 0;
+
+
         // Intersects the shape with a ray.
         // We assume the ray is in the correct coordinate system
         // prior to calling the function.
-        // Note that the intersection only checks if the ray
-        // intersects the object. It does not check for visibility,
-        // whether the object is behind the ray, or for self inetrsection.
-        virtual void intersect(const Ray&, IntersectionList&) const = 0;
+        // As input we send the last closest t (transformed into local
+        // coordinates), and we can optimize this function by only returning
+        // a valid intersection when it is closer than the oldT
+        // (though it will also be checked later just in case).
+        // If multiple hits are found, only the closest is returned.
+        // Visibility is not checked at this level, but self intersection is.
+        virtual Intersection intersect(const Ray&, real oldT) const = 0;
 
 
         // Samples a random point on the surface area

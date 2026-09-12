@@ -146,10 +146,23 @@ namespace pathtracer{
         }
 
 
+        // Scalar division
+        Vector3 operator/(real s) const{
+            return Vector3(m_data[0] / s, m_data[1] / s, m_data[2] / s);
+        }
+
+
         // Element-wise product
         Vector3 operator*(const Vector3& v) const{
             return Vector3(m_data[0] * v.m_data[0], 
                 m_data[1] * v.m_data[1], m_data[2] * v.m_data[2]);
+        }
+
+
+        // Element-wise division
+        Vector3 operator/(const Vector3& v) const{
+            return Vector3(m_data[0] / v.m_data[0], 
+                m_data[1] / v.m_data[1], m_data[2] / v.m_data[2]);
         }
 
 
@@ -208,6 +221,15 @@ namespace pathtracer{
         }
 
 
+        real minElement() const {
+            return std::min(m_data[0], std::min(m_data[1], m_data[2]));
+        }
+
+
+        real maxElement() const {
+            return std::max(m_data[0], std::max(m_data[1], m_data[2]));
+        }
+        
 
         // Element-wise >= operator
         bool operator>=(const Vector3& other) const {

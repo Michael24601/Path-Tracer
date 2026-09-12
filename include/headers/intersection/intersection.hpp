@@ -1,5 +1,4 @@
 
-
 #ifndef PATH_TRACER_INTERSECTION_HPP
 #define PATH_TRACER_INTERSECTION_HPP
 
@@ -19,6 +18,11 @@ namespace pathtracer{
     public:
 
         static Intersection NO_HIT;
+
+
+        Intersection() : m_t{REAL_INFINITY},
+        SurfacePoint(Vector3::ORIGIN, Vector3::ORIGIN, Vector3::ORIGIN,
+            Vector3::ORIGIN, Vector2::ORIGIN, nullptr){}
 
 
         Intersection(real t, const Vector3& position, 
