@@ -253,6 +253,11 @@ namespace pathtracer{
         }
 
 
+        real luminance() const {
+            return 0.2126 * x() + 0.7152 * y() + 0.0722 * z();
+        }
+
+
         std::string toString() const{
             return "Vector(" + std::to_string(m_data[0]) 
                 + " " + std::to_string(m_data[1]) + " " 

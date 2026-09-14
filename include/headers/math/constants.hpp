@@ -18,6 +18,7 @@ namespace pathtracer{
     // Math constants
     constexpr real PI = 3.1415926535897932384626433832795;
     constexpr real INV_PI = 1.0 / PI;
+    constexpr real INV_FOUR_PI = 1.0 / (4.0 * PI);
     constexpr real PI_SQUARED = PI * PI;
     constexpr real HALF_PI = PI * 0.5;
     constexpr real TWO_PI = PI * 2.0;

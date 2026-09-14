@@ -57,7 +57,7 @@
                 "ior": {
                     "type": "color",
                     "parameters": {
-                        "color": [1.33, 1.33, 1.33]
+                        "color": [1.4, 1.4, 1.4]
                     }
                 },
                 "reflectance": {
@@ -263,14 +263,14 @@
             "material": "water",
             "parameters": {
                 "transform": [
-                    700.0, 0.0, 0.0, -100.0,
-                    0.0, 700.0, 0.0, 100.0,
-                    0.0, 0.0, 700.0, 0.0
+                    25.0, 0.0, 0.0, 260.0,
+                    0.0, 25.0, 0.0, 100.0,
+                    0.0, 0.0, 25.0, 260.0
                 ],
                 "vertex-data": { 
                     "format": "obj",
                     "parameters": {
-                        "file-name": "data/models/Water.obj"
+                        "file-name": "data/models/Wave.obj"
                     }
                 }
             }
@@ -305,12 +305,12 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 500
+            "sample-count": 100
         },
         "integrator": {
-            "type": "path-tracer-nee",
+            "type": "path-tracer-nee-mis",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 500
             }
         }
     }

@@ -6,6 +6,7 @@
 #include "../math/constants.hpp"
 #include "../intersection/intersection.hpp"
 #include "../intersection/areaSample.hpp"
+#include "../logger.hpp"
 
 namespace pathtracer{
 
@@ -60,7 +61,7 @@ namespace pathtracer{
     public:
 
         Triangle(const Vector3& v0, const Vector3& v1, const Vector3& v2) : 
-            v0{v0}, v1{v1}, v2{v2}, m_shadingNormals{false} {
+            v0{v0}, v1{v1}, v2{v2}, m_shadingNormals{false}, m_uvCoordinates{false} {
 
                 // Ensures points are not colinear
                 Vector3 n = (v1-v0).cross(v2-v0);
@@ -71,7 +72,7 @@ namespace pathtracer{
         Triangle(const Vector3& v0, const Vector3& v1, const Vector3& v2,
             const Vector3& n0, const Vector3& n1, const Vector3& n2) : 
             v0{v0}, v1{v1}, v2{v2}, n0{n0}, n1{n1}, n2{n2}, 
-            m_shadingNormals{true} {
+            m_shadingNormals{true}, m_uvCoordinates{false} {
 
                 // Ensures points are not colinear
                 Vector3 n = (v1-v0).cross(v2-v0);
@@ -82,7 +83,7 @@ namespace pathtracer{
         Triangle(const Vector3& v0, const Vector3& v1, const Vector3& v2,
             const Vector2& uv0, const Vector2& uv1, const Vector2& uv2) : 
             v0{v0}, v1{v1}, v2{v2}, uv0{uv0}, uv1{uv1}, uv2{uv2}, 
-            m_uvCoordinates{true} {
+            m_uvCoordinates{true}, m_shadingNormals{false} {
 
                 // Ensures points are not colinear
                 Vector3 n = (v1-v0).cross(v2-v0);

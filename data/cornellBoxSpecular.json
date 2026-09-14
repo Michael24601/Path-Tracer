@@ -319,7 +319,7 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 412],
-            "sample-count": 10
+            "sample-count": 50
         },
         "integrator": {
             "type": "path-tracer-nee",

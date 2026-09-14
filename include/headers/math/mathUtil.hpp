@@ -13,13 +13,9 @@ namespace pathtracer{
 
         public:  
 
-        static const Vector3 luminance(){
-            return Vector3(0.2126f, 0.7152f, 0.0722f);
-        }
-
 
         static float russianRoulette(const Vector3& c, float max = 0.75f) {
-            return std::min(max, (float)c.dot(luminance()) * 2.0f);
+            return std::min(max, (float)c.luminance() * 2.0f);
         }
 
 
@@ -114,6 +110,19 @@ namespace pathtracer{
                 sinPhi * sin(theta),
                 cos(phi)
             };
+        }
+
+
+        // Return spherical coordinates
+        static Vector2 inverse(const Vector3& d){
+            real u = std::atan2(d.y(), d.x()) / (2.0 * PI);
+            if (u < 0.0){
+                u += 1.0;   
+            }
+
+            real v = (1.0 - d.z()) * 0.5;
+
+            return Vector2{u, v};
         }
 
 

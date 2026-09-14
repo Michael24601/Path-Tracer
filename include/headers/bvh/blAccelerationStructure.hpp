@@ -99,129 +99,142 @@ namespace pathtracer{
         // for a single node.
         // Then returns the split axis (x, y, or z), and the best
         // position for said axis.
-        void binning(const NodePtr node, const std::vector<Triangle>& shapes, 
-            int& bestSplitAxis, real& bestSplitPosition) {
-
-            float minHeuristic = REAL_INFINITY;
-            // -1 by default
-            int bestAxis = -1;
-            // Undefined by default
-            float bestSplit = 0.0f;
-            
-            // For each axis 
-            for(int axis = 0; axis < 3; axis++){
-
-                // We have N-1 splitting planes, however, looping over each split,
-                // and then having to loop over all primitives in them
-                // can be very slow.
-                // Instead, we can just have a single loop over all
-                // primitives, and inside that loop we can assign each
-                // primitive to a bin using the centroid. Each bin keeps track of
-                // the number of primitives, and AABB that encompasses all
-                // of those primitives.
-                // This is the advantage of binning.
+        void binning(const NodePtr node, const std::vector<Triangle>& shapes,
+            int& bestSplitAxis, real& bestSplitPosition){
                 
-                // We can then do two more loop over the bins accumulating
-                // the bins on the left and right of each plane by combining
-                // the AABB and the number of primitives; this gives us
-                // the values we need to evaluate the SAH of each split.
+            real minHeuristic = REAL_INFINITY;
+            int bestAxis = -1;
+            real bestSplit = 0.0;
 
-                // The size of each bin
-                float max_coord = node->aabb().maxCorner()[axis];
-                float min_coord = node->aabb().minCorner()[axis];
-                float size = (max_coord - min_coord) / BIN_SIZE;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                real max_coord = node->aabb().maxCorner()[axis];
+                real min_coord = node->aabb().minCorner()[axis];
+                real size = (max_coord - min_coord) / BIN_SIZE;
 
-                // The bin data
-                std::vector<Vector3> bin_max(BIN_SIZE, Vector3(-REAL_INFINITY));
-                std::vector<Vector3> bin_min(BIN_SIZE, Vector3(REAL_INFINITY));
+                if (size <= 0.0)
+                    continue;
+
+                std::vector<Vector3> bin_max(
+                    BIN_SIZE, Vector3(-REAL_INFINITY));
+
+                std::vector<Vector3> bin_min(
+                    BIN_SIZE, Vector3(REAL_INFINITY));
+
                 std::vector<int> primitive_num(BIN_SIZE, 0);
 
-                for (int i = node->firstShape(); i <= node->lastShape(); i++) {
-
+                for (int i = node->firstShape(); i <= node->lastShape(); i++)
+                {
                     int primitiveIndex = m_shapeIndexes[i];
-                    Vector3 centroid =  shapes[primitiveIndex].getCentroid();
+
+                    Vector3 centroid = shapes[primitiveIndex].getCentroid();
                     AxisAlignedBox box = shapes[primitiveIndex].getBoundingBox();
 
-                    // We need to know which bin it belongs to,
-                    // unless the aabb is degenerate.
-                    if(size == 0.0) continue;
                     int bin = (centroid[axis] - min_coord) / size;
-                    if (bin >= BIN_SIZE) bin = BIN_SIZE - 1;
-                    if(bin < 0) bin = 0;
-                    
-                    // We then update the bin data
+
+                    if (bin >= BIN_SIZE)
+                        bin = BIN_SIZE - 1;
+
+                    if (bin < 0)
+                        bin = 0;
+
                     primitive_num[bin]++;
 
-                    // We then check min and max for x, y, z
-                    for(int dir = 0; dir < 3; dir++){
-                        if(box.minCorner()[dir] < bin_min[bin][dir]){
+                    for (int dir = 0; dir < 3; dir++)
+                    {
+                        if (box.minCorner()[dir] < bin_min[bin][dir])
                             bin_min[bin][dir] = box.minCorner()[dir];
-                        }
-                        if(box.maxCorner()[dir] > bin_max[bin][dir]){
+
+                        if (box.maxCorner()[dir] > bin_max[bin][dir])
                             bin_max[bin][dir] = box.maxCorner()[dir];
-                        }
                     }
                 }
 
-                std::vector<float> left_SAH(BIN_SIZE-1, 0);
-                std::vector<float> right_SAH(BIN_SIZE-1, 0);
+                std::vector<real> left_SAH(BIN_SIZE - 1, REAL_INFINITY);
+                std::vector<real> right_SAH(BIN_SIZE - 1, REAL_INFINITY);
 
-                // Now we will loop over all bins backwards and forwards,
-                // accumulating the bins on the left and right.
+                std::vector<int> left_num(BIN_SIZE - 1, 0);
+                std::vector<int> right_num(BIN_SIZE - 1, 0);
+
                 int total_num = 0;
-                Vector3 aabb_max(-REAL_INFINITY);
-                Vector3 aabb_min(REAL_INFINITY); 
 
-                // Left pass
-                for(int i = 0; i < BIN_SIZE-1; i++){
-                    total_num += primitive_num[i];
-                    // We then check min and max for x, y, z
-                    for(int dir = 0; dir < 3; dir++){
-                        if(aabb_min[dir] > bin_min[i][dir]){
-                            aabb_min[dir] = bin_min[i][dir];
-                        }
-                        if(aabb_max[dir] < bin_max[i][dir]){
-                            aabb_max[dir] = bin_max[i][dir];
+                Vector3 aabb_max(-REAL_INFINITY);
+                Vector3 aabb_min(REAL_INFINITY);
+
+                for (int i = 0; i < BIN_SIZE - 1; i++)
+                {
+                    if (primitive_num[i] > 0)
+                    {
+                        total_num += primitive_num[i];
+
+                        for (int dir = 0; dir < 3; dir++)
+                        {
+                            if (aabb_min[dir] > bin_min[i][dir])
+                                aabb_min[dir] = bin_min[i][dir];
+
+                            if (aabb_max[dir] < bin_max[i][dir])
+                                aabb_max[dir] = bin_max[i][dir];
                         }
                     }
-                    AxisAlignedBox temp(aabb_min, aabb_max);
-                    left_SAH[i] = total_num * temp.surfaceArea();
+
+                    left_num[i] = total_num;
+
+                    if (total_num > 0)
+                    {
+                        AxisAlignedBox temp(aabb_min, aabb_max);
+                        left_SAH[i] = total_num * temp.surfaceArea();
+                    }
                 }
 
                 total_num = 0;
                 aabb_max = Vector3(-REAL_INFINITY);
-                aabb_min = Vector3(REAL_INFINITY); 
+                aabb_min = Vector3(REAL_INFINITY);
 
-                // right pass
-                for(int i = BIN_SIZE-2; i >= 0; i--){
-                    total_num += primitive_num[i];
-                    // We then check min and max for x, y, z
-                    for(int dir = 0; dir < 3; dir++){
-                        if(aabb_min[dir] > bin_min[i+1][dir]){
-                            aabb_min[dir] = bin_min[i+1][dir];
-                        }
-                        if(aabb_max[dir] < bin_max[i+1][dir]){
-                            aabb_max[dir] = bin_max[i+1][dir];
+                for (int i = BIN_SIZE - 2; i >= 0; i--)
+                {
+                    int bin = i + 1;
+
+                    if (primitive_num[bin] > 0)
+                    {
+                        total_num += primitive_num[bin];
+
+                        for (int dir = 0; dir < 3; dir++)
+                        {
+                            if (aabb_min[dir] > bin_min[bin][dir])
+                                aabb_min[dir] = bin_min[bin][dir];
+
+                            if (aabb_max[dir] < bin_max[bin][dir])
+                                aabb_max[dir] = bin_max[bin][dir];
                         }
                     }
-                    AxisAlignedBox temp(aabb_min, aabb_max);
-                    right_SAH[i] = total_num * temp.surfaceArea();
+
+                    right_num[i] = total_num;
+
+                    if (total_num > 0)
+                    {
+                        AxisAlignedBox temp(aabb_min, aabb_max);
+                        right_SAH[i] = total_num * temp.surfaceArea();
+                    }
                 }
 
-                // We finally choose the smallest SAH split
-                for(int i = 0; i < BIN_SIZE-1; i++){
-                    float sah = left_SAH[i] + right_SAH[i];
-                    if(sah < minHeuristic){
+                for (int i = 0; i < BIN_SIZE - 1; i++)
+                {
+                    if (left_num[i] == 0 || right_num[i] == 0)
+                        continue;
+
+                    real sah = left_SAH[i] + right_SAH[i];
+
+                    if (sah < minHeuristic)
+                    {
                         minHeuristic = sah;
                         bestAxis = axis;
-                        // The split coordinate with min_offset
-                        bestSplit = i * size + min_coord;
+
+                        // Split between bin i and bin i + 1
+                        bestSplit = min_coord + (i + 1) * size;
                     }
                 }
             }
 
-            // Then we just set the bestAxis and split based on which
-            // had teh smallest SAH value.
             bestSplitAxis = bestAxis;
             bestSplitPosition = bestSplit;
         }
@@ -305,6 +318,9 @@ namespace pathtracer{
                     Intersection it = shapes[m_shapeIndexes[i]].intersect(ray, oldT);
                     if(it && it.t() < oldT && it.t() > SHADOW_EPSILON){
                         oldT = it.t();
+                        // We need to tell the intersection which triangle was hit
+                        // for reverse queries to work.
+                        it.setTriangleIndex(m_shapeIndexes[i]);
                         result = it;
                     }
                 }

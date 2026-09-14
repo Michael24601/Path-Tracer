@@ -1,13 +1,16 @@
+CXXFLAGS = -std=c++20 -fopenmp
+RELEASE_FLAGS = -O3 -DNDEBUG
+DEBUG_FLAGS = -g -O0
 
 # Builds
 all:
 	if not exist build mkdir build
-	g++ -O3 -DNDEBUG -fopenmp source/*.cpp -Iinclude/libs -o build/build.exe
+	g++ $(CXXFLAGS) $(RELEASE_FLAGS) source/*.cpp -Iinclude/libs -o build/build.exe
 
 # Builds debug version
 debug:
 	if not exist build mkdir build
-	g++ -g -O0 -fopenmp source/*.cpp -Iinclude/libs -o build/build.exe
+	g++ $(CXXFLAGS) $(DEBUG_FLAGS) source/*.cpp -Iinclude/libs -o build/build.exe
 
 # Runs existing build
 run:
