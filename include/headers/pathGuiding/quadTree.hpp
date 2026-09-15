@@ -1,6 +1,6 @@
 
-#ifndef PATH_TRACER_RENDERER_HPP
-#define PATH_TRACER_RENDERER_HPP
+#ifndef PATH_TRACER_QUAD_TREE_HPP
+#define PATH_TRACER_QUAD_TREE_HPP
 
 #include "../math/mathUtil.hpp"
 #include "../core/random.hpp"
@@ -133,6 +133,11 @@ namespace pathtracer{
             // Subdivides the node, and gives each child a quarter
             // of its flux.
             void subdivide(){
+
+                if(!isLeaf()){
+                    return;
+                }
+
                 real newFlux = getFlux() / 4.0;
                 children[0] = new Node(newFlux);
                 children[1] = new Node(newFlux);
@@ -293,8 +298,8 @@ namespace pathtracer{
             }
 
 
-            // Creates a copy of the structure of the tree, with 0.0 flux.
-            // These become the children of newNode.
+            // Creates a copy of the structure of the tree, with the same flux.
+            // Sets the children of newNode.
             void copy(NodePtr newNode) const{
 
                 if(isLeaf()){
@@ -302,7 +307,7 @@ namespace pathtracer{
                 }
 
                 for(int i = 0; i < 4; i++){
-                    newNode->children[i] = new Node(0.0);
+                    newNode->children[i] = new Node(children[i]->getFlux());
                     children[i]->copy(newNode->children[i]);
                 }
             }
@@ -345,6 +350,10 @@ namespace pathtracer{
         // But their parents' fluxes remain stale. After training, this
         // recomputeFlux function is called to update the flux of every
         // internal node.
+        // We could have added flux every single time we call accumulate,
+        // while going down the tree, but that can add some cost,
+        // as it requires using atomic operations a lot (unlike recompute
+        // which is called after path tracing).
         void recomputeFlux(){
             m_root->recomputeFlux();
         }
@@ -403,9 +412,10 @@ namespace pathtracer{
         }
 
 
-        // Returns a tree with the same structure, but 0.0 flux values
+        // Returns a tree with the same structure and flux
         QuadTree* copyTree(){
             QuadTree* newTree = new QuadTree();
+            newTree->m_root->addFlux(m_root->getFlux());
             m_root->copy(newTree->m_root);
             return newTree;
         }
