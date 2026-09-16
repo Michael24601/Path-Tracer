@@ -18,7 +18,7 @@ namespace pathtracer{
     public:
 
         PathTracerRenderer(int width, int height, const Camera* camera, 
-            const Scene* scene, const Integrator* integrator, int samples) :
+            const Scene* scene, Integrator* integrator, int samples) :
             Renderer(width, height, camera, scene, integrator), 
             m_samples{samples} {}
 

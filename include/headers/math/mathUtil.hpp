@@ -156,6 +156,20 @@ namespace pathtracer{
             };
         }
 
+
+        // Transforms 3D coordinates on a unit hemisphere.
+        static Vector2 inverse(const Vector3& dir){
+            real theta = atan2(dir.y(), dir.x());
+            if(theta < 0.0){
+                theta += 2.0 * PI;
+            }
+
+            real u = theta / (2.0 * PI);
+            real v = dir.z();
+
+            return Vector2{u, v};
+        }
+
         
         // The PDF is constant since it is uniform over the hemisphere 
         // area. It is half of the surface area of a sphere.

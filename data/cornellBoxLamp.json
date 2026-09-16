@@ -108,13 +108,31 @@
             }
         },
         {
+            "id": "lamp",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/lamp/lampPost.obj"
+                    }
+                }
+            }
+        },
+        {
             "id": "light",
             "type": "mesh",
             "material": "light-bsdf",
             "emission": {
                 "type": "lambertian",
                 "parameters": {
-                    "power": [17.0, 12.0, 4.0]
+                    "power": [180.0, 140.0, 50.0]
                 }
             },
             "parameters": {
@@ -126,7 +144,7 @@
                 "vertex-data":{ 
                     "format": "obj",
                     "parameters":{
-                        "file-name": "data/models/cornellBox/ceilingLight.obj"
+                        "file-name": "data/models/lamp/lampLight.obj"
                     }
                 }
             }
@@ -186,7 +204,7 @@
             }
         },
         {
-            "id": "tall-block",
+            "id": "shade",
             "type": "mesh",
             "material": "diffuse-white",
             "parameters": {
@@ -198,7 +216,7 @@
                 "vertex-data":{ 
                     "format": "obj",
                     "parameters":{
-                        "file-name": "data/models/cornellBox/tallBlock.obj"
+                        "file-name": "data/models/lamp/cover.obj"
                     }
                 }
             }
@@ -230,15 +248,19 @@
     },
         
     "renderer": {
-        "type": "path-tracer-renderer",
+        "type": "path-guiding-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 100
+            "sample-count": 90,
+            "render-sample-count": 40,
+            "first-iteration-sample-count": 4,
+            "iteration-count": 4
         },
         "integrator": {
-            "type": "path-tracer-nee",
+            "type": "path-tracer-nee-guided",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 100,
+                "mis-alpha": 0.5
             }
         }
     }

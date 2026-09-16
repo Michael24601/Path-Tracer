@@ -69,6 +69,32 @@ namespace pathtracer{
         bool inScene() const {return m_inScene; }
 
 
+        // Transforms shape's box to global coordinates and then finds
+        // AABB that fits it (not the tightest fit but fast).
+        AxisAlignedBox getBoundingBox() const{
+
+            AxisAlignedBox localBounds = m_shape->getBoundingBox();
+
+            Vector3 min = localBounds.minCorner();
+            Vector3 max = localBounds.maxCorner();
+
+            AxisAlignedBox result;
+
+            result.extend(m_transform.transform(Vector3(min.x(), min.y(), min.z())));
+            result.extend(m_transform.transform(Vector3(max.x(), min.y(), min.z())));
+            result.extend(m_transform.transform(Vector3(min.x(), max.y(), min.z())));
+            result.extend(m_transform.transform(Vector3(max.x(), max.y(), min.z())));
+
+            result.extend(m_transform.transform(Vector3(min.x(), min.y(), max.z())));
+            result.extend(m_transform.transform(Vector3(max.x(), min.y(), max.z())));
+            result.extend(m_transform.transform(Vector3(min.x(), max.y(), max.z())));
+            result.extend(m_transform.transform(Vector3(max.x(), max.y(), max.z())));
+
+            return result;
+
+        }
+
+
         const Texture* const alphaTexture() const{
             return m_alpha;
         }

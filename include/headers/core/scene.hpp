@@ -7,6 +7,7 @@
 #include "instance.hpp"
 #include "../intersection/rayTracer.hpp"
 #include "../light/light.hpp"
+#include "../bvh/axisAlignedBox.hpp"
 
 namespace pathtracer{
 
@@ -16,6 +17,8 @@ namespace pathtracer{
     
         std::vector<Instance*> m_instances;
         std::vector<Light*> m_lights;
+
+        AxisAlignedBox m_bounds;
 
 
         // Also intersects a scene but quits early if one is found
@@ -43,7 +46,13 @@ namespace pathtracer{
             // These instances are now part of the scene, so we flag them
             for(Instance* inst: m_instances){
                 inst->setInScene(true);
+                m_bounds.extend(inst->getBoundingBox());
             }
+        }
+
+
+        const AxisAlignedBox& getBoundingBox() const{
+            return m_bounds;
         }
 
 

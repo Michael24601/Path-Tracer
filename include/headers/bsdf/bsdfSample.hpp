@@ -25,7 +25,6 @@ namespace pathtracer{
         // like for cosine weighted sampling.
         Vector3 m_weight;
 
-
         bool m_isDelta;
 
     public:
@@ -37,6 +36,11 @@ namespace pathtracer{
             real cosine, real pdf, const Vector3& weight, bool isDelta = false): 
             m_cosine{cosine}, m_bsdf{bsdf},  
             m_wi(wi), m_pdf{pdf}, m_weight{weight}, m_isDelta{isDelta}{}
+
+
+        BsdfSample() : m_bsdf{Vector3(0.0)}, m_wi{Vector3(0.0)}, 
+            m_cosine{0.0}, m_pdf{0.0}, m_weight{Vector3(0.0)}, 
+            m_isDelta{false}{}
 
 
         bool isInvalid() const { return m_pdf <= 0.0; }

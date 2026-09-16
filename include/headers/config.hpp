@@ -13,6 +13,7 @@
 #include <random>
 #include <iostream>
 #include <fstream>
+#include <stack>
 
 namespace pathtracer{
 

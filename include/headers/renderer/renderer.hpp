@@ -15,7 +15,7 @@ namespace pathtracer{
 
         const Camera* m_camera;
         const Scene* m_scene;
-        const Integrator* m_integrator;
+        Integrator* m_integrator;
         // Width and height in pixels
         int m_width;
         int m_height;
@@ -23,12 +23,12 @@ namespace pathtracer{
     public:
 
         Renderer(int width, int height, const Camera* camera, 
-            const Scene* scene, const Integrator* integrator): 
+            const Scene* scene, Integrator* integrator): 
             m_camera{camera}, m_scene{scene}, m_integrator{integrator},
             m_width{width}, m_height{height}{}
 
         
-        std::vector<std::vector<Vector3>> render() const {
+        virtual std::vector<std::vector<Vector3>> render() {
 
             int width = m_width;
             int height = m_height;

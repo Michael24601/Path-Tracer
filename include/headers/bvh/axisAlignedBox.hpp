@@ -33,6 +33,13 @@ namespace pathtracer{
         }
 
 
+        // Increases AABB size to fit a point
+        void extend(const Vector3& point){
+            m_minCorner = m_minCorner.elementWiseMinimum(point);
+            m_maxCorner = m_maxCorner.elementWiseMaximum(point);
+        }
+
+
         real surfaceArea() const {
             Vector3 size = m_maxCorner - m_minCorner;
             // It's 2 * the area of each plane

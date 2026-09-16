@@ -5,6 +5,7 @@
 #include "../math/mathUtil.hpp"
 #include "../core/random.hpp"
 #include "quadTree.hpp"
+#include "../logger.hpp"
 #include <atomic>
 
 
@@ -39,11 +40,19 @@ namespace pathtracer{
                 children(2, nullptr), dTree{nullptr} {}
 
 
+            ~Node(){
+                if(dTree){
+                    delete dTree;
+                }
+            }
+
+
             // Prunes the descendants of a node
             void cleanSubtree(){
 
                 if(isLeaf()){
                     delete dTree;
+                    dTree = nullptr;
                     return;
                 }
 
@@ -52,6 +61,10 @@ namespace pathtracer{
                     delete children[i];
                     children[i] = nullptr;
                 }
+
+                // Since this is now a leaf, we can add a dTree to it
+                // (new one).
+                dTree = new QuadTree();
             }
 
 
@@ -235,15 +248,14 @@ namespace pathtracer{
                     // First we adapt the dTree (to avoid re-adapting
                     // it if leaf is split and tree is copied)
                     dTree->adaptTree();
-
-                    if(getSampleCount() < threshold){
+                    if(getSampleCount() <= threshold || threshold == 0){
                         return;
                     }
 
                     subdivide();
                 }
                 // For internal nodes, prunes children
-                else if(getSampleCount() < threshold){
+                else if(getSampleCount() <= threshold){
                     cleanSubtree();
                     return;
                 }   
@@ -309,6 +321,11 @@ namespace pathtracer{
         ~KdTree(){
             m_root->cleanSubtree();
             delete m_root;
+        }
+
+
+        void setThreshold(int threshold){
+            m_threshold = threshold;
         }
 
 

@@ -23,10 +23,13 @@
 #include "../bsdf/dielectricBsdf.hpp"
 #include "../renderer/renderer.hpp"
 #include "../renderer/pathTracerRenderer.hpp"
+#include "../renderer/pathGuidingRenderer.hpp"
 #include "../integrator/aovIntegrator.hpp"
 #include "../integrator/pathTracer.hpp"
 #include "../integrator/pathTracerNee.hpp"
 #include "../integrator/pathTracerNeeMis.hpp"
+#include "../integrator/pathTracerGuided.hpp"
+#include "../integrator/pathTracerNeeGuided.hpp"
 #include "../imageIo/imageIo.hpp"
 #include "objLoader.hpp"
 #include <fstream>
@@ -376,6 +379,17 @@ namespace pathtracer{
                     int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
                     integrator = new PathTracerNeeMis(maxDepth);
                 }
+                else if(data["renderer"]["integrator"]["type"] == "path-tracer-guided"){
+                    int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
+                    real alpha = data["renderer"]["integrator"]["parameters"]["mis-alpha"];
+                    integrator = new PathTracerGuided(maxDepth, alpha);
+                }
+                else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-guided"){
+                    int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
+                    real alpha = data["renderer"]["integrator"]["parameters"]["mis-alpha"];
+                    integrator = new PathTracerNeeGuided(maxDepth, alpha);
+                }
+                
 
                 if(data["renderer"]["type"] == "path-tracer-renderer"){
                     int sampleCount = data["renderer"]["parameters"]["sample-count"];
@@ -386,6 +400,14 @@ namespace pathtracer{
                 else if(data["renderer"]["type"] == "renderer"){
                     renderer = new Renderer(resolution.x(), resolution.y(), 
                         camera, scene, integrator);
+                }
+                else if(data["renderer"]["type"] == "path-guiding-renderer"){
+                    int renderSamples = data["renderer"]["parameters"]["render-sample-count"];
+                    int firstIterationSamples = data["renderer"]["parameters"]["first-iteration-sample-count"];
+                    int iterationCount = data["renderer"]["parameters"]["iteration-count"];
+                    renderer = new PathGuidingRenderer(resolution.x(), resolution.y(), 
+                        camera, scene, integrator, firstIterationSamples, iterationCount,
+                        renderSamples);
                 }
             }
             else{

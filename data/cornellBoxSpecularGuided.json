@@ -315,19 +315,22 @@
         }
     },
     
+
     "renderer": {
-        "type": "path-tracer-renderer",
+        "type": "path-guiding-renderer",
         "parameters": {
             "pixel-resolution": [512, 412],
-            "sample-count": 1000
+            "render-sample-count": 500,
+            "first-iteration-sample-count": 4,
+            "iteration-count": 10
         },
         "integrator": {
-            "type": "path-tracer-nee",
+            "type": "path-tracer-guided",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 100,
+                "mis-alpha": 0.5
             }
         }
     }
-
-
+    
 }

@@ -4,6 +4,7 @@
 
 #include "../math/mathUtil.hpp"
 #include "../core/random.hpp"
+#include "../logger.hpp"
 #include <atomic>
 
 
@@ -40,6 +41,7 @@ namespace pathtracer{
 
             // Prunes the descendants of a node
             void cleanSubtree(){
+
                 if(isLeaf()){
                     return;
                 }
@@ -52,10 +54,18 @@ namespace pathtracer{
             }
 
 
-            inline bool isLeaf() const { return !children[0]; }
+            inline bool isLeaf() const { 
+                return !children[0]; 
+            }
 
 
             inline void addFlux(real value){
+                // Ensures no NANs are sent here (since I have no control
+                // over what the path tracer sends)
+                if(!std::isfinite(value)){
+                LOG_WARNING("NaN/Inf contribution: " + std::to_string(value));
+                    return;
+                }
                 flux.fetch_add(value, std::memory_order_relaxed);
             }
 
@@ -133,7 +143,7 @@ namespace pathtracer{
             // Subdivides the node, and gives each child a quarter
             // of its flux.
             void subdivide(){
-
+                
                 if(!isLeaf()){
                     return;
                 }
@@ -178,8 +188,17 @@ namespace pathtracer{
 
                 real total{0.0};
                 for(int i = 0; i < 4; i++){
+
                     children[i]->recomputeFlux();
-                    total += children[i]->getFlux();
+                    real childFlux = children[i]->getFlux();
+
+                    if(!std::isfinite(childFlux))
+                        LOG_INFO("BAD CHILD FLUX");
+
+                    total += childFlux;
+
+                    if(!std::isfinite(total))
+                    LOG_INFO("TOTAL BECAME BAD AT CHILD " + std::to_string(i));
                 }
 
                 flux.store(total);
@@ -198,18 +217,26 @@ namespace pathtracer{
                     // Just samples the local space uniformly
                     return Random::next2D();
                 }
+
+                // If we have zero flux, we can't sample the children,
+                // so we just sample uniformly (choose a child at random).
+                real totalFlux = getFlux();
+                if(totalFlux <= 0){
+                    // uniform over the 4 children
+                    int c = std::min(3, static_cast<int>(Random::next() * 4));
+                    return transformFromChild(children[c]->sample(), c);
+                }
                 
                 // Otherwise, we sample a child: we sample a 1D
                 // point, then do CDF inversion using flux as pdf.
                 real randomNum = Random::next();
-
                 real target = randomNum * getFlux();
                 real cumulative = 0.0;
                 int selectedChild = 0;
 
                 for (int i = 0; i < 4; i++) {
                     cumulative += children[i]->getFlux();
-                    if (target < cumulative) {
+                    if (target <= cumulative) {
                         selectedChild = i;
                         break;
                     }
@@ -226,7 +253,7 @@ namespace pathtracer{
             // (given in the local space of the current node)
             real pdf(const Vector2& p) const {
 
-                    if(!inQuadrant(p)){
+                if(!inQuadrant(p)){
                     // Not sampled, so probability is 0.0
                     return 0.0;
                 }
@@ -237,18 +264,24 @@ namespace pathtracer{
                     return 1.0;
                 }
 
-                // Otherwise, the pdf of selecting a child is
-                // proportional to its flux.
+                // If no flux, fallback is to do uniform sampling over the
+                // children.
                 if(getFlux() <= 0) {
-                    // Avoids division by zero
-                    return 0.0;
+                    real choicePdf{0.0};
+                    for(int i = 0; i < 4; i++){
+                        // Each gets multiplied by 4 and by 0.25 (uniform),
+                        // which cancel out.
+                        choicePdf += children[i]->pdf(transformToChild(p, i));
+                    }
+
+                    return choicePdf;
                 }
                 real oneOverFlux = 1.0 / getFlux();
                 real choicePdf{0.0};
 
                 for(int i = 0; i < 4; i++){
                     // Note that child pdf is transformed to local space
-                    // by multiplying by 4.;
+                    // by multiplying by 4;
                     choicePdf += (children[i]->getFlux() * oneOverFlux)
                         * 4 * children[i]->pdf(transformToChild(p, i));
                 }
@@ -265,14 +298,16 @@ namespace pathtracer{
             void adaptNode(real threshold){
 
                 if(isLeaf()){
-                    if(getFlux() < threshold){
+
+                    // Ensures no infinite recursion
+                    if(getFlux() <= threshold || threshold < EPSILON){
                         return;
                     }
 
                     subdivide();
                 }
                 // For internal nodes, prunes children
-                else if(getFlux() < threshold){
+                else if(getFlux() <= threshold){
                     cleanSubtree();
                     return;
                 }   
@@ -394,6 +429,9 @@ namespace pathtracer{
         // receive a quarter of its flux (information to be used while
         // subdividing, since a node's newly formed children may be
         // subdivided as well).
+        // Note that after training a tree, we do not use the refined
+        // version in rendering, refinement is for the next ieration
+        // (since refining it spreads the flux evenly)
         void adaptTree(){
             // The threshold is 1 percent of total flux
             real threshold = m_root->getFlux() * 0.01;
@@ -405,7 +443,7 @@ namespace pathtracer{
         // the current tree has the flux reset to 0. The new tree starts
         // anew with no accumulated flux from previous iterations, but keeps
         // the newly updated structure, and uses the previous tree
-        // (after refinement, before reset), in order to sample its paths 
+        // (before refinement, before reset), in order to sample its paths 
         // and guide them.
         void reset(){
             m_root->reset();
