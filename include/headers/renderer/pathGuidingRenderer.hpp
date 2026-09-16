@@ -26,6 +26,9 @@ namespace pathtracer{
         // Actual samples used to render
         int m_samplesUsed;
 
+        // The c used to determine when to subdivide spatial tree
+        int m_c;
+
         // The SD trees used for path guiding.
         // The first guides the second (ieration k and k+1)
         KdTree* m_guideTree;
@@ -35,11 +38,11 @@ namespace pathtracer{
 
         PathGuidingRenderer(int width, int height, const Camera* camera, 
             const Scene* scene, Integrator* integrator, 
-            int firstIterationSamples, int iterationCount, int renderSamples) :
-            Renderer(width, height, camera, scene, integrator), 
+            int firstIterationSamples, int iterationCount, int renderSamples,
+            int c) : Renderer(width, height, camera, scene, integrator), 
             m_firstIterationSamples{firstIterationSamples},
             m_iterationCount{iterationCount},
-            m_renderSamples{renderSamples} {}
+            m_renderSamples{renderSamples}, m_c{c} {}
 
         
         ~PathGuidingRenderer(){
@@ -58,8 +61,7 @@ namespace pathtracer{
             // In the first iteration, we don't use any guide tree, only
             // the training tree. The threshold is c * 2^k where k = 0.
 
-            static const int c = 12000;
-            int threshold = c;
+            int threshold = m_c;
 
             // If guiding tree is nullptr, then they just use bsdf.
             // If training tree is nullptr, then they just render and don't train.
@@ -91,9 +93,6 @@ namespace pathtracer{
                     }
                 }
 
-                threshold = c * sqrt(static_cast<float>(std::pow(2, k+1)));
-                m_samplesUsed *= 2;
-
                 // We recompute the trees and swap them
                 m_trainTree->recomputeSampleCount();
 
@@ -105,15 +104,18 @@ namespace pathtracer{
                 // Training tree is reset
                 m_trainTree->adaptTree();
                 m_trainTree->reset();
-                m_trainTree->setThreshold(threshold);
 
-                /*                
-                Vector3 p(0.13, 0.6, 0);
+                threshold = m_c * sqrt(static_cast<float>(std::pow(2, k)));
+                m_samplesUsed *= 2;
+
+                m_trainTree->setThreshold(threshold);
+                  
+                Vector3 p(1, 0.53, 1.49);
                 p = p - m_scene->getBoundingBox().minCorner();
                 p = p / (m_scene->getBoundingBox().maxCorner() - m_scene->getBoundingBox().minCorner());
-                auto im = QuadTreeUtil::renderQuadTree(m_guideTree->getDTree(p),  512);
+                auto tree = m_guideTree->getDTree(p);
+                auto im = QuadTreeUtil::renderQuadTree(tree,  512);
                 ImageIo::savePNG(im, "output/file" + std::to_string(k) + ".png");
-                */
                 
 
                 LOG_INFO("Iteration: " + std::to_string(k));
@@ -143,7 +145,7 @@ namespace pathtracer{
 
         // The path tracer version uses multiple samples per pixel,
         // and jitters them.
-        virtual Vector3 renderPixel(int i, int j) const override {
+        virtual Vector3 renderPixel(int i, int j) override {
 
             Vector3 color(0.0);
 

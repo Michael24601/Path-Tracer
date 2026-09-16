@@ -24,7 +24,7 @@ namespace pathtracer{
 
         // The path tracer version uses multiple samples per pixel,
         // and jitters them.
-        virtual Vector3 renderPixel(int i, int j) const override {
+        virtual Vector3 renderPixel(int i, int j) override {
 
             Vector3 color(0.0);
 

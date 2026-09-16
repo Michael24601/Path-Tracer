@@ -132,7 +132,7 @@
             "emission": {
                 "type": "lambertian",
                 "parameters": {
-                    "power": [180.0, 140.0, 50.0]
+                    "power": [380.0, 300.0, 150.0]
                 }
             },
             "parameters": {
@@ -248,16 +248,17 @@
     },
         
     "renderer": {
-        "type": "path-guiding-renderer",
+        "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 90,
-            "render-sample-count": 40,
+            "sample-count": 628,
+            "render-sample-count": 370,
             "first-iteration-sample-count": 4,
-            "iteration-count": 4
+            "iteration-count": 6,
+            "spatial-subdivision-c": 50
         },
         "integrator": {
-            "type": "path-tracer-nee-guided",
+            "type": "path-tracer-nee",
             "parameters": {
                 "max-depth": 100,
                 "mis-alpha": 0.5

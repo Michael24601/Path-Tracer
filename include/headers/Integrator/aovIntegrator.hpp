@@ -31,7 +31,7 @@ namespace pathtracer{
     
         // Uses whatever rendering technique it wants to render
         // the light received by the given shadow ray.
-        Vector3 color(const Ray& ray, const Scene& scene) const override{
+        Vector3 color(const Ray& ray, const Scene& scene) override{
 
             if(m_variable == RenderVariable::DIRECTION){
                 return (ray.direction() + Vector3(1.0)) * 0.5;

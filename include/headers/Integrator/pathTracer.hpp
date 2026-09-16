@@ -17,7 +17,7 @@ namespace pathtracer{
 
         PathTracer(int maxDepth) : m_maxDepth{maxDepth}{}
 
-        Vector3 color(const Ray& ray, const Scene& scene) const override{
+        Vector3 color(const Ray& ray, const Scene& scene) override{
 
             Ray currRay = ray;
             Vector3 color = Vector3(0.0);

@@ -14,7 +14,7 @@ namespace pathtracer{
     
         // Uses whatever rendering technique it wants to render
         // the light received by the given shadow ray.
-        virtual Vector3 color(const Ray&, const Scene&) const = 0;
+        virtual Vector3 color(const Ray&, const Scene&) = 0;
      
     };
 

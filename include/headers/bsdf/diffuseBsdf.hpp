@@ -50,7 +50,7 @@ namespace pathtracer{
             // Wi is sampled in teh upper hemisphere, so it's always
             // positive, but we need to check this for wo.
             if(Bsdf::cosineTheta(wo) <= 0) {
-                return BsdfSample::INVALID;
+                direction = -direction;
             }
 
             // Cosine weighted
@@ -102,18 +102,19 @@ namespace pathtracer{
             // some light by intersecting the inside of the object,
             // on the lighted side.
 
-            // In this case, both wi and wo are given to us,
-            // so we make sure they are on the same side.
-            if(Bsdf::cosineTheta(wo) <= 0 || cosine <= 0){
-                return BsdfSample::INVALID;
-            }
-
             Vector3 weight;
             if(UNIFORM){
                 weight = bsdf * cosine * (1.0 / pdf); 
             }
             else{
                 weight = albedo;
+            }
+
+            
+            // In this case, both wi and wo are given to us,
+            // so we make sure they are on the same side.
+            if(Bsdf::cosineTheta(wo) * cosine < 0){
+                return BsdfSample(Vector3(0.0), wi, cosine, pdf, Vector3(0.0));            
             }
 
             return BsdfSample(bsdf, wi, cosine, pdf, weight);

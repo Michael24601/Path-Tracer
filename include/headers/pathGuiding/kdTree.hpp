@@ -298,7 +298,6 @@ namespace pathtracer{
                 }
             }
 
-
         };
 
 

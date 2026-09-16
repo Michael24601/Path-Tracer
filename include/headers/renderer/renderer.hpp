@@ -52,7 +52,7 @@ namespace pathtracer{
 
 
         // Default version just calls the integrator at midpoint of pixel
-        virtual Vector3 renderPixel(int i, int j) const {
+        virtual Vector3 renderPixel(int i, int j) {
             real offsetX = 0.5, offsetY = 0.5;
 
             real x = ((i + offsetX) / m_width) * 2.0 - 1.0;

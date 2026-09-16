@@ -405,9 +405,10 @@ namespace pathtracer{
                     int renderSamples = data["renderer"]["parameters"]["render-sample-count"];
                     int firstIterationSamples = data["renderer"]["parameters"]["first-iteration-sample-count"];
                     int iterationCount = data["renderer"]["parameters"]["iteration-count"];
+                    int c = data["renderer"]["parameters"]["spatial-subdivision-c"];
                     renderer = new PathGuidingRenderer(resolution.x(), resolution.y(), 
                         camera, scene, integrator, firstIterationSamples, iterationCount,
-                        renderSamples);
+                        renderSamples, c);
                 }
             }
             else{

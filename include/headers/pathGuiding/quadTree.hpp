@@ -188,17 +188,9 @@ namespace pathtracer{
 
                 real total{0.0};
                 for(int i = 0; i < 4; i++){
-
                     children[i]->recomputeFlux();
                     real childFlux = children[i]->getFlux();
-
-                    if(!std::isfinite(childFlux))
-                        LOG_INFO("BAD CHILD FLUX");
-
                     total += childFlux;
-
-                    if(!std::isfinite(total))
-                    LOG_INFO("TOTAL BECAME BAD AT CHILD " + std::to_string(i));
                 }
 
                 flux.store(total);
@@ -218,10 +210,9 @@ namespace pathtracer{
                     return Random::next2D();
                 }
 
-                // If we have zero flux, we can't sample the children,
-                // so we just sample uniformly (choose a child at random).
-                real totalFlux = getFlux();
-                if(totalFlux <= 0){
+                // This should never happen. If it does, we just sample
+                // the current node uniformly.
+                if(getFlux() <= 0){
                     // uniform over the 4 children
                     int c = std::min(3, static_cast<int>(Random::next() * 4));
                     return transformFromChild(children[c]->sample(), c);
