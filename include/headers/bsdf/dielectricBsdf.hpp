@@ -34,7 +34,7 @@ namespace pathtracer
             // So we will calculate that first.
             // F = (Fp^2 + Fs^2)/2 for s and p polarized light.
 
-            real cos_wo = Bsdf::cosineTheta(wo);
+            real cos_wo = ShadingSpace::cosineTheta(wo);
 
             // We know that ior is n_int/n_ext, from interior to exterior (air).
             // We will pick eta, or n, as either ior or 1/ior.
@@ -114,9 +114,9 @@ namespace pathtracer
                 // the conductor.
                 // The normal is (0, 0, 1) since we are in local space.
                 Vector3 normal(0, 0, 1);
-                wi = reflect(wo, normal);
+                wi = ShadingSpace::reflect(wo, normal);
                 wi = wi.normalized();
-                cosineTerm = Bsdf::cosineTheta(wi);
+                cosineTerm = ShadingSpace::cosineTheta(wi);
                 
                 // Again, as before, the pdf which is 1/0 and the dirac
                 // delta cancel out, along with the cos term.
@@ -134,9 +134,9 @@ namespace pathtracer
             else {
                 // Now for the refraction, we know that wi is.
                 Vector3 normal(0, 0, 1);
-                wi = Bsdf::refract(wo, normal, n);
+                wi = ShadingSpace::refract(wo, normal, n);
                 wi = wi.normalized();
-                cosineTerm = Bsdf::cosineTheta(wi);
+                cosineTerm = ShadingSpace::cosineTheta(wi);
                 // Here eta, or n, is used in the weight.
                 // Otherwise it is the same as before.
                 weight = transmittance_color * (1.0 / (n * n));

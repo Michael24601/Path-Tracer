@@ -95,14 +95,16 @@ namespace pathtracer{
 
                 // We recompute the trees and swap them
                 m_trainTree->recomputeSampleCount();
+                m_trainTree->adaptTree();
 
                 if(m_guideTree) {
                     delete m_guideTree;
                 }
                 m_guideTree = m_trainTree->copyTree();
 
+                LOG_INFO(std::to_string(m_trainTree->m_root->getSampleCount()));
+
                 // Training tree is reset
-                m_trainTree->adaptTree();
                 m_trainTree->reset();
 
                 threshold = m_c * sqrt(static_cast<float>(std::pow(2, k)));
@@ -110,13 +112,12 @@ namespace pathtracer{
 
                 m_trainTree->setThreshold(threshold);
                   
-                Vector3 p(1, 0.53, 1.49);
+                Vector3 p(-2, 2.7, 0.75);
                 p = p - m_scene->getBoundingBox().minCorner();
                 p = p / (m_scene->getBoundingBox().maxCorner() - m_scene->getBoundingBox().minCorner());
                 auto tree = m_guideTree->getDTree(p);
                 auto im = QuadTreeUtil::renderQuadTree(tree,  512);
                 ImageIo::savePNG(im, "output/file" + std::to_string(k) + ".png");
-                
 
                 LOG_INFO("Iteration: " + std::to_string(k));
             }

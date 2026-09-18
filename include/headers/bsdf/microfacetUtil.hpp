@@ -20,14 +20,14 @@ namespace pathtracer{
 
 
         static real smithG1(real alpha, const Vector3& wh, const Vector3& w) {
-            if (w.dot(wh) * Bsdf::cosineTheta(w) * Bsdf::cosineTheta(wh) <= 0){
+            if (w.dot(wh) * ShadingSpace::cosineTheta(w) * ShadingSpace::cosineTheta(wh) <= 0){
                 return 0;
             }
-            if (Bsdf::absCosineTheta(w) >= 1){
+            if (ShadingSpace::absCosineTheta(w) >= 1){
                 return 1;
             }
 
-            const real cos = Bsdf::cosineTheta(w);
+            const real cos = ShadingSpace::cosineTheta(w);
             const real tanTheta2 = (1 - cos * cos) / (cos * cos);
             const real a2tanTheta2 = (alpha * alpha) * tanTheta2;
             return 2 / (1 + sqrtReal(1 + a2tanTheta2));
@@ -35,9 +35,9 @@ namespace pathtracer{
 
 
         static real evaluateGGX(real alpha, const Vector3& wh) {
-            real nDotH = Bsdf::cosineTheta(wh);
-            real a = Bsdf::cosinePhiSineTheta(wh) / alpha;
-            real b = Bsdf::sinePhiSineTheta(wh) / alpha;
+            real nDotH = ShadingSpace::cosineTheta(wh);
+            real a = ShadingSpace::cosinePhiSineTheta(wh) / alpha;
+            real b = ShadingSpace::sinePhiSineTheta(wh) / alpha;
             real c = (a * a) + (b * b) + (nDotH * nDotH);
             return 1 / (PI * (alpha * c) * (alpha * c));
         }
@@ -47,7 +47,7 @@ namespace pathtracer{
         static Vector3 sampleGGXVNDF(real alpha, const Vector3 &wo, 
             const Vector2 &rnd) {
 
-            real sgn = copysign(1, Bsdf::cosineTheta(wo));
+            real sgn = copysign(1, ShadingSpace::cosineTheta(wo));
 
             Vector3 Vh =
                 Vector3(alpha * wo.x(), alpha * wo.y(), wo.z()).normalized() * sgn;
@@ -84,7 +84,7 @@ namespace pathtracer{
         static real pdfGGXVNDF(real alpha, const Vector3& wh, const Vector3& wo) {
             return evaluateGGX(alpha, wh) *
                 smithG1(alpha, wh, wo) *
-                abs(wh.dot(wo)) / Bsdf::absCosineTheta(wo);
+                abs(wh.dot(wo)) / ShadingSpace::absCosineTheta(wo);
         }
 
 

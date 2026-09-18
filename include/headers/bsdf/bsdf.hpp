@@ -14,55 +14,6 @@ namespace pathtracer{
 
         Bsdf(){}
 
-
-        // The cosine term is the normal dot wi, and since we
-        // are in local coordinates, the normal is the z axis.
-        static real cosineTheta(const Vector3& w) {
-            return w.z();
-        }    
-
-
-        // The cosine term is the normal dot wi, and since we
-        // are in local coordinates, the normal is the z axis.
-        static real absCosineTheta(const Vector3& w) {
-            return std::abs(w.z());
-        }
-
-
-        static float cosinePhiSineTheta(const Vector3& w) { 
-            return w.x(); 
-        }
-        
-        static float sinePhiSineTheta(const Vector3& w) { 
-            return w.y(); 
-        }
-        
-        
-        // This returns the vector reflected around the normal,
-        // which in local coordinates is always (0, 0, 1).
-        static Vector3 reflect(const Vector3& w){
-            return Vector3(-w.x(), -w.y(), w.z());
-        }
-
-
-        // Reflects around a given normal
-        static Vector3 reflect(const Vector3 &w, const Vector3 &n) {
-            return n * 2 * n.dot(w) - w;
-        }
-
-
-        // Refracts a vector given ior and normal
-        static Vector3 refract(const Vector3& w, const Vector3& n, real eta) {
-            const real invEta = 1 / eta;
-            const real k = 1 - (invEta * invEta) * (1 - (n.dot(w) * n.dot(w)));
-            if (k < 0) {
-                // total internal reflection
-                return Vector3(0.0);
-            }
-            const real cosTheta = n.dot(w);
-            return n * (invEta * cosTheta - copysign(sqrt(k), cosTheta)) - w * invEta;
-        }
-
         
         // In general, we can either sample a point directly
         // on the surface of an object, after choosing said object,

@@ -15,25 +15,25 @@
 
         },
         {
-            "id": "diffuse-green",
+            "id": "diffuse-purple",
             "type": "diffuse",
             "parameters": {
                 "albedo": {
                     "type": "color",
                     "parameters": {
-                        "color": [0.14, 0.45, 0.091]
+                        "color": [0.6, 0.1, 0.8]
                     }
                 }
             }
         },
         {
-            "id": "diffuse-red",
+            "id": "diffuse-yellow",
             "type": "diffuse",
             "parameters": {
                 "albedo": {
                     "type": "color",
                     "parameters": {
-                        "color": [0.63, 0.065, 0.05]
+                        "color": [0.06, 0.75, 0.45]
                     }
                 }
             }
@@ -102,7 +102,7 @@
                 "vertex-data":{ 
                     "format": "obj",
                     "parameters":{
-                        "file-name": "data/models/cornellBox/backWall.obj"
+                        "file-name": "data/models/indirect/backWall.obj"
                     }
                 }
             }
@@ -114,7 +114,7 @@
             "emission": {
                 "type": "lambertian",
                 "parameters": {
-                    "power": [17.0, 12.0, 4.0]
+                    "power": [60.0, 45.0, 15.0]
                 }
             },
             "parameters": {
@@ -126,7 +126,7 @@
                 "vertex-data":{ 
                     "format": "obj",
                     "parameters":{
-                        "file-name": "data/models/cornellBox/ceilingLight.obj"
+                        "file-name": "data/models/indirect/backLight.obj"
                     }
                 }
             }
@@ -134,7 +134,7 @@
         {
             "id": "right-wall",
             "type": "mesh",
-            "material": "diffuse-green",
+            "material": "diffuse-yellow",
             "parameters": {
                 "transform": [
                     1.0, 0.0, 0.0, 0.0,
@@ -152,7 +152,7 @@
         {
             "id": "left-wall",
             "type": "mesh",
-            "material": "diffuse-red",
+            "material": "diffuse-purple",
             "parameters": {
                 "transform": [
                     1.0, 0.0, 0.0, 0.0,
@@ -234,11 +234,11 @@
         "type": "path-guiding-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 100,
-            "render-sample-count": 100,
-            "first-iteration-sample-count": 32,
+            "sample-count": 300,
+            "render-sample-count": 600,
+            "first-iteration-sample-count": 16,
             "iteration-count": 4,
-            "spatial-subdivision-c": 10000
+            "spatial-subdivision-c": 12000
         },
         "integrator": {
             "type": "path-tracer-guided",

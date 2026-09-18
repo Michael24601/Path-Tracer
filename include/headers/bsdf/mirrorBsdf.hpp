@@ -22,7 +22,7 @@ namespace pathtracer{
             const override{
 
             // We only scatter light in the upper hemisphere.
-            if(Bsdf::cosineTheta(wo) <= 0) {
+            if(ShadingSpace::cosineTheta(wo) <= 0) {
                 return BsdfSample::INVALID;
             }
 
@@ -31,13 +31,13 @@ namespace pathtracer{
             // infinity of being chosen, effectively meaning 
             // the integral is removed.
 
-            Vector3 direction = reflect(wo);
+            Vector3 direction = ShadingSpace::reflect(wo);
 
             // The idea is that it does not contribute in any way,
             // so we'll place 1 as a placeholder.
             real pdf = 1.0;
 
-            real cosine = cosineTheta(direction);
+            real cosine = ShadingSpace::cosineTheta(direction);
 
             Vector3 bsdf = m_reflectance;
             Vector3 weight = m_reflectance;

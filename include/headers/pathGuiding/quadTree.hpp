@@ -63,7 +63,7 @@ namespace pathtracer{
                 // Ensures no NANs are sent here (since I have no control
                 // over what the path tracer sends)
                 if(!std::isfinite(value)){
-                LOG_WARNING("NaN/Inf contribution: " + std::to_string(value));
+                    LOG_WARNING("NaN/Inf contribution: " + std::to_string(value));
                     return;
                 }
                 flux.fetch_add(value, std::memory_order_relaxed);
@@ -106,6 +106,8 @@ namespace pathtracer{
                     case 3:
                         return Vector2(2.0 * p.x() - 1.0,
                             2.0 * p.y() - 1.0);
+                    default:
+                        return p;
                 }
             }
 
@@ -136,6 +138,8 @@ namespace pathtracer{
                             0.5 * (p.x() + 1.0),
                             0.5 * (p.y() + 1.0)
                         );
+                    default:
+                        return p;
                 }
             }
 
@@ -358,6 +362,11 @@ namespace pathtracer{
         ~QuadTree(){
             m_root->cleanSubtree();
             delete m_root;
+        }
+
+
+        real getFlux() const{
+            return m_root->getFlux();
         }
 
 

@@ -49,6 +49,7 @@ namespace pathtracer{
                 Intersection it = scene.intersect(currRay);
                 // If no hits (we can break or sample envmap)
                 if(!it){
+                    recordPath(positions, directions, weights, Vector3(0.0), scene);
                     break;
                 }
 
@@ -148,6 +149,7 @@ namespace pathtracer{
                 // Russian roulette
                 real p = Util::russianRoulette(throughput);
                 if (Random::next() > p){
+                    recordPath(positions, directions, weights, Vector3(0.0), scene);
                     break;
                 }
 
@@ -187,7 +189,9 @@ namespace pathtracer{
                     pdf = m_alpha * guidePdf + (1.0 - m_alpha) * bsdfPdf;
                     weight = sample.bsdf() * sample.cosine() / pdf;
                 }
-                else{
+                
+               
+                if(!m_guideTree || it.instance()->bsdf()->isSpecular() || sample.isInvalid()){ 
                     sample = it.sampleBsdf(wo);
                     wi = sample.wi();
                     weight = sample.weight();

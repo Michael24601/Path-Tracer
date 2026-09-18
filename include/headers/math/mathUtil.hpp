@@ -54,6 +54,62 @@ namespace pathtracer{
     };
 
 
+    class ShadingSpace{
+
+    public:
+
+        
+        // The cosine term is the normal dot wi, and since we
+        // are in local coordinates, the normal is the z axis.
+        static real cosineTheta(const Vector3& w) {
+            return w.z();
+        }    
+
+
+        // The cosine term is the normal dot wi, and since we
+        // are in local coordinates, the normal is the z axis.
+        static real absCosineTheta(const Vector3& w) {
+            return std::abs(w.z());
+        }
+
+
+        static float cosinePhiSineTheta(const Vector3& w) { 
+            return w.x(); 
+        }
+        
+        static float sinePhiSineTheta(const Vector3& w) { 
+            return w.y(); 
+        }
+        
+        
+        // This returns the vector reflected around the normal,
+        // which in local coordinates is always (0, 0, 1).
+        static Vector3 reflect(const Vector3& w){
+            return Vector3(-w.x(), -w.y(), w.z());
+        }
+
+
+        // Reflects around a given normal
+        static Vector3 reflect(const Vector3 &w, const Vector3 &n) {
+            return n * 2 * n.dot(w) - w;
+        }
+
+
+        // Refracts a vector given ior and normal
+        static Vector3 refract(const Vector3& w, const Vector3& n, real eta) {
+            const real invEta = 1 / eta;
+            const real k = 1 - (invEta * invEta) * (1 - (n.dot(w) * n.dot(w)));
+            if (k < 0) {
+                // total internal reflection
+                return Vector3(0.0);
+            }
+            const real cosTheta = n.dot(w);
+            return n * (invEta * cosTheta - copysign(sqrt(k), cosTheta)) - w * invEta;
+        }
+
+    };
+
+
     class Barycentric{
 
     public:
@@ -204,7 +260,10 @@ namespace pathtracer{
 
         // The point is in shading coordinates space (normal is z axis)
         static real pdf(const Vector3& point){
-            return point.z() * INV_PI;
+            // Uses absolute value in case the point given is not in
+            // the upper hemisphere (can't return negative pdf, so
+            // we allow it).
+            return ShadingSpace::absCosineTheta(point) * INV_PI;
         }
 
     };

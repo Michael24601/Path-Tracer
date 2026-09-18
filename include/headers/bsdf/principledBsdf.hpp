@@ -43,7 +43,7 @@ namespace pathtracer{
             }
             else{
                 pdf = SquareToHemisphereCosine::pdf(wi);
-                cosine = Bsdf::cosineTheta(wi);
+                cosine = ShadingSpace::cosineTheta(wi);
                 Vector3 albedo = m_color;
                 bsdf = albedo * INV_PI;
                 // Cosine cancels out when using cosine weighted sampling 
@@ -72,12 +72,12 @@ namespace pathtracer{
             Vector3 weight = albedo;
             Vector3 bsdf = albedo * INV_PI;
 
-            if (Bsdf::cosineTheta(wo) < 0){
+            if (ShadingSpace::cosineTheta(wo) < 0){
                 wi = -wi; 
             }
 
             real pdf = SquareToHemisphereCosine::pdf(wi);
-            real cosine = Bsdf::cosineTheta(wi);
+            real cosine = ShadingSpace::cosineTheta(wi);
 
             return BsdfSample(bsdf, wi, cosine, pdf, weight);
         }
@@ -126,7 +126,7 @@ namespace pathtracer{
 
             // PDF
             real pdf = Microfacet::pdfGGXVNDF(m_alpha, wm, wo);
-            real cosine = Bsdf::cosineTheta(wi);
+            real cosine = ShadingSpace::cosineTheta(wi);
             Vector3 bsdf = (R * D_wm * G1_wi * G1_wo) * (1.0 / (4 * cos_wo));
 
             Vector3 weight = bsdf * cosine * (1.0 / pdf);
@@ -145,7 +145,7 @@ namespace pathtracer{
             // The density function will be pdfGGXVNDF.
 
             // Formula for vector wi reflected around wm.
-            Vector3 wi = Bsdf::reflect(wo, wm);
+            Vector3 wi = ShadingSpace::reflect(wo, wm);
             wi = wi.normalized();
             // This will also have a pdf, which scales p(wm) by 1/(4 |wm.wo|)
             // And p(wm) is [ D(wm) G1_wo |wm . wo| ] / |cos_wo|
@@ -165,13 +165,13 @@ namespace pathtracer{
             real G1_wi = Microfacet::smithG1(m_alpha, wm, wi);
             Vector3 weight = R * G1_wi;
 
-            real cosine = Bsdf::absCosineTheta(wi);
+            real cosine = ShadingSpace::absCosineTheta(wi);
 
             real pdf = Microfacet::pdfGGXVNDF(m_alpha, wm, wo);
 
             real D_wm = Microfacet::evaluateGGX(m_alpha, wm);
             real G1_wo = Microfacet::smithG1(m_alpha, wm, wo);
-            real cos_wo = Bsdf::absCosineTheta(wo);
+            real cos_wo = ShadingSpace::absCosineTheta(wo);
             Vector3 bsdf = (R * D_wm * G1_wi * G1_wo) * (1.0 / (4 * cos_wo));
 
             return BsdfSample(bsdf, wi, cosine, pdf, weight);
@@ -223,7 +223,7 @@ namespace pathtracer{
             const real specular = m_specular->sample(uv).x();
             const real metallic = m_metallic->sample(uv).x();
             const real F = specular * Fresnel::schlick((1 - metallic) 
-                * 0.08f, Bsdf::cosineTheta(wo));
+                * 0.08f, ShadingSpace::cosineTheta(wo));
 
             const DiffuseLobe diffuseLobe(baseColor * (1 - F) * (1 - metallic));
             const MetallicLobe metallicLobe(baseColor * F + (1 - F) * metallic, alpha);
@@ -268,7 +268,7 @@ namespace pathtracer{
 
             real pdf = diffuse_component.pdf() * p + metallic_component.pdf() * (1 - p);
 
-            real cosine = Bsdf::absCosineTheta(wi);
+            real cosine = ShadingSpace::absCosineTheta(wi);
 
             Vector3 weight = (diffuse_component.weight() * diffuse_component.pdf() 
                 + metallic_component.weight() * metallic_component.pdf())

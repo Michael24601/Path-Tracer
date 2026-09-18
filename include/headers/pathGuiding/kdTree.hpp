@@ -245,10 +245,10 @@ namespace pathtracer{
 
                 if(isLeaf()){
 
-                    // First we adapt the dTree (to avoid re-adapting
-                    // it if leaf is split and tree is copied)
-                    dTree->adaptTree();
                     if(getSampleCount() <= threshold || threshold == 0){
+                        // First we adapt the dTree (to avoid re-adapting
+                        // it if leaf is split and tree is copied)
+                        dTree->adaptTree();
                         return;
                     }
 
@@ -299,15 +299,14 @@ namespace pathtracer{
             }
 
         };
-
-
-        // The root of the tree
-        NodePtr m_root;
         
         // How many samples per leaf node we tolerate
         int m_threshold;
 
     public:
+
+        // The root of the tree
+        NodePtr m_root;
 
         
         // Initializes a tree with just a root and 0 flux

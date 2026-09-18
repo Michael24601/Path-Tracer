@@ -36,6 +36,42 @@ namespace pathtracer{
             return data;
         }
 
+
+        static std::vector<std::vector<Vector3>> renderSamples(
+            QuadTree* tree, int dimension, int sampleCount){
+
+            std::vector<std::vector<Vector3>> data(
+                dimension, std::vector<Vector3>(dimension, Vector3(0.0)));
+
+            for(int k = 0; k < sampleCount; k++){
+
+                Vector3 direction = tree->sample();
+                Vector2 coord = SquareToSphereUniform::inverse(direction);
+
+                int x = std::min(
+                    dimension - 1,
+                    static_cast<int>(coord.x() * dimension));
+
+                int y = std::min(
+                    dimension - 1,
+                    static_cast<int>(coord.y() * dimension));
+
+                data[y][x] = data[y][x] + Vector3(1.0);
+            }
+
+            real normalization =
+                static_cast<real>(dimension * dimension) /
+                static_cast<real>(sampleCount);
+
+            for(int i = 0; i < dimension; i++){
+                for(int j = 0; j < dimension; j++){
+                    data[i][j] = data[i][j] * normalization;
+                }
+            }
+
+            return data;
+        }
+
     };
 
 }

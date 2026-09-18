@@ -3,6 +3,11 @@
 
 using namespace pathtracer;
 
+
+std::atomic<long long> PathTracerGuided::n1 = 0;
+std::atomic<long long> PathTracerGuided::n2 = 0;
+
+
 int main(int argc, char* argv[]) {
 
     if(argc != 3) {
@@ -28,6 +33,9 @@ int main(int argc, char* argv[]) {
     // Opens image when done
     std::string command = "start \"\" \"" + output + "\"";
     system(command.c_str());
+
+    std::cout << PathTracerGuided::n1.load(std::memory_order_relaxed) 
+        << " " << PathTracerGuided::n2.load(std::memory_order_relaxed) << "\n";
 
     
     return 0;

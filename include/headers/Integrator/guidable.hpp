@@ -45,6 +45,7 @@ namespace pathtracer{
         Vector3 toTreeLocalSpace(const Vector3& position, const Scene& scene) const{
             Vector3 min = scene.getBoundingBox().minCorner() - Vector3(0.1);
             Vector3 size = scene.getBoundingBox().maxCorner() + Vector3(0.1) - min;
+
             Vector3 result = (position - min) / size;
             return result;
         }
@@ -74,10 +75,10 @@ namespace pathtracer{
                     );
 
                     intensity = intensity * weight[i];
+
                 }
             }
         }
-
 
     };
 
