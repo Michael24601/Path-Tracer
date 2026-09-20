@@ -29,5 +29,18 @@ namespace pathtracer{
             
         return res;
     }
+
+
+    SurfaceDifferentials Transform::transformDifferentials(
+        const SurfaceDifferentials& d) const {
+
+        // Differential information
+        SurfaceDifferentials res(transformDirectionKeepScale(d.dpdu()),
+        transformDirectionKeepScale(d.dpdv()),
+        transformNormalKeepScale(d.dndu()),
+        transformNormalKeepScale(d.dndv()));
+
+        return res;
+    }
         
 }

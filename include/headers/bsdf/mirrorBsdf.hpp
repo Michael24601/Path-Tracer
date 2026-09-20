@@ -2,14 +2,14 @@
 #ifndef PATH_TRACER_MIRROR_BSDF_HPP
 #define PATH_TRACER_MIRROR_BSDF_HPP
 
-#include "bsdf.hpp"
+#include "specularBsdf.hpp"
 #include "../math/mathUtil.hpp"
 #include "../core/random.hpp"
 #include "../texture/texture.hpp"
 
 namespace pathtracer{
 
-    class MirrorBsdf: public Bsdf{
+    class MirrorBsdf: public SpecularBsdf{
 
         real m_reflectance;
 
@@ -55,8 +55,24 @@ namespace pathtracer{
         }
         
 
-        bool isSpecular() const override{
-            return true;
+        // This evaluates the weight for reflecting (no wi is sent since
+        // only one works).
+        Vector3 evaluateReflection(const Vector3& wo,
+            const Vector2& uv) const override{
+            return m_reflectance;
+        }
+
+
+        // This always returns 0.0 since the pure mirror does not refract.
+        Vector3 evaluateRefraction(const Vector3& wo, 
+            const Vector2& uv) const override{
+            return Vector3(0.0);
+        } 
+
+
+        // Mirrors can't refract so ior can be 1.0 (dummy value)
+        real eta(const Vector3& wo, const Vector2& uv) const override {
+            return 1.0;
         }
 
     };

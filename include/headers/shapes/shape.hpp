@@ -12,6 +12,7 @@ namespace pathtracer{
     // Forward declaration
     class Intersection;
     class AreaSample;
+    class SurfaceDifferentials;
 
 
     // Contains point sampled from surface, and optionally
@@ -61,6 +62,12 @@ namespace pathtracer{
         // Returns the Area sample for a given point on the surface.
         // The point is expected in local coordinates.
         virtual AreaSample evaluateAreaSample(const SurfaceSample&) const = 0;
+
+
+        // Expects local space position, normal, and uv coordinates
+        virtual SurfaceDifferentials computeDifferentials(
+            const Vector3& position, const Vector3& shadingNormal,
+            const Vector2& uv, int triangleIndex) const = 0;
 
     };
 }

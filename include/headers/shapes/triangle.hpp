@@ -6,6 +6,7 @@
 #include "../math/constants.hpp"
 #include "../intersection/intersection.hpp"
 #include "../intersection/areaSample.hpp"
+#include "../intersection/surfaceDifferentials.hpp"
 #include "../logger.hpp"
 
 namespace pathtracer{
@@ -53,8 +54,10 @@ namespace pathtracer{
                 ? Barycentric::interpolate(uv0, uv1, uv2, barycentric)
                 : barycentric;
 
-            return SurfacePoint(point, geometryNormal, 
+            SurfacePoint sp(point, geometryNormal, 
                 shadingNormal, tangent, uv, nullptr);
+
+            return sp;
         }
 
 
@@ -225,6 +228,51 @@ namespace pathtracer{
                 ),
                 pdf
             );
+        }
+
+
+        SurfaceDifferentials computeDifferentials(
+            const Vector3& position, const Vector3& shadingNormal,
+            const Vector2& uv, int triangleIndex) const override{
+
+            // dpdu, dpdv, dndu, dndv are constant across the whole (flat)
+            // triangle.
+
+            Vector3 e1 = v1 - v0;
+            Vector3 e2 = v2 - v0;
+
+            Vector2 duv1, duv2;
+            if (m_uvCoordinates) {
+                duv1 = uv1 - uv0;
+                duv2 = uv2 - uv0;
+            } else {
+                // Barycentric fallback
+                duv1 = Vector2(1, 0);
+                duv2 = Vector2(0, 1);
+            }
+
+            real det = duv1.x() * duv2.y() - duv2.x() * duv1.y();
+
+            Vector3 dpdu, dpdv;
+            if (std::abs(det) < EPSILON) {
+                dpdu = e1;
+                dpdv = e2;
+            } else {
+                real invDet = 1.0 / det;
+                dpdu = (e1 * duv2.y() - e2 * duv1.y()) * invDet;
+                dpdv = (e2 * duv1.x() - e1 * duv2.x()) * invDet;
+            }
+
+            Vector3 dndu(0.0), dndv(0.0);
+            if (m_shadingNormals && std::abs(det) >= EPSILON) {
+                Vector3 dn1 = n1 - n0;
+                Vector3 dn2 = n2 - n0;
+                real invDet = 1.0 / det;
+                dndu = (dn1 * duv2.y() - dn2 * duv1.y()) * invDet;
+                dndv = (dn2 * duv1.x() - dn1 * duv2.x()) * invDet;
+            }
+
+            return SurfaceDifferentials(dpdu, dpdv, dndu, dndv);
         }
 
     };

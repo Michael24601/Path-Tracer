@@ -65,5 +65,20 @@ namespace pathtracer{
         // multilplied by the pdf of choosing the shape.
         return AreaSample(newSample, worldPdf);   
     }
+
+
+    SurfaceDifferentials Instance::computeDifferentials(
+        const SurfacePoint& sp) const{
+
+        // First we will transform the position and normal to local
+        // coordinates.
+        Vector3 localPoint = m_transform.inverseTransform(sp.position());
+        Vector3 localNormal = m_transform.inverseTransformNormal(sp.shadingNormal());
+
+        SurfaceDifferentials d = m_shape->computeDifferentials(localPoint, 
+            localNormal, sp.uv(), sp.triangleIndex());
+
+        return m_transform.transformDifferentials(d);
+    }
     
 }

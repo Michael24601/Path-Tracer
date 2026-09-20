@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_DIELECTRIC_BSDF_HPP
 #define PATH_TRACER_DIELECTRIC_BSDF_HPP
 
-#include "bsdf.hpp"
+#include "specularBsdf.hpp"
 #include "../math/mathUtil.hpp"
 #include "../core/random.hpp"
 #include "../texture/texture.hpp"
@@ -11,7 +11,7 @@
 namespace pathtracer
 {
 
-    class DielectricBsdf : public Bsdf{
+    class DielectricBsdf : public SpecularBsdf{
 
     private:
         // The color a this sample point could either come from a texture
@@ -122,6 +122,10 @@ namespace pathtracer
                 // delta cancel out, along with the cos term.
                 // This leaves Fr * color / Fr, or Fr * color as
                 // discussed.
+
+                // Notice that if transmittance is not possible,
+                // fresnel will be equal to 1, and the bsdf reduces
+                // to the mirror bsdf, with the same weight.
                 if (!transmittance) {
                     bsdf = reflectance_color * fresnel * (1.0 / cosineTerm);
                     weight = reflectance_color * fresnel;
@@ -158,9 +162,74 @@ namespace pathtracer
             return BsdfSample::INVALID;
         }
 
+    
 
-        bool isSpecular() const override{
-            return true;
+        // This evaluates the weight for reflecting (no wi is sent since
+        // only one works). Same logic as the sample function.
+        // Assumes reflection was actually chosen.
+        Vector3 evaluateReflection(const Vector3& wo, const Vector2& uv) 
+            const override{
+
+            real cos_wo = ShadingSpace::cosineTheta(wo);
+            real ior = m_ior->sample(uv).x();
+            real invIor = 1.0f / ior;
+
+            real n;
+            if (cos_wo > 0){
+                n = ior;
+            }
+            else{
+                n = invIor;
+            }
+
+            real fresnel = Fresnel::dielectric(cos_wo, n);
+
+            Vector3 transmittance_color = m_transmittance->sample(uv);
+            Vector3 reflectance_color = m_reflectance->sample(uv);
+
+            if (transmittance_color != Vector3(0.0)){
+                return reflectance_color;
+            }
+
+            return reflectance_color * fresnel;
+        }
+
+
+        // This always returns 0.0 since the pure mirror does not refract.
+        Vector3 evaluateRefraction(const Vector3& wo, const Vector2& uv) 
+            const override{
+
+            real cos_wo = ShadingSpace::cosineTheta(wo);
+            real ior = m_ior->sample(uv).x();
+            real invIor = 1.0f / ior;
+
+            real n;
+            if (cos_wo > 0){
+                n = ior;
+            }
+            else{
+                n = invIor;
+            }
+
+            real fresnel = Fresnel::dielectric(cos_wo, n);
+
+            // This is the TIR case
+            if (fresnel >= 1.0f){
+                return Vector3(0.0f);
+            }
+
+            Vector3 transmittance_color = m_transmittance->sample(uv);
+            return transmittance_color * (1.0f - fresnel) / (n * n);  
+        } 
+
+
+        real eta(const Vector3& wo, const Vector2& uv) const override {
+            real ior = m_ior->sample(uv).x();
+
+            // Relative ior depends on whether we are entering or leaving.
+            return ShadingSpace::cosineTheta(wo) > 0
+                ? ior
+                : 1.0f / ior;
         }
 
     };

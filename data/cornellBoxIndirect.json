@@ -235,7 +235,7 @@
         "parameters": {
             "pixel-resolution": [512, 512],
             "sample-count": 300,
-            "render-sample-count": 600,
+            "render-sample-count": 300,
             "first-iteration-sample-count": 16,
             "iteration-count": 4,
             "spatial-subdivision-c": 12000
@@ -244,7 +244,7 @@
             "type": "path-tracer-guided",
             "parameters": {
                 "max-depth": 100,
-                "mis-alpha": 0.5
+                "mis-alpha": 0.05
             }
         }
     }

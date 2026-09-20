@@ -7,6 +7,7 @@
 #include "../math/matrix3.hpp"
 #include "../math/matrix4.hpp"
 #include "../core/ray.hpp"
+#include "../intersection/surfaceDifferentials.hpp"
 
 namespace pathtracer{
 
@@ -47,6 +48,11 @@ namespace pathtracer{
 
         Transform(const Matrix3& transform, const Vector3& translation) : 
             m_translation(translation), m_transform(transform) {}
+
+
+        const Matrix3& getMatrix() const {
+            return m_transform;
+        }
 
 
         Transform inverse() const{
@@ -112,6 +118,13 @@ namespace pathtracer{
         }
 
 
+        // Transforms a normal but keeps the scale
+        Vector3 transformNormalKeepScale(const Vector3& normal) const{
+            return (m_transform.inverse().transposed() * normal);
+        }
+
+
+
         // Inverse transforms a normal (from world to local)
         Vector3 inverseTransformNormal(const Vector3& normal) const {
             return (m_transform.transposed() * normal).normalized();
@@ -143,6 +156,11 @@ namespace pathtracer{
 
         // Transforms surface points (like intersections)
         SurfacePoint transformSurfacePoint(const SurfacePoint& it) const;
+
+
+        // Transforms surface differentials
+        SurfaceDifferentials transformDifferentials(
+            const SurfaceDifferentials& d) const;
 
 
         // Returns the determinant of the transform matrix

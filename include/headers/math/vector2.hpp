@@ -54,8 +54,7 @@ namespace pathtracer{
 
         real lengthSquared() const {
             return m_data[0] * m_data[0] 
-                + m_data[1] * m_data[1] 
-                + m_data[2] * m_data[2];
+                + m_data[1] * m_data[1];
         }
 
 
@@ -118,6 +117,12 @@ namespace pathtracer{
             Vector2 result(*this);
             result.normalize();
             return result;
+        }
+
+
+        // Scalar product
+        bool operator<(const Vector2& v) const{
+            return m_data[0] < v.m_data[0] && m_data[1] < v.m_data[1];
         }
 
 

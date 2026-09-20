@@ -87,6 +87,15 @@ namespace pathtracer{
             return sample;
         }
 
+
+        SurfaceDifferentials computeDifferentials(
+            const Vector3& position, const Vector3& shadingNormal,
+            const Vector2& uv, int triangleIndex) const override {
+
+            return triangles[triangleIndex].computeDifferentials(
+                position, shadingNormal, uv, triangleIndex);
+        }
+
     };
 
 }

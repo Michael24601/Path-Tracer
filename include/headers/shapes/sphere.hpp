@@ -6,6 +6,7 @@
 #include "../math/constants.hpp"
 #include "../intersection/intersection.hpp"
 #include "../intersection/areaSample.hpp"
+#include "../intersection/surfaceDifferentials.hpp"
 
 namespace pathtracer{
 
@@ -24,7 +25,7 @@ namespace pathtracer{
 
             // UV calculation
             real theta = std::acos(Util::clamp(normal.z(), -1, 1));
-            real phi   = std::atan2(normal.y(), normal.x());
+            real phi = std::atan2(normal.y(), normal.x());
             if (phi < 0){
                     phi += 2 * PI;
             }
@@ -43,8 +44,8 @@ namespace pathtracer{
             
             // The instance is null since this class doesn't know 
             // which isntance of itself it is. 
-            return SurfacePoint(point, normal, normal, tangent, uv, 
-                nullptr);
+            SurfacePoint sp(point, normal, normal, tangent, uv, nullptr);
+            return sp;
         }
 
     public:
@@ -145,6 +146,36 @@ namespace pathtracer{
             AreaSample sample(generateSurfacePoint(point.point), pdf);
             return sample;
         }
+
+
+        SurfaceDifferentials computeDifferentials(
+            const Vector3& position, const Vector3& shadingNormal,
+            const Vector2& uv, int triangleIndex) const override {
+
+            // Note that we use the provided normal and don't rederive it
+            // since we may be using normal maps.
+
+            // n == p on a unit sphere centered at the origin
+            const Vector3& normal = shadingNormal;
+
+            Vector3 dpdu = Vector3(-normal.y(), normal.x(), 0.0) * (2 * PI);
+
+            real sinTheta = std::sqrt(normal.x()*normal.x() + normal.y()*normal.y());
+            Vector3 dpdv;
+            if (sinTheta > 0){
+                dpdv = Vector3(normal.z() * normal.x() / sinTheta,
+                    normal.z() * normal.y() / sinTheta,
+                    -sinTheta) * PI;
+            }
+            else{
+                dpdv = Vector3(0, 0, 0);
+            }
+
+            // n == p, so the normal derivatives equal the position derivatives
+            return SurfaceDifferentials(dpdu, dpdv, dpdu, dpdv);
+            
+        }
+
 
     };
 }

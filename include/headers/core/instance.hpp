@@ -7,6 +7,7 @@
 #include "../texture/texture.hpp"
 #include "../bsdf/bsdf.hpp"
 #include "../emission/emission.hpp"
+#include "../intersection/surfaceDifferentials.hpp"
 #include "transform.hpp"
 
 namespace pathtracer{
@@ -142,6 +143,11 @@ namespace pathtracer{
         // a point on the surface of the instance.
         // The input is in global coordinates.
         AreaSample evaluateAreaSample(const SurfaceSample&) const;
+
+
+        // Computes the differential info on the surface of the shape
+        // (gets surface point in global coordinates)
+        SurfaceDifferentials computeDifferentials(const SurfacePoint&) const;
         
     };
 
