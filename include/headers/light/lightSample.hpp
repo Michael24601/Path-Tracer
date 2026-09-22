@@ -6,6 +6,7 @@
 
 namespace pathtracer{
 
+    class Light;
     
     class LightSample{
 
@@ -28,14 +29,22 @@ namespace pathtracer{
         // Distance to light
         real m_distance;
 
+        // Optional parameter when light intersected is a mesh
+        int m_triangleIndex;
+
+        const Light* m_caster;
+
+
     public:
 
         static LightSample INVALID;
 
         LightSample(const Vector3& wi, const Vector3& radiance,
-            const Vector3& position, real pdf, real distance): 
+            const Vector3& position, real pdf, real distance, const Light* caster,
+            int triangleIndex = -1): 
             m_wi(wi), m_radiance(radiance), m_position(position), 
-            m_pdf(pdf), m_distance{distance}{}
+            m_pdf(pdf), m_distance{distance}, m_caster{caster},
+            m_triangleIndex{triangleIndex}{}
 
 
         real pdf() const { return m_pdf; }
@@ -54,6 +63,13 @@ namespace pathtracer{
         
 
         bool isValid() const { return m_distance > 0.0; }
+
+
+        const Light* caster() const { return m_caster; }
+
+
+        int triangleIndex() const { return m_triangleIndex; }
+
     };
 
 }

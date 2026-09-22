@@ -14,29 +14,49 @@ namespace pathtracer{
     private:
 
 
-        Vector3 m_seedPoint;
-        Vector3 m_finalPoint;
+        SurfacePoint m_seedPoint;
+        SurfacePoint m_finalPoint;
+
+        // We also keep track of eta and half vector
+        Vector3 m_halfVector;
+        real m_eta;
+
         bool m_isConverged;
+        bool m_isReflection;
         
 
     public:
 
 
-        SmsSample(const Vector3& seedPoint, const Vector3& finalPoint, 
-            bool isConverged) : m_seedPoint{seedPoint},
-            m_finalPoint{finalPoint}, m_isConverged{isConverged}{}
+        SmsSample(const SurfacePoint& seedPoint, const SurfacePoint& finalPoint,
+            const Vector3& halfVector, real eta,
+            bool isReflection, bool isConverged) : m_seedPoint{seedPoint},
+            m_finalPoint{finalPoint}, m_halfVector{halfVector}, m_eta{eta},
+            m_isReflection{isReflection}, m_isConverged{isConverged}{}
 
 
-        const Vector3& seedPoint() const{
+        const SurfacePoint& seedPoint() const{
             return m_seedPoint;
         }
 
-        const Vector3& finalPoint() const{
+        const SurfacePoint& finalPoint() const{
             return m_finalPoint;
+        }
+
+        const Vector3& halfVector() const {
+            return m_halfVector;
+        }
+
+        real eta() const{
+            return m_eta;
         }
 
         bool isConverged() const{
             return m_isConverged;
+        }
+
+        bool isReflection() const{
+            return m_isReflection;
         }
 
     };

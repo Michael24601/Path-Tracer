@@ -7,6 +7,7 @@
 #include "../intersection/surfacePoint.hpp"
 #include "../bsdf/specularBsdf.hpp"
 #include "../math/matrix2.hpp"
+#include "../light/lightSample.hpp"
 
 namespace pathtracer{
 
@@ -53,7 +54,7 @@ namespace pathtracer{
             }
             else{
                 // This eta is eta_out / eta_in
-                halfVector = (wo * eta + wi).normalized();
+                halfVector = -(wo * eta + wi).normalized();
             }
 
             return halfVector;
@@ -145,13 +146,14 @@ namespace pathtracer{
                     + wo * (wo.dot(dpdv) * ilo);
             }
             else {
+                // Not sure if eta multiplies ilo or ili
                 dh_du =
-                    -dpdu * (eta * ili + ilo)
+                    -dpdu * (ili + ilo * eta)
                     + wi * (wi.dot(dpdu) * ili)
                     + wo * (wo.dot(dpdu) * eta * ilo);
 
                 dh_dv =
-                    -dpdv * (eta * ili + ilo)
+                    -dpdv * (ili + ilo * eta)
                     + wi * (wi.dot(dpdv) * ili)
                     + wo * (wo.dot(dpdv) * eta * ilo);
             }
@@ -189,6 +191,126 @@ namespace pathtracer{
 
             Vector2 C = specularConstraint(p, halfVector);
             return dC_dX.inverse() * C;
+        }
+
+
+
+        static Vector3 geometricTerm(const SurfacePoint& x0,
+            const SmsSample& sample, const LightSample& x2,
+            const SurfaceDifferentials d1, const SurfaceDifferentials& d2) {
+
+            static const real kMinDistance = 1e-3;
+            static const real kMinDeterminant = 1e-6;
+
+            // The specular point
+            const SurfacePoint& x1 = sample.finalPoint();
+
+            
+            // Note that wi and wo are flipped in this function, so we multiply
+            // wi by eta (since wi is the one connected back to x0).
+
+
+            Vector3 wi = x0.position() - x1.position();
+            real ili = wi.length();
+            if(ili < kMinDistance){
+                return 0.0;
+            }
+            ili = 1.0 / ili;
+            wi = wi * ili;
+
+            Vector3 wo = x2.position() - x1.position();
+            real ilo = wo.length();
+            if(ilo < kMinDistance){
+                return 0.0;
+            }
+            ilo = 1.0 / ilo;
+            wo = wo * ilo;
+
+            Matrix2 dc1_dx0, dc2_dx1, dc2_dx2;
+ 
+            // Setup generalized half-vector
+            real eta = sample.eta();
+
+            // Even though it is stored, we recompute it without normalization
+            Vector3 halfVector;
+            if(sample.isReflection()){
+                halfVector = (wo + wi);
+            }
+            else{
+                // This eta is eta_out / eta_in
+                halfVector = (wo + wi * eta);
+            }
+            Vector3 h = halfVector.normalized();
+            if(!sample.isReflection()) h = h * -1.0;
+
+            // Notice eta multiplies ili, not ilo, since convention is flipped
+            real ilh = 1.0 / halfVector.length();
+            ilo *= ilh;
+            ili *= eta * ilh;
+
+            // Local shading tangent frame
+            real dot_dpdu_n = d1.dpdu().dot(x1.shadingNormal());
+            real dot_dpdv_n = d1.dpdv().dot(x1.shadingNormal());
+            Vector3 s = d1.dpdu() - x1.shadingNormal() * dot_dpdu_n;
+            Vector3 t = d1.dpdv() - x1.shadingNormal() * dot_dpdv_n;
+
+            Vector3 dh_du, dh_dv;
+            // Derivative of specular constraint w.r.t. x1
+            dh_du = -d1.dpdu() * (ili + ilo) + wi * (wi.dot(d1.dpdu()) * ili)
+                                            + wo * (wo.dot(d1.dpdu()) * ilo);
+            dh_dv = -d1.dpdv() * (ili + ilo) + wi * (wi.dot(d1.dpdv()) * ili)
+                                            + wo * (wo.dot(d1.dpdv()) * ilo);
+            dh_du = dh_du - h * dh_du.dot(h);
+            dh_dv = dh_dv - h * dh_dv.dot(h);
+            if(!sample.isReflection()){
+                dh_du = dh_du * -1.0;
+                dh_dv = dh_dv * -1.0;
+            }
+
+            real dot_h_n    = h.dot(x1.shadingNormal());
+            real dot_h_dndu = h.dot(d1.dndu());
+            real dot_h_dndv = h.dot(d1.dndv());
+            Matrix2 dc1_dx1(
+                dh_du.dot(s) - d1.dpdu().dot(d1.dndu()) * dot_h_n - dot_dpdu_n * dot_h_dndu,
+                dh_dv.dot(s) - d1.dpdu().dot(d1.dndv()) * dot_h_n - dot_dpdu_n * dot_h_dndv,
+                dh_du.dot(t) - d1.dpdv().dot(d1.dndu()) * dot_h_n - dot_dpdv_n * dot_h_dndu,
+                dh_dv.dot(t) - d1.dpdv().dot(d1.dndv()) * dot_h_n - dot_dpdv_n * dot_h_dndv
+            );
+
+            // Derivative of specular constraint w.r.t. x2
+            dh_du = (d2.dpdu() - wo * wo.dot(d2.dpdu())) * ilo;
+            dh_dv = (d2.dpdv() - wo * wo.dot(d2.dpdv())) * ilo;
+            dh_du = dh_du - h * dh_du.dot(h);
+            dh_dv = dh_dv - h * dh_dv.dot(h);
+            if(!sample.isReflection()){
+                dh_du = dh_du * -1.0;
+                dh_dv = dh_dv * -1.0;
+            }
+            Matrix2 dc1_dx2(
+                dh_du.dot(s), dh_dv.dot(s),
+                dh_du.dot(t), dh_dv.dot(t)
+            );
+
+
+            // Invert single 2x2 matrix
+            real determinant = dc1_dx1.determinant();
+            if(std::abs(determinant) < kMinDeterminant){
+                return 0.0;
+            }
+            Matrix2 inv_dc1_dx1 = dc1_dx1.inverse();
+            real dx1_dx2 = std::abs((inv_dc1_dx1 * dc1_dx2).determinant());
+
+            // Unfortunately, these geometric terms are very unstable, so to avoid
+            // severe variance we need to clamp here.
+            dx1_dx2 = std::min(dx1_dx2, real(1.0));
+
+            Vector3 d = x0.position() - x1.position();
+            real invR2 = 1.0 / d.lengthSquared();
+            d = d * std::sqrt(invR2);
+
+            real dw0_dx1 = std::abs(d.dot(x1.geometryNormal())) * invR2;
+            real G = dw0_dx1 * dx1_dx2;
+            return G;
         }
 
 

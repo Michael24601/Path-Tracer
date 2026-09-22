@@ -8,6 +8,7 @@
 #include "smsSample.hpp"
 #include "smsUtil.hpp"
 #include "../intersection/areaSample.hpp"
+#include "../light/lightSample.hpp"
 
 namespace pathtracer{
 
@@ -29,15 +30,22 @@ namespace pathtracer{
         // Maximum numbers of allowed iterations for the newton solver
         int m_maxIterations;
 
+        // Maximum trials allowed to compute inverse probability
+        int m_maxTrials;
+
+        // The threshold for two samples being the same
+        real m_threshold;
+
         // The threshold for checking if the specular constraint is met.
         real m_epsilon;
 
     public:
 
 
-        SpecularManifoldSampling(const Scene* scene, int maxIterations = 20,
-            real epsilon = 1e-5) : m_epsilon{epsilon},
-            m_maxIterations{maxIterations}{
+        SpecularManifoldSampling(const Scene* scene, int maxIterations = 30,
+            int maxTrials = 100, real epsilon = 1e-5, real threshold = 1e-4) : 
+            m_epsilon{epsilon}, m_maxIterations{maxIterations}, 
+            m_maxTrials{maxTrials}, m_threshold{threshold}{
 
             for(int i = 0; i < scene->instanceCount(); i++){
 
@@ -49,6 +57,81 @@ namespace pathtracer{
                     m_bsdfs.push_back(bsdf);
                 }
             }
+        }
+
+
+        // Returns the outgoing radiance from x0, after connecting
+        // x0 to a specular point x1, connected to x2 on the light, 
+        // satisfying the specular constraint.
+        // The wo pointing away from x0 to the previous point is also sent.
+        Vector3 sample(const SurfacePoint& causticPoint, 
+            const LightSample& lightPoint, const Vector3& wo,
+            real lightSelectionPdf, const Scene* scene){
+
+            // First we loop over all shapes and search until we find
+            // a shape with a valid SMS sample.
+            for(int i = 0; i < m_specularInstances.size(); i++){
+
+                SmsSample sample = samplePath(causticPoint.position(), 
+                    m_specularInstances[i], m_bsdfs[i], 
+                    lightPoint.position(), scene);
+
+                // If not valid, we continue to next shape
+                if(!sample.isConverged()){
+                    continue;
+                }
+
+                // We know x0 to x1 is visible (samplePath checks),
+                // but now we check x1 to x2.
+                Vector3 dir = (lightPoint.position() - sample.finalPoint().position()).normalized();
+                bool visible = scene->visibility(sample.finalPoint().position(), lightPoint.position());
+
+                if(!visible){
+                    continue;
+                }
+
+
+                // If all is valid, we can calculate the path contribution.
+                int counter = 0;
+                real threshold = m_threshold * m_threshold;
+                bool found = false;
+                while(counter < m_maxTrials){
+
+                    counter++;
+                    
+                    SmsSample newSample = samplePath(causticPoint.position(), 
+                    m_specularInstances[i], m_bsdfs[i], 
+                    lightPoint.position(), scene);
+
+                    if(newSample.isConverged() && (newSample.finalPoint().position()
+                        - sample.finalPoint().position()).lengthSquared() < threshold){
+                        found = true;
+                        break;
+                    }
+                }
+
+                // Failure
+                if(!found){
+                    continue;
+                }
+
+                // Otherwise we can compute the probability of sampling
+                // x1.
+                real invProbability = 1.0 / counter;
+
+                // Then we can evaluate the path contribution
+                // which includes the bsdf at x0 and x1, the cosine terms,
+                // the pdf for sampling x2... all except the pdf of x1.
+                Vector3 weight = evaluatePathContribution(causticPoint, 
+                    lightPoint, sample, m_bsdfs[i], wo, lightSelectionPdf, scene);
+                
+                weight = weight * invProbability;
+                return weight;
+            }
+
+            // If we get here, it is a failure, and we return 0.0
+            return Vector3(0.0);
+
         }
 
 
@@ -88,8 +171,6 @@ namespace pathtracer{
             // and return false.
             Vector3 dir = (sample.position() - causticPoint);
 
-            LOG_INFO(dir.toString());
-
             real distance = dir.length();
             dir = dir / distance;
 
@@ -97,7 +178,7 @@ namespace pathtracer{
             Intersection it = scene->intersect(ray);
 
             if(!it || it.t() < distance - 2 * SHADOW_EPSILON || it.instance() != specular){
-                return SmsSample(sample.position(), sample.position(), false);
+                return SmsSample(sample, sample, Vector3(0.0), 1.0, true, false);
             }
 
             // Otherwise we use the newton solver
@@ -125,14 +206,11 @@ namespace pathtracer{
             real eta = bsdf->eta(wo, seedIt.uv());
             Vector3 halfVector = SmsUtil::halfVector(wo, seedIt, wi, eta, reflection);
             Vector2 c = SmsUtil::specularConstraint(seedIt, halfVector);
-            
-            LOG_INFO("Sample: " + seedIt.position().toString());
-            LOG_INFO("C(x): " + c.toString());
 
             // First we check if the point satisfies the constraints.
             // If so no need to run the solver.
             if(c.lengthSquared() < threshold){
-                return SmsSample(seedIt.position(), seedIt.position(), true);
+                return SmsSample(seedIt, seedIt, halfVector, eta, reflection, true);
             }
 
             // Initially the sample is just the seed.
@@ -162,11 +240,9 @@ namespace pathtracer{
                 Ray ray(x0 + direction * SHADOW_EPSILON, direction);
                 Intersection nextIt = scene->intersect(ray);
 
-                LOG_INFO("Sample: " + nextIt.position().toString());
-
                 // If occluded or leaves scene
-                if(!nextIt || nextIt.t() < distance - SHADOW_EPSILON){
-                    return SmsSample(seedIt.position(), nextIt.position(), false);
+                if(!nextIt || nextIt.t() < distance - SHADOW_EPSILON || nextIt.instance() != seedIt.instance()){
+                    return SmsSample(seedIt, nextIt, halfVector, eta, reflection, false);
                 }
 
                 // Otherwise we check if constraints are met.
@@ -181,12 +257,9 @@ namespace pathtracer{
 
                 c = SmsUtil::specularConstraint(nextIt, halfVector);
 
-                LOG_INFO("C(x): " + c.toString());
-                LOG_INFO("C(x).length^2: " + std::to_string(c.lengthSquared()));
-
                 // If they are, we return a success
                 if(c.lengthSquared() < threshold){
-                    return SmsSample(seedIt.position(), nextIt.position(), true);
+                    return SmsSample(seedIt, nextIt, halfVector, eta, reflection, true);
                 }
 
                 // Otherwise we repeat
@@ -196,7 +269,63 @@ namespace pathtracer{
             }
 
             // Failure
-            return SmsSample(seedIt.position(), finalIt.position(), false);
+            return SmsSample(seedIt, finalIt, halfVector, eta, reflection, false);
+        }
+
+
+        // Returns the ougoing contribution from x0 after it samples
+        // x1 and x2 on the light. This will include all weight terms
+        // except for the pdf at x1, which is computed outside
+        // (since it can fail, so the main function handles it).
+        static Vector3 evaluatePathContribution(
+            const SurfacePoint& causticPoint, const LightSample& lightPoint, 
+            const SmsSample& sample, const SpecularBsdf* bsdf, 
+            const Vector3& wo, real lightSelectionPdf, const Scene* scene){
+
+            Vector3 wi = (sample.finalPoint().position() - causticPoint.position()).normalized();
+            
+            // First we compute bsdf at x0.
+            BsdfSample s0 = causticPoint.evaluateBsdf(wo, wi);
+            // No need to include the pdf since accounted for.
+            Vector3 s0Weight = s0.bsdf() * s0.cosine();
+
+            // Same for the bsdf at the specular point. However, note that
+            // the bsdf at the specular can't be evaluated since it is
+            // a delta distribution, so we instead use specular specific 
+            // functions.
+            Vector3 s1Weight;
+            if(sample.isReflection()){
+                // This is wo from x1 to x0
+                Vector3 secondWo = -wi;
+                secondWo = sample.finalPoint().shadingFrame().inverseTransformDirection(secondWo);
+                // This expects wi in local coordinates.
+                // It returns the bsdf * cosine result (the pdf is delta so
+                // it isn't included by default.)
+                s1Weight = bsdf->evaluateReflection(secondWo, sample.finalPoint().uv());
+            }
+            else{
+                Vector3 secondWo = -wi;
+                secondWo = sample.finalPoint().shadingFrame().inverseTransformDirection(secondWo);
+                s1Weight = bsdf->evaluateRefraction(secondWo, sample.finalPoint().uv());
+            }
+
+            // Next up, we need the jacobian
+
+            SurfaceDifferentials d1 = sample.finalPoint().instance()
+                ->computeDifferentials(sample.finalPoint());
+
+            // The other one, at a light
+            SurfaceDifferentials d2 = lightPoint.caster()->computeDifferentials(lightPoint);
+
+            Vector3 jacobian = SmsUtil::geometricTerm(causticPoint, sample, lightPoint, d1, d2);
+
+            // And finally, we need the light sample contribution
+            // and its pdf in solid angles.
+            Vector3 lightContribution = lightPoint.radiance() / 
+                (lightPoint.pdf() * lightSelectionPdf);
+
+            return lightContribution * s1Weight * s0Weight * jacobian;
+            
         }
 
 

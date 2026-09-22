@@ -53,7 +53,7 @@ namespace pathtracer{
             Vector3 radiance = s.evaluateEmission(-wi);
 
             LightSample sample(wi, radiance, s.position(), 
-                solidAnglePdf, dist);
+                solidAnglePdf, dist, this, s.triangleIndex());
 
             return sample;
         }
@@ -77,7 +77,15 @@ namespace pathtracer{
             Vector3 radiance = s.evaluateEmission(-wi);
 
             return LightSample(wi, radiance, s.position(), 
-                solidAnglePdf, dist);
+                solidAnglePdf, dist, this, s.triangleIndex());
+        }
+
+
+        SurfaceDifferentials computeDifferentials(const LightSample& s) const override{
+            // First we get the area sample for s
+            SurfaceSample sample(s.position(), s.triangleIndex());
+            AreaSample lightSample = m_instance->evaluateAreaSample(sample);
+            return m_instance->computeDifferentials(lightSample);
         }
 
 

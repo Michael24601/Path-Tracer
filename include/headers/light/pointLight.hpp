@@ -34,13 +34,13 @@ namespace pathtracer{
             real pdf = 1.0;
 
             // The power radiates in a sphere, so.
-            real dist = (origin - m_position).length();
+            real dist = (m_position - origin).length();
             real distSquared = dist * dist;
             Vector3 radiance = m_power * (1.0 / (4 * PI * distSquared));
 
             Vector3 wi = (m_position - origin).normalized();
 
-            return LightSample(wi, radiance, m_position, pdf, dist);
+            return LightSample(wi, radiance, m_position, pdf, dist, this);
         }
 
 
@@ -49,6 +49,22 @@ namespace pathtracer{
             
             // Non intersectable light
             return LightSample::INVALID;
+        }
+
+
+        SurfaceDifferentials computeDifferentials(const LightSample& s) const override{
+            Vector3 n = s.wi();
+            Vector3 tangent;
+            if (std::abs(n.x()) > std::abs(n.z())){
+                tangent = Vector3(-n.y(), n.x(), 0.0).normalized();
+            }
+            else{
+                tangent = Vector3(0.0, -n.z(), n.y()).normalized();
+            }
+            Vector3 bitangent = n.cross(tangent);
+
+            return SurfaceDifferentials(tangent, bitangent, 
+                Vector3(0.0), Vector3(0.0));
         }
 
 

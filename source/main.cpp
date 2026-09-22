@@ -11,8 +11,6 @@ std::atomic<long long> PathTracerGuided::n2 = 0;
 
 int main(int argc, char* argv[]) {
 
-    /*
-
     if(argc != 3) {
         LOG_ERROR("Invalid arguments");
         return 1;
@@ -40,9 +38,7 @@ int main(int argc, char* argv[]) {
     std::cout << PathTracerGuided::n1.load(std::memory_order_relaxed) 
         << " " << PathTracerGuided::n2.load(std::memory_order_relaxed) << "\n";
 
-
-    */
-
+    /*
 
     Sphere* s = new Sphere();
     MirrorBsdf* bsdf = new MirrorBsdf(0.95);
@@ -84,6 +80,7 @@ int main(int argc, char* argv[]) {
 
     }
     
+    */
     
     return 0;
 }

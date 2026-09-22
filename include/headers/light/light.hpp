@@ -6,8 +6,11 @@
 #include "../core/transform.hpp"
 #include "../math/vector2.hpp"
 #include "lightSample.hpp"
+#include "../intersection/surfaceDifferentials.hpp"
 
 namespace pathtracer{
+
+    class Instance;
 
     class Light{
 
@@ -37,6 +40,10 @@ namespace pathtracer{
         // an area light, and if this area light refers to an
         // instance present in the scene.)
         virtual bool isIntersectable() const = 0;
+
+
+        // Computes surface differentials
+        virtual SurfaceDifferentials computeDifferentials(const LightSample&) const = 0; 
     
     };
 
