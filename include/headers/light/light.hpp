@@ -42,6 +42,12 @@ namespace pathtracer{
         virtual bool isIntersectable() const = 0;
 
 
+        // This is true for an area light. Note that it may not be 
+        // intersectable since the instance may not be visible aside
+        // from being a light.
+        virtual bool hasArea() const = 0;
+
+
         // Computes surface differentials
         virtual SurfaceDifferentials computeDifferentials(const LightSample&) const = 0; 
     

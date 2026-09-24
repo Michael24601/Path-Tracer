@@ -25,6 +25,35 @@ namespace pathtracer{
         bool m_shadingNormals;
         bool m_uvCoordinates;
 
+
+
+        Vector3 computeDpdu() const {
+            Vector3 e1 = v1 - v0;
+            Vector3 e2 = v2 - v0;
+
+            Vector2 duv1, duv2;
+
+            if (m_uvCoordinates) {
+                duv1 = uv1 - uv0;
+                duv2 = uv2 - uv0;
+            } else {
+                duv1 = Vector2(1, 0);
+                duv2 = Vector2(0, 1);
+            }
+
+            real det =
+                duv1.x() * duv2.y() -
+                duv2.x() * duv1.y();
+
+            if (std::abs(det) < EPSILON)
+                return e1;
+
+            real invDet = 1.0 / det;
+
+            return (e1 * duv2.y() - e2 * duv1.y()) * invDet;
+        }
+
+
         
         // Given a ray and a distance t along it, sets the intersection
         // object. The uv are the barycentric coordinates of the
@@ -38,13 +67,13 @@ namespace pathtracer{
             // unless no vertex normals are given.
             Vector3 geometryNormal = ((v1-v0).cross(v2-v0)).normalized();
             Vector3 shadingNormal = m_shadingNormals 
-                ? Barycentric::interpolate(n0, n1, n2, barycentric)
+                ? Barycentric::interpolate(n0, n1, n2, barycentric).normalized()
                 : geometryNormal;
 
             // Tangent calculation
-            Vector3 tangent = (v1 - v0).normalized();
-            tangent = (tangent - shadingNormal * 
-                shadingNormal.dot(tangent)).normalized();
+            Vector3 dpdu = computeDpdu();
+            Vector3 tangent =
+                (dpdu - shadingNormal * shadingNormal.dot(dpdu)).normalized();
 
             
             // The uv (texture) coordinates can be specified, otherwise
@@ -233,15 +262,13 @@ namespace pathtracer{
 
         SurfaceDifferentials computeDifferentials(
             const Vector3& position, const Vector3& shadingNormal,
-            const Vector2& uv, int triangleIndex) const override{
-
-            // dpdu, dpdv, dndu, dndv are constant across the whole (flat)
-            // triangle.
+            const Vector2& uv, int triangleIndex) const override {
 
             Vector3 e1 = v1 - v0;
             Vector3 e2 = v2 - v0;
 
             Vector2 duv1, duv2;
+
             if (m_uvCoordinates) {
                 duv1 = uv1 - uv0;
                 duv2 = uv2 - uv0;
@@ -251,29 +278,143 @@ namespace pathtracer{
                 duv2 = Vector2(0, 1);
             }
 
-            real det = duv1.x() * duv2.y() - duv2.x() * duv1.y();
+            real det =
+                duv1.x() * duv2.y() -
+                duv1.y() * duv2.x();
 
             Vector3 dpdu, dpdv;
+
             if (std::abs(det) < EPSILON) {
                 dpdu = e1;
                 dpdv = e2;
             } else {
                 real invDet = 1.0 / det;
-                dpdu = (e1 * duv2.y() - e2 * duv1.y()) * invDet;
-                dpdv = (e2 * duv1.x() - e1 * duv2.x()) * invDet;
+
+                dpdu =
+                    (e1 * duv2.y() -
+                    e2 * duv1.y()) * invDet;
+
+                dpdv =
+                    (e2 * duv1.x() -
+                    e1 * duv2.x()) * invDet;
             }
 
-            Vector3 dndu(0.0), dndv(0.0);
+            Vector3 dndu(0.0);
+            Vector3 dndv(0.0);
+
             if (m_shadingNormals && std::abs(det) >= EPSILON) {
+
+                // Derivative of the unnormalized interpolated normal.
                 Vector3 dn1 = n1 - n0;
                 Vector3 dn2 = n2 - n0;
+
                 real invDet = 1.0 / det;
-                dndu = (dn1 * duv2.y() - dn2 * duv1.y()) * invDet;
-                dndv = (dn2 * duv1.x() - dn1 * duv2.x()) * invDet;
+
+                Vector3 dnduLinear =
+                    (dn1 * duv2.y() -
+                    dn2 * duv1.y()) * invDet;
+
+                Vector3 dndvLinear =
+                    (dn2 * duv1.x() -
+                    dn1 * duv2.x()) * invDet;
+
+
+                // Recover barycentric coordinates from the texture UV.
+                real b1;
+                real b2;
+
+                if (m_uvCoordinates) {
+
+                    Vector2 relative = uv - uv0;
+
+                    b1 =
+                        (relative.x() * duv2.y() -
+                        relative.y() * duv2.x()) * invDet;
+
+                    b2 =
+                        (duv1.x() * relative.y() -
+                        duv1.y() * relative.x()) * invDet;
+
+                } else {
+
+                    // In the barycentric fallback, uv directly stores
+                    // (b1, b2).
+                    b1 = uv.x();
+                    b2 = uv.y();
+                }
+
+                real b0 = 1.0 - b1 - b2;
+
+                // Unnormalized interpolated shading normal.
+                Vector3 interpolatedNormal =
+                    n0 * b0 +
+                    n1 * b1 +
+                    n2 * b2;
+
+                real normalLength = interpolatedNormal.length();
+
+                if (normalLength > EPSILON) {
+
+                    // Derivative of a normalized vector:
+                    //
+                    // dn = (dN - n(n . dN)) / |N|
+                    //
+                    dndu =
+                        (dnduLinear -
+                        shadingNormal *
+                        shadingNormal.dot(dnduLinear))
+                        / normalLength;
+
+                    dndv =
+                        (dndvLinear -
+                        shadingNormal *
+                        shadingNormal.dot(dndvLinear))
+                        / normalLength;
+                }
             }
 
-            return SurfaceDifferentials(dpdu, dpdv, dndu, dndv);
+            Vector3 s = (dpdu - shadingNormal * (shadingNormal.dot(dpdu))).normalized();
+
+            return SurfaceDifferentials(
+                dpdu,
+                dpdv,
+                dndu,
+                dndv,
+                s
+            );
         }
+
+
+        Vector3 getPosition(const Vector2& uv, int triangleIndex) const override{
+
+            if (!m_uvCoordinates) {
+                // Fallback
+                return Barycentric::interpolate(v0, v1, v2, uv);
+            }
+
+            // Inverts UV coordinates
+            Vector2 duv1 = uv1 - uv0;
+            Vector2 duv2 = uv2 - uv0;
+            Vector2 relative = uv - uv0;
+
+            real det = duv1.x() * duv2.y() -
+                duv2.x() * duv1.y();
+
+            assert(std::abs(det) >= EPSILON && "Degenerate UV mapping");
+
+            real invDet = 1.0 / det;
+
+            real b1 = (relative.x() * duv2.y() -
+                relative.y() * duv2.x()) * invDet;
+
+            real b2 = (duv1.x() * relative.y() -
+                duv1.y() * relative.x()) * invDet;
+
+            real b0 = 1.0 - b1 - b2;
+
+            return v0 * b0 + v1 * b1 + v2 * b2;
+        }
+
 
     };
 

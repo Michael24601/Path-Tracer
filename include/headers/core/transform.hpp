@@ -160,7 +160,8 @@ namespace pathtracer{
 
         // Transforms surface differentials
         SurfaceDifferentials transformDifferentials(
-            const SurfaceDifferentials& d) const;
+            const SurfaceDifferentials& d, const Vector3& localNormal,
+            const Vector3& worldNormal) const;
 
 
         // Returns the determinant of the transform matrix

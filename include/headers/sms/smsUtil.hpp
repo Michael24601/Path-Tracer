@@ -43,6 +43,9 @@ namespace pathtracer{
 
         // Returns the halfvector (depends on whether we are reflecting),
         // or refracting. 
+        // Note that this is NOT normalized. But we want to differentiate
+        // the normalized one. We don't normalize it because we need its
+        // length later.
         static Vector3 halfVector(const Vector3& wo, 
             const SurfacePoint& p, const Vector3& wi,
             real eta, bool reflection) {
@@ -50,11 +53,11 @@ namespace pathtracer{
             // Assuming wi is the one pointing towards the light
             Vector3 halfVector;
             if(reflection){
-                halfVector = (wo + wi).normalized();
+                halfVector = (wo + wi);
             }
             else{
                 // This eta is eta_out / eta_in
-                halfVector = -(wo * eta + wi).normalized();
+                halfVector = -(wo * eta + wi);
             }
 
             return halfVector;
@@ -71,16 +74,19 @@ namespace pathtracer{
         // Again, wi points towards the light.
         // The bsdf is sent to avoid having to dynamically downcast it.
         static Vector2 specularConstraint(const SurfacePoint& p,
-            const Vector3& halfVector){
+            const Vector3& halfVector, const SurfaceDifferentials& d){
 
             // The constraint is T(xi)^T h(x1, x1x0, x2x0), where h
             // depends on whether it is refracting or reflecting.
 
-            // Tangents
-            Vector3 t0 = p.shadingFrame().getMatrix().column(0);
-            Vector3 t1 = p.shadingFrame().getMatrix().column(1);
+            // Must be normalized;
+            Vector3 h = halfVector.normalized();
 
-            return Vector2(t0.dot(halfVector), t1.dot(halfVector));
+            // Tangents
+            Vector3 t0 = d.s();
+            Vector3 t1 = d.t(p.shadingNormal());
+
+            return Vector2(t0.dot(h), t1.dot(h));
         }
 
 
@@ -89,13 +95,12 @@ namespace pathtracer{
         // It also needs the normal, tangent, and bitangent as inputs.
         static FrameDifferentials computeFrameDifferentials(
             const Vector3& normal,
-            const Vector3& s,
-            const Vector3& t,
             const SurfaceDifferentials& d) {
 
             Vector3 dpdu = d.dpdu();
             Vector3 dndu = d.dndu();
             Vector3 dndv = d.dndv();
+            Vector3 s = d.s();
 
             Vector3 ds_du =
                 (-dndu * normal.dot(dpdu) -
@@ -121,7 +126,7 @@ namespace pathtracer{
             const Vector3& x0, const Vector3& x2,
             const SurfacePoint& p,
             const Vector3& wo, const Vector3& wi,
-            const Vector3& h,   // The halfvector
+            const Vector3& halfVector,   // The halfvector
             const SurfaceDifferentials& s,
             bool reflection, real eta) {
 
@@ -131,38 +136,68 @@ namespace pathtracer{
             real ilo = 1.0 / (x0 - p.position()).length();
             real ili = 1.0 / (x2 - p.position()).length();
 
-            Vector3 dh_du;
-            Vector3 dh_dv;
+            real ilh = 1.0 / halfVector.length();
+            Vector3 h = halfVector * ilh;
 
-            if (reflection) {
-                dh_du =
-                    -dpdu * (ili + ilo)
-                    + wi * (wi.dot(dpdu) * ili)
-                    + wo * (wo.dot(dpdu) * ilo);
+            ilo *= ilh;
+            ili *= ilh;
 
-                dh_dv =
-                    -dpdv * (ili + ilo)
-                    + wi * (wi.dot(dpdv) * ili)
-                    + wo * (wo.dot(dpdv) * ilo);
+            // We have to normalize them by the length of the halfvector
+
+            if (!reflection) {
+                ilo = ilo * eta;
             }
-            else {
-                // Not sure if eta multiplies ilo or ili
-                dh_du =
-                    -dpdu * (ili + ilo * eta)
-                    + wi * (wi.dot(dpdu) * ili)
-                    + wo * (wo.dot(dpdu) * eta * ilo);
 
-                dh_dv =
-                    -dpdv * (ili + ilo * eta)
-                    + wi * (wi.dot(dpdv) * ili)
-                    + wo * (wo.dot(dpdv) * eta * ilo);
-            }
+            Vector3 dh_du = -dpdu * (ili + ilo)
+                + wi * (wi.dot(dpdu) * ili)
+                + wo * (wo.dot(dpdu) * ilo);
+
+            Vector3 dh_dv = -dpdv * (ili + ilo)
+                + wi * (wi.dot(dpdv) * ili)
+                + wo * (wo.dot(dpdv) * ilo);
+
 
             dh_du = dh_du - h * h.dot(dh_du);
             dh_dv = dh_dv - h * h.dot(dh_dv);
 
+            if (!reflection) {
+                dh_du = -dh_du;
+                dh_dv = -dh_dv;
+            }
+            
             return HalfVectorDifferentials(dh_du, dh_dv);
 
+        }
+
+
+        Matrix2 computeConstraintJacobian(
+            const Vector3& x0,
+            const Vector3& x2,
+            const SurfacePoint& p,
+            const Vector3& wo,
+            const Vector3& wi,
+            const Vector3& halfVector,
+            const SurfaceDifferentials& d,
+            bool reflection,
+            real eta)
+        {
+            Vector3 s = d.s();
+            Vector3 t = d.t(p.shadingNormal());
+            Vector3 h = halfVector.normalized();
+
+            FrameDifferentials f =
+                computeFrameDifferentials(p.shadingNormal(), d);
+
+            HalfVectorDifferentials hd =
+                computeHalfVectorDifferentials(
+                    x0, x2, p, wo, wi, halfVector, d, reflection, eta);
+
+            return Matrix2(
+                f.dsdu.dot(h) + s.dot(hd.dhdu),
+                f.dsdv.dot(h) + s.dot(hd.dhdv),
+                f.dtdu.dot(h) + t.dot(hd.dhdu),
+                f.dtdv.dot(h) + t.dot(hd.dhdv)
+            );
         }
 
 
@@ -176,26 +211,33 @@ namespace pathtracer{
             const SurfaceDifferentials& d,
             bool reflection, real eta){
 
-            Vector3 s = p.shadingFrame().getMatrix().column(0);
-            Vector3 t = p.shadingFrame().getMatrix().column(1);
+            Vector3 s = d.s();
+            Vector3 t = d.t(p.shadingNormal());
+            Vector3 h = halfVector.normalized();
+            
             FrameDifferentials f = computeFrameDifferentials(
-                p.shadingNormal(), s, t, d);
-            HalfVectorDifferentials h = 
+                p.shadingNormal(), d);
+            HalfVectorDifferentials hd = 
                 computeHalfVectorDifferentials(x0, x2, p, wo, wi, 
-                    halfVector, d, reflection, eta);
+                halfVector, d, reflection, eta);
 
-            Matrix2 dC_dX(f.dsdu.dot(halfVector) + s.dot(h.dhdu),
-                f.dsdv.dot(halfVector) + s.dot(h.dhdv),
-                f.dtdu.dot(halfVector) + t.dot(h.dhdu),
-                f.dtdv.dot(halfVector) + t.dot(h.dhdv));
+            Matrix2 dC_dX(
+                f.dsdu.dot(h) + s.dot(hd.dhdu),
+                f.dsdv.dot(h) + s.dot(hd.dhdv),
+                f.dtdu.dot(h) + t.dot(hd.dhdu),
+                f.dtdv.dot(h) + t.dot(hd.dhdv)
+            );
 
-            Vector2 C = specularConstraint(p, halfVector);
-            return dC_dX.inverse() * C;
+            Vector2 C = specularConstraint(p, halfVector, d);
+
+            Vector2 dx = dC_dX.inverse() * C;
+
+            return dx;
         }
 
 
 
-        static Vector3 geometricTerm(const SurfacePoint& x0,
+        static real geometricTerm(const SurfacePoint& x0,
             const SmsSample& sample, const LightSample& x2,
             const SurfaceDifferentials d1, const SurfaceDifferentials& d2) {
 
@@ -204,6 +246,16 @@ namespace pathtracer{
 
             // The specular point
             const SurfacePoint& x1 = sample.finalPoint();
+
+
+            /*
+            LOG_INFO("d1.dpdu=" + std::to_string(d1.dpdu().length()) +
+                    " d1.dpdv=" + std::to_string(d1.dpdv().length()) +
+                    " d2.dpdu=" + std::to_string(d2.dpdu().length()) +
+                    " d2.dpdv=" + std::to_string(d2.dpdv().length()) +
+                    " d1.dndu=" + std::to_string(d1.dndu().length()) +
+                    " d1.dndv=" + std::to_string(d1.dndv().length()));
+            */
 
             
             // Note that wi and wo are flipped in this function, so we multiply
@@ -230,23 +282,16 @@ namespace pathtracer{
  
             // Setup generalized half-vector
             real eta = sample.eta();
+            real len = sample.halfVector().length();
+            real ilh = 1.0 / len;
 
             // Even though it is stored, we recompute it without normalization
-            Vector3 halfVector;
-            if(sample.isReflection()){
-                halfVector = (wo + wi);
-            }
-            else{
-                // This eta is eta_out / eta_in
-                halfVector = (wo + wi * eta);
-            }
-            Vector3 h = halfVector.normalized();
+            Vector3 h = sample.halfVector() * ilh;
             if(!sample.isReflection()) h = h * -1.0;
 
-            // Notice eta multiplies ili, not ilo, since convention is flipped
-            real ilh = 1.0 / halfVector.length();
             ilo *= ilh;
-            ili *= eta * ilh;
+            // Notice eta multiplies ili not ilo
+            ili *= ilh * eta;
 
             // Local shading tangent frame
             real dot_dpdu_n = d1.dpdu().dot(x1.shadingNormal());
@@ -310,6 +355,15 @@ namespace pathtracer{
 
             real dw0_dx1 = std::abs(d.dot(x1.geometryNormal())) * invR2;
             real G = dw0_dx1 * dx1_dx2;
+
+            /*
+            LOG_INFO("dx1_dx2=" + std::to_string(dx1_dx2) +
+            " dw0_dx1=" + std::to_string(dw0_dx1) +
+            " determinant=" + std::to_string(determinant) +
+            " invR2=" + std::to_string(invR2) +
+            " G=" + std::to_string(G));
+            */
+
             return G;
         }
 

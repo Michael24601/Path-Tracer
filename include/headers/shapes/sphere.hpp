@@ -171,11 +171,26 @@ namespace pathtracer{
                 dpdv = Vector3(0, 0, 0);
             }
 
+            Vector3 s = (dpdu - shadingNormal * (shadingNormal.dot(dpdu))).normalized();
+
             // n == p, so the normal derivatives equal the position derivatives
-            return SurfaceDifferentials(dpdu, dpdv, dpdu, dpdv);
+            return SurfaceDifferentials(dpdu, dpdv, dpdu, dpdv, s);
             
         }
 
+
+        Vector3 getPosition(const Vector2& uv, int triangleIndex) const override {
+            real phi = 2.0 * PI * uv.x();
+            real theta = PI * uv.y();
+
+            real sinTheta = std::sin(theta);
+
+            return Vector3(
+                sinTheta * std::cos(phi),
+                sinTheta * std::sin(phi),
+                std::cos(theta)
+            );
+        }
 
     };
 }

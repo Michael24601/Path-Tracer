@@ -7,6 +7,7 @@
 #include "../math/vector2.hpp"
 #include "../core/instance.hpp"
 #include "../bsdf/bsdfSample.hpp"
+#include "../logger.hpp"
 
 namespace pathtracer{
 

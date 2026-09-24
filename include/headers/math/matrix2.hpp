@@ -50,8 +50,8 @@ namespace pathtracer{
             real c = std::cos(angle);
             real s = std::sin(angle);
             return Matrix2(
-                Vector2(c, -s),
-                Vector2(s, c)
+                Vector2(c, s),
+                Vector2(-s, c)
             );
         }
 

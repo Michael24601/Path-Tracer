@@ -64,6 +64,11 @@ namespace pathtracer{
         virtual AreaSample evaluateAreaSample(const SurfaceSample&) const = 0;
 
 
+        // Returns a position given the uv coordinates and optionally
+        // the triangle index.
+        virtual Vector3 getPosition(const Vector2& uv, int triangleIndex) const = 0;
+
+
         // Expects local space position, normal, and uv coordinates
         virtual SurfaceDifferentials computeDifferentials(
             const Vector3& position, const Vector3& shadingNormal,

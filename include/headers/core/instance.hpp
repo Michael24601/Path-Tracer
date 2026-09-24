@@ -148,6 +148,12 @@ namespace pathtracer{
         // Computes the differential info on the surface of the shape
         // (gets surface point in global coordinates)
         SurfaceDifferentials computeDifferentials(const SurfacePoint&) const;
+
+
+        Vector3 getPosition(const Vector2& uv, int triangleIndex) const {
+            Vector3 position = m_shape->getPosition(uv, triangleIndex);
+            return m_transform.transform(position);
+        }
         
     };
 

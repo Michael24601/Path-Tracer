@@ -17,7 +17,8 @@ namespace pathtracer{
         SurfacePoint m_seedPoint;
         SurfacePoint m_finalPoint;
 
-        // We also keep track of eta and half vector
+        // We also keep track of eta and half vector.
+        // The halfvector is not normalized.
         Vector3 m_halfVector;
         real m_eta;
 

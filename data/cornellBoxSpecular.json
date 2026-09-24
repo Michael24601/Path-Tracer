@@ -96,20 +96,9 @@
                     0.0, 0.0, 1.0, 0.0
                 ],
                 "vertex-data":{ 
-                    "format": "raw-array",
+                    "format": "obj",
                     "parameters":{
-                        "vertices": [
-                            [
-                                [1.0, 1.59, -1.04],
-                                [1.0, 1.59, 0.99],
-                                [-1.02, 1.59, 0.99]
-                            ],
-                            [
-                                [-1.02, 1.59, 0.99],
-                                [-1.02, 1.59, -1.04],
-                                [1.0, 1.59, -1.04]
-                            ]
-                        ]
+                        "file-name": "data/models/specular/ceiling.obj"
                     }
                 }
             }
@@ -125,20 +114,27 @@
                     0.0, 0.0, 1.0, 0.0
                 ],
                 "vertex-data":{ 
-                    "format": "raw-array",
+                    "format": "obj",
                     "parameters":{
-                        "vertices": [
-                            [
-                                [1.0, 0.0, -1.04],
-                                [-0.99, 0.0, -1.04],
-                                [-1.01, 0.0, 0.99]
-                            ],
-                            [
-                                [-1.01, 0.0, 0.99],
-                                [1.0, 0.0, 0.99],
-                                [1.0, 0.0, -1.04]
-                            ]
-                        ]
+                        "file-name": "data/models/specular/floor.obj"
+                    }
+                }
+            }
+        },
+        {
+            "id": "back-wall",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/specular/backWall.obj"
                     }
                 }
             }
@@ -160,26 +156,15 @@
                     0.0, 0.0, 1.0, 0.0
                 ],
                 "vertex-data":{ 
-                    "format": "raw-array",
+                    "format": "obj",
                     "parameters":{
-                        "vertices": [
-                            [
-                                [0.05426, 1.578, -0.077912],
-                                [0.05426, 1.578, 0.017913],
-                                [-0.06426, 1.578, 0.017913]
-                            ],
-                            [
-                                [-0.06426, 1.578, 0.017913],
-                                [-0.06426, 1.578, -0.077912],
-                                [0.05426, 1.578, -0.077912]
-                            ]
-                        ]
+                        "file-name": "data/models/specular/light.obj"
                     }
                 }
             }
         },
         {
-            "id": "back-wall",
+            "id": "right-wall",
             "type": "mesh",
             "material": "diffuse-white",
             "parameters": {
@@ -189,49 +174,9 @@
                     0.0, 0.0, 1.0, 0.0
                 ],
                 "vertex-data":{ 
-                    "format": "raw-array",
+                    "format": "obj",
                     "parameters":{
-                        "vertices": [
-                            [
-                                [1.0, 1.59, -1.04],
-                                [-1.02, 1.59, -1.04],
-                                [-0.99, 0.0, -1.04]
-                            ],
-                            [
-                                [-0.99, 0.0, -1.04],
-                                [1.0, 0.0, -1.04],
-                                [1.0, 1.59, -1.04]
-                            ]
-                        ]
-                    }
-                }
-            }
-        },
-        {
-            "id": "right-wall",
-            "type": "mesh",
-            "material": "mirror-bsdf",
-            "parameters": {
-                "transform": [
-                    1.0, 0.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 1.0, 0.0
-                ],
-                "vertex-data":{ 
-                    "format": "raw-array",
-                    "parameters":{
-                        "vertices": [
-                            [
-                                [1.0, 1.59, 0.99],
-                                [1.0, 1.59, -1.04],
-                                [1.0, 0.0, -1.04]
-                            ],
-                            [
-                                [1.0, 0.0, -1.04],
-                                [1.0, 0.0, 0.99],
-                                [1.0, 1.59, 0.99]
-                            ]
-                        ]
+                        "file-name": "data/models/specular/rightWall.obj"
                     }
                 }
             }
@@ -247,20 +192,9 @@
                     0.0, 0.0, 1.0, 0.0
                 ],
                 "vertex-data":{ 
-                    "format": "raw-array",
+                    "format": "obj",
                     "parameters":{
-                        "vertices": [
-                            [
-                                [-1.02, 1.59, -1.04],
-                                [-1.02, 1.59, 0.99],
-                                [-1.01, 0.0, 0.99]
-                            ],
-                            [
-                                [-1.01, 0.0, 0.99],
-                                [-0.99, 0.0, -1.04],
-                                [-1.02, 1.59, -1.04]
-                            ]
-                        ]
+                        "file-name": "data/models/specular/leftWall.obj"
                     }
                 }
             }
@@ -268,7 +202,7 @@
         {
             "id": "mirror-sphere",
             "type": "sphere",
-            "material": "mirror-bsdf",
+            "material": "diffuse-white",
             "parameters": {
                 "transform": [
                     0.3, 0.0, 0.0, -0.4,
@@ -319,12 +253,13 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 412],
-            "sample-count": 100
+            "sample-count": 50
         },
         "integrator": {
-            "type": "path-tracer-nee",
+            "type": "path-tracer-sms",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 100,
+                "render-variable": "dpdv"
             }
         }
     }

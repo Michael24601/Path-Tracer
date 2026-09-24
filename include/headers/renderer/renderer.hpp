@@ -15,12 +15,13 @@ namespace pathtracer{
 
         const Camera* m_camera;
         const Scene* m_scene;
-        Integrator* m_integrator;
         // Width and height in pixels
         int m_width;
         int m_height;
 
     public:
+
+            Integrator* m_integrator;
 
         Renderer(int width, int height, const Camera* camera, 
             const Scene* scene, Integrator* integrator): 

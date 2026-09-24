@@ -42,8 +42,14 @@ namespace pathtracer{
     public:
 
 
-        SpecularManifoldSampling(const Scene* scene, int maxIterations = 30,
-            int maxTrials = 100, real epsilon = 1e-5, real threshold = 1e-4) : 
+        std::atomic<int> m_converged{0};
+        std::atomic<int> m_projectionFailedNoHit{0};
+        std::atomic<int> m_projectionFailedDiffInstance{0};
+        std::atomic<int> m_maxIt{0};
+
+
+        SpecularManifoldSampling(const Scene* scene, int maxIterations = 50,
+            int maxTrials = 99999, real epsilon = 1e-5, real threshold = 1e-4) : 
             m_epsilon{epsilon}, m_maxIterations{maxIterations}, 
             m_maxTrials{maxTrials}, m_threshold{threshold}{
 
@@ -66,7 +72,9 @@ namespace pathtracer{
         // The wo pointing away from x0 to the previous point is also sent.
         Vector3 sample(const SurfacePoint& causticPoint, 
             const LightSample& lightPoint, const Vector3& wo,
-            real lightSelectionPdf, const Scene* scene){
+            real lightSelectionPdf, const Scene* scene, bool& success){
+
+            success = false;
 
             // First we loop over all shapes and search until we find
             // a shape with a valid SMS sample.
@@ -115,9 +123,12 @@ namespace pathtracer{
                     continue;
                 }
 
-                // Otherwise we can compute the probability of sampling
-                // x1.
-                real invProbability = 1.0 / counter;
+                // Otherwise we can compute the probability of sampling x1.
+                // Based on the fact that this a geometric distribution,
+                // the estimate for p is 1 / number of trials until
+                // we get the same converged vertex, which means 1/p
+                // is estimated by the counter.
+                real invProbability = static_cast<real>(counter);
 
                 // Then we can evaluate the path contribution
                 // which includes the bsdf at x0 and x1, the cosine terms,
@@ -126,9 +137,12 @@ namespace pathtracer{
                     lightPoint, sample, m_bsdfs[i], wo, lightSelectionPdf, scene);
                 
                 weight = weight * invProbability;
+
+                success = true;
                 return weight;
             }
 
+            success = false;
             // If we get here, it is a failure, and we return 0.0
             return Vector3(0.0);
 
@@ -188,7 +202,7 @@ namespace pathtracer{
 
 
         SmsSample newtonSolver(const Vector3& x0, 
-            const Intersection& seedIt, const Vector3& x2, 
+            const SurfacePoint& seedIt, const Vector3& x2, 
             const SpecularBsdf* bsdf, const Scene* scene){
 
             // We use the newton solver to converge to a point on the
@@ -203,13 +217,21 @@ namespace pathtracer{
             
             bool reflection = SmsUtil::isReflection(wo, seedIt, wi);
 
-            real eta = bsdf->eta(wo, seedIt.uv());
+            // We need local wo
+            Vector3 localWo = seedIt.shadingFrame().inverseTransformDirection(wo);
+            real eta = bsdf->eta(localWo, seedIt.uv());
+            SurfaceDifferentials d = seedIt.instance()->computeDifferentials(seedIt);
+
+            // Note, not normalized
             Vector3 halfVector = SmsUtil::halfVector(wo, seedIt, wi, eta, reflection);
-            Vector2 c = SmsUtil::specularConstraint(seedIt, halfVector);
+            Vector2 c = SmsUtil::specularConstraint(seedIt, halfVector, d);
+
+            // LOG_INFO("START: " + seedIt.position().toString());
 
             // First we check if the point satisfies the constraints.
             // If so no need to run the solver.
             if(c.lengthSquared() < threshold){
+                ++m_converged;
                 return SmsSample(seedIt, seedIt, halfVector, eta, reflection, true);
             }
 
@@ -220,14 +242,16 @@ namespace pathtracer{
             int k{0};
             while(k < m_maxIterations){
 
+                // LOG_INFO(finalIt.position().toString());
+
                 // First we propose a new position. This position
                 // is on the tangent space of the specular surface at the
                 // previous proposition.
 
-                SurfaceDifferentials d = finalIt.instance()->computeDifferentials(finalIt);
+                d = finalIt.instance()->computeDifferentials(finalIt);
 
                 Vector2 dx = SmsUtil::computeNewtonStep(x0, x2, finalIt,
-                    wo, wi, halfVector, d, reflection, eta) * 0.5;
+                    wo, wi, halfVector, d, reflection, eta);
 
                 // We then offset and ray trace
                 Vector3 proposedPosition = finalIt.position()
@@ -240,8 +264,17 @@ namespace pathtracer{
                 Ray ray(x0 + direction * SHADOW_EPSILON, direction);
                 Intersection nextIt = scene->intersect(ray);
 
-                // If occluded or leaves scene
-                if(!nextIt || nextIt.t() < distance - SHADOW_EPSILON || nextIt.instance() != seedIt.instance()){
+                // Note: we don't check visibility, since the point
+                // is not projected yet (distance mismatch). It is enough to 
+                // check if it is the same instance.
+                if(!nextIt || nextIt.instance() != seedIt.instance()){                    
+                    if(!nextIt){
+                        ++m_projectionFailedNoHit;
+                    }
+                    else{
+                        ++m_projectionFailedDiffInstance;
+                    }
+
                     return SmsSample(seedIt, nextIt, halfVector, eta, reflection, false);
                 }
 
@@ -252,13 +285,18 @@ namespace pathtracer{
                 wi = (x2 - nextIt.position()).normalized();
             
                 reflection = SmsUtil::isReflection(wo, nextIt, wi);
-                eta = bsdf->eta(wo, nextIt.uv());
+                localWo = nextIt.shadingFrame().inverseTransformDirection(wo);
+                eta = bsdf->eta(localWo, nextIt.uv());
                 halfVector = SmsUtil::halfVector(wo, nextIt, wi, eta, reflection);
 
-                c = SmsUtil::specularConstraint(nextIt, halfVector);
+                c = SmsUtil::specularConstraint(nextIt, halfVector, d);
+
+                // LOG_INFO("C: " + std::to_string(c.length()));
 
                 // If they are, we return a success
                 if(c.lengthSquared() < threshold){
+                    ++m_converged;
+                    // LOG_INFO("CONVERGED"+ finalIt.position().toString());
                     return SmsSample(seedIt, nextIt, halfVector, eta, reflection, true);
                 }
 
@@ -268,7 +306,10 @@ namespace pathtracer{
                 k++;
             }
 
+            // LOG_INFO("END NO CONVERGED:" + finalIt.position().toString());
+
             // Failure
+            ++m_maxIt;
             return SmsSample(seedIt, finalIt, halfVector, eta, reflection, false);
         }
 
@@ -317,14 +358,38 @@ namespace pathtracer{
             // The other one, at a light
             SurfaceDifferentials d2 = lightPoint.caster()->computeDifferentials(lightPoint);
 
-            Vector3 jacobian = SmsUtil::geometricTerm(causticPoint, sample, lightPoint, d1, d2);
+            real jacobian = SmsUtil::geometricTerm(causticPoint, sample, lightPoint, d1, d2);
 
-            // And finally, we need the light sample contribution
-            // and its pdf in solid angles.
-            Vector3 lightContribution = lightPoint.radiance() / 
-                (lightPoint.pdf() * lightSelectionPdf);
+            // And finally, we need the light sample contribution, with
+            // respect to the new point.
+            SurfaceSample s{lightPoint.position(), lightPoint.triangleIndex()};
+            LightSample newSample = lightPoint.caster()->evaluateLightSample(
+                sample.finalPoint().position(), s);
+            Vector3 lightContribution = newSample.radiance();
 
-            return lightContribution * s1Weight * s0Weight * jacobian;
+            // For the light pdf, we can use the original pdf of having
+            // sampled the light.
+            real lightPdf = (lightPoint.pdf() * lightSelectionPdf);
+
+            // Since the geometric term already handles solid angle
+            // conversion, we need to undo it.
+            if(lightPoint.caster()->hasArea()){
+                lightPdf *= (lightPoint.cosine() 
+                    / (lightPoint.distance() * lightPoint.distance()));
+            }
+
+            /*
+            std::string s = "s0Weight=" + s0Weight.toString() +
+                " s1Weight=" + s1Weight.toString() +
+                " jacobian=" + std::to_string(jacobian) +
+                " lightRadiance=" + lightPoint.radiance().toString() +
+                " lightPdf=" + std::to_string(lightPdf) +
+                " reflection=" + std::to_string(sample.isReflection()) +
+                " eta=" + std::to_string(sample.eta());
+            LOG_INFO(s);
+            */
+
+            return lightContribution * s1Weight * s0Weight * jacobian / lightPdf;
             
         }
 

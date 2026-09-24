@@ -231,7 +231,7 @@
         
 
     "renderer": {
-        "type": "path-tracer-renderer",
+        "type": "renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
             "sample-count": 30,
@@ -241,10 +241,11 @@
             "spatial-subdivision-c": 10000
         },
         "integrator": {
-            "type": "path-tracer-nee-mis",
+            "type": "aov-integrator",
             "parameters": {
                 "max-depth": 100,
-                "mis-alpha": 0.5
+                "mis-alpha": 0.5,
+                "render-variable": "dpdu"
             }
         }
     }

@@ -73,6 +73,7 @@ namespace pathtracer{
             real pdf = UniformTriangle::pdf(triangles, index);
 
             AreaSample sample = triangle.sampleSurfaceArea();
+            sample.setTriangleIndex(index);
             sample.setPdf(pdf * sample.pdf());
             return sample;
         }
@@ -84,6 +85,7 @@ namespace pathtracer{
                 triangles[index].evaluateAreaSample(point);
             real selectionPdf = UniformTriangle::pdf(triangles, index);
             sample.setPdf(sample.pdf() * selectionPdf);
+            sample.setTriangleIndex(index);
             return sample;
         }
 
@@ -94,6 +96,12 @@ namespace pathtracer{
 
             return triangles[triangleIndex].computeDifferentials(
                 position, shadingNormal, uv, triangleIndex);
+        }
+
+
+        
+        Vector3 getPosition(const Vector2& uv, int triangleIndex) const override{
+            return triangles[triangleIndex].getPosition(uv, 0);
         }
 
     };

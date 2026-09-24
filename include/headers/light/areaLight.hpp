@@ -53,7 +53,7 @@ namespace pathtracer{
             Vector3 radiance = s.evaluateEmission(-wi);
 
             LightSample sample(wi, radiance, s.position(), 
-                solidAnglePdf, dist, this, s.triangleIndex());
+                solidAnglePdf, dist, this, cosineY, s.triangleIndex());
 
             return sample;
         }
@@ -66,6 +66,7 @@ namespace pathtracer{
             // We just evaluate the area sample of having chosen
             // this particular point.
             AreaSample s = m_instance->evaluateAreaSample(surPoint);
+
             Vector3 wi = (s.position() - origin).normalized();
 
             // The light sample expects the pdf in solid angles
@@ -77,7 +78,7 @@ namespace pathtracer{
             Vector3 radiance = s.evaluateEmission(-wi);
 
             return LightSample(wi, radiance, s.position(), 
-                solidAnglePdf, dist, this, s.triangleIndex());
+                solidAnglePdf, dist, this, cosineY, s.triangleIndex());
         }
 
 
@@ -86,6 +87,11 @@ namespace pathtracer{
             SurfaceSample sample(s.position(), s.triangleIndex());
             AreaSample lightSample = m_instance->evaluateAreaSample(sample);
             return m_instance->computeDifferentials(lightSample);
+        }
+
+
+        bool hasArea() const override{
+            return true;
         }
 
 

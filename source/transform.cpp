@@ -32,15 +32,32 @@ namespace pathtracer{
 
 
     SurfaceDifferentials Transform::transformDifferentials(
-        const SurfaceDifferentials& d) const {
+        const SurfaceDifferentials& d, const Vector3& localNormal,
+        const Vector3& worldNormal) const {
 
-        // Differential information
-        SurfaceDifferentials res(transformDirectionKeepScale(d.dpdu()),
-        transformDirectionKeepScale(d.dpdv()),
-        transformNormalKeepScale(d.dndu()),
-        transformNormalKeepScale(d.dndv()));
+        Vector3 q = m_transform.inverse().transposed() * localNormal;
+        real length = q.length();
 
-        return res;
+        Vector3 dndu = m_transform.inverse().transposed() * d.dndu();
+        Vector3 dndv = m_transform.inverse().transposed() * d.dndv();
+
+        // We need to take into account normal normalization
+        dndu = (dndu - worldNormal * worldNormal.dot(dndu)) / length;
+        dndv = (dndv - worldNormal * worldNormal.dot(dndv)) / length;
+
+        Vector3 dpdu = transformDirectionKeepScale(d.dpdu());
+        Vector3 dpdv = transformDirectionKeepScale(d.dpdv());
+
+        // Instead of transforming s, it is easier to just recompute it
+        Vector3 s = (dpdu - worldNormal * (worldNormal.dot(dpdu))).normalized();
+
+        return SurfaceDifferentials(
+            dpdu,
+            dpdv,
+            dndu,
+            dndv,
+            s
+        );
     }
         
 }

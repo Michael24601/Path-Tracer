@@ -60,6 +60,8 @@ namespace pathtracer{
 
         // We then transform the whole sample
         SurfacePoint newSample = m_transform.transformSurfacePoint(sample);
+        newSample.setInstance(this);
+        newSample.computeShadingFrame();
 
         // The total pdf is just the pdf of choosing the point
         // multilplied by the pdf of choosing the shape.
@@ -78,7 +80,7 @@ namespace pathtracer{
         SurfaceDifferentials d = m_shape->computeDifferentials(localPoint, 
             localNormal, sp.uv(), sp.triangleIndex());
 
-        return m_transform.transformDifferentials(d);
+        return m_transform.transformDifferentials(d, localNormal, sp.shadingNormal());
     }
     
 }

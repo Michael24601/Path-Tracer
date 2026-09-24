@@ -30,6 +30,7 @@
 #include "../integrator/pathTracerNeeMis.hpp"
 #include "../integrator/pathTracerGuided.hpp"
 #include "../integrator/pathTracerNeeGuided.hpp"
+#include "../integrator/pathTracerSms.hpp"
 #include "../imageIo/imageIo.hpp"
 #include "objLoader.hpp"
 #include <fstream>
@@ -366,6 +367,18 @@ namespace pathtracer{
                     if(var == "normal"){
                         integrator = new AovIntegrator(AovIntegrator::RenderVariable::NORMAL);
                     }
+                    else if(var == "dpdu"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::DPDU);
+                    }
+                    else if(var == "dpdv"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::DPDV);
+                    }
+                    else if(var == "dndu"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::DNDU);
+                    }
+                    else if(var == "dndv"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::DNDV);
+                    }
                 }
                 else if(data["renderer"]["integrator"]["type"] == "path-tracer"){
                     int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
@@ -388,6 +401,10 @@ namespace pathtracer{
                     int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
                     real alpha = data["renderer"]["integrator"]["parameters"]["mis-alpha"];
                     integrator = new PathTracerNeeGuided(maxDepth, alpha);
+                }
+                else if(data["renderer"]["integrator"]["type"] == "path-tracer-sms"){
+                    int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
+                    integrator = new PathTracerSms(maxDepth, scene);
                 }
                 
 

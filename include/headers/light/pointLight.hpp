@@ -64,7 +64,12 @@ namespace pathtracer{
             Vector3 bitangent = n.cross(tangent);
 
             return SurfaceDifferentials(tangent, bitangent, 
-                Vector3(0.0), Vector3(0.0));
+                Vector3(0.0), Vector3(0.0), tangent);
+        }
+
+        
+        bool hasArea() const override{
+            return true;
         }
 
 

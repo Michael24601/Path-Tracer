@@ -14,7 +14,11 @@ namespace pathtracer{
         enum class RenderVariable{
             ALBEDO,
             NORMAL,
-            DIRECTION
+            DIRECTION,
+            DPDU,
+            DPDV,
+            DNDU,
+            DNDV
         };
 
 
@@ -54,6 +58,28 @@ namespace pathtracer{
             case RenderVariable::NORMAL:
                 color = (it.shadingNormal() + Vector3(1.0)) * 0.5;
                 break;
+            case RenderVariable::DPDU:{
+                SurfaceDifferentials d = it.instance()->computeDifferentials(it);
+                color = (d.dpdu() + Vector3(1.0)) * 0.5;
+                break;
+            }
+            case RenderVariable::DPDV:{
+                SurfaceDifferentials d = it.instance()->computeDifferentials(it);
+                color = (d.dpdv() + Vector3(1.0)) * 0.5;
+                break;
+            }
+            case RenderVariable::DNDU:{
+                SurfaceDifferentials d = it.instance()->computeDifferentials(it);
+                real value = d.dndu().length();
+                color = Vector3(value / 1000.0);
+                break;
+            }
+            case RenderVariable::DNDV:{
+                SurfaceDifferentials d = it.instance()->computeDifferentials(it);
+                real v = d.dndv().length();
+                color = Vector3(v);
+                break;
+            }
             default:
                 color = Vector3::ORIGIN;
             }
