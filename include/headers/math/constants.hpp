@@ -2,7 +2,8 @@
 #ifndef PATH_TRACER_CONSTANTS_HPP
 #define PATH_TRACER_CONSTANTS_HPP
 
-#include "../config.hpp"
+#include "config.hpp"
+#include <limits>
 
 namespace pathtracer{
 

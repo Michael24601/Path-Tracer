@@ -1,0 +1,213 @@
+
+#include "shapes/sphere.hpp"
+#include <cmath>
+#include "core/random.hpp"
+#include "core/ray.hpp"
+#include "intersection/areaSample.hpp"
+#include "intersection/intersection.hpp"
+#include "intersection/surfaceDifferentials.hpp"
+#include "intersection/surfacePoint.hpp"
+#include "math/constants.hpp"
+#include "math/mathUtil.hpp"
+#include "bvh/axisAlignedBox.hpp"
+
+namespace pathtracer{
+
+    // Generates the point with its shading frame and texture coordinates
+    SurfacePoint Sphere::generateSurfacePoint(const Vector3& point) const {
+
+        // The shading and geometry normal are the same
+        Vector3 normal = point.normalized();
+
+        // UV calculation
+        real theta = std::acos(Util::clamp(normal.z(), -1, 1));
+        real phi = std::atan2(normal.y(), normal.x());
+
+        if(phi < 0){
+            phi += 2 * PI;
+        }
+
+        Vector2 uv(phi * 0.5 * INV_PI, theta * INV_PI);
+
+        // Tangent calculation
+        Vector3 tangent(-normal.y(), normal.x(), 0.0);
+
+        if(tangent.lengthSquared() > 0){
+            tangent = tangent.normalized();
+        }
+        else{
+            tangent = Vector3(1, 0, 0);
+        }
+        
+        // The instance is null since this class doesn't know 
+        // which isntance of itself it is. 
+        SurfacePoint sp(point, normal, normal, tangent, uv, nullptr);
+
+        return sp;
+    }
+
+    Sphere::Sphere() {
+    }
+
+    real Sphere::getSurfaceArea() const {
+        // For a sphere with radius 1
+        return 4 * PI;
+    }
+
+    AxisAlignedBox Sphere::getBoundingBox() const {
+        // The local sphere will range between -1 and 1
+        // for all axes.
+        return AxisAlignedBox(
+            Vector3(-1.0),
+            Vector3(1.0));
+    }
+
+    Vector3 Sphere::getCentroid() const {
+        // In local coordinates, the centroid is the origin.
+        return Vector3::ORIGIN;
+    }
+
+    // Intersects the shape with a ray
+    Intersection Sphere::intersect(const Ray& ray, real oldT) const {
+
+        // Solving for the sphere intersection can be done
+        // by plugging the parametric ray equation into the implicit
+        // unit sphere equation:
+        // || o+td ||^2 = 1
+        // Which reduces to a quadratic of the form:
+        // t^2||d||^2 + 2t<d, o> + ||o||^2 - 1 = 0
+        // at^2 + bt + c = 0
+        // Which can be solved by checking the discriminant.
+
+        // No hit by default
+        Intersection intersection;
+        
+        // The norm of the direction is 1
+        real a = 1;
+        real b = 2 * ray.direction().dot(ray.origin());
+        real c = ray.origin().lengthSquared() - 1;
+
+        real discriminant = b * b - 4 * a * c;
+
+        if(discriminant < 0){
+            return intersection;
+        }
+        else if(discriminant < EPSILON){
+            // Only one solution, which is -b/2a
+            real t = -b / (2.0 * a);
+
+            if(t > SHADOW_EPSILON && t < oldT){
+                Vector3 point = ray.at(t);
+                return Intersection(t, generateSurfacePoint(point));
+            }
+        }
+        else{
+            // In this case we have two solutions, with t0 being closer
+            real sqrtDiscriminant = sqrtReal(discriminant);
+            real t0 = (-b - sqrtDiscriminant) / (2.0 * a);
+            real t1 = (-b + sqrtDiscriminant) / (2.0 * a);
+
+            Vector3 point0 = ray.at(t0);
+            Vector3 point1 = ray.at(t1);
+
+            if(t0 > SHADOW_EPSILON && t0 < oldT){
+                return Intersection(t0, generateSurfacePoint(point0));
+            }
+            else if(t1 > SHADOW_EPSILON && t1 < oldT){
+                return Intersection(t1, generateSurfacePoint(point1));;
+            }
+        }
+
+        return intersection;
+    }
+
+    AreaSample Sphere::sampleSurfaceArea() const {
+
+        // We will sample the sphere surface area by mapping
+        // a 2D square onto the sphere using spherical coordinates.
+        Vector2 uv = Random::next2D();
+        Vector3 point = SquareToSphereUniform::transform(uv);
+        real pdf = SquareToSphereUniform::pdf(point);
+        
+        // the reciprocal of the surface area. If not, we would
+        // have had to calculate the proabbility of choosing
+        // this specific point and returned that value.
+        AreaSample sample(generateSurfacePoint(point), pdf);
+
+        return sample;
+    }
+
+    AreaSample Sphere::evaluateAreaSample(const SurfaceSample& point) const {
+
+        real pdf = SquareToSphereUniform::pdf(point.point);
+
+        AreaSample sample(generateSurfacePoint(point.point), pdf);
+
+        return sample;
+    }
+
+    SurfaceDifferentials Sphere::computeDifferentials(const Vector3& position, 
+        const Vector3& shadingNormal, const Vector2& uv, 
+        int triangleIndex) const {
+
+        // Note that we use the provided normal and don't rederive it
+        // since we may be using normal maps.
+
+        // n == p on a unit sphere centered at the origin
+        const Vector3& normal = shadingNormal;
+
+        Vector3 dpdu =
+            Vector3(-normal.y(), normal.x(), 0.0) * (2 * PI);
+
+        real sinTheta =
+            std::sqrt(
+                normal.x() * normal.x() +
+                normal.y() * normal.y());
+
+        Vector3 dpdv;
+
+        if(sinTheta > 0){
+            dpdv =
+                Vector3(
+                    normal.z() * normal.x() / sinTheta,
+                    normal.z() * normal.y() / sinTheta,
+                    -sinTheta) * PI;
+        }
+        else{
+            dpdv = Vector3(0, 0, 0);
+        }
+        
+        // Second derivatives 
+
+        Vector3 d2pdu2 =
+            Vector3(-normal.x(), -normal.y(), 0.0) *
+            (4 * PI * PI);
+
+        Vector3 d2pdudv =
+            Vector3(
+                -normal.z() * normal.y() / sinTheta,
+                normal.z() * normal.x() / sinTheta,
+                0.0) * (2 * PI * PI);
+
+        Vector3 d2pdv2 = -normal * (PI * PI);
+
+        Vector3 s = dpdu.normalized();
+
+        // n == p, so the normal derivatives equal the position derivatives
+        return SurfaceDifferentials(dpdu, dpdv,
+            dpdu, dpdv, d2pdu2, d2pdudv, d2pdv2, s);
+    }
+
+    Vector3 Sphere::getPosition(const Vector2& uv, int triangleIndex) const {
+
+        real phi = 2.0 * PI * uv.x();
+        real theta = PI * uv.y();
+
+        real sinTheta = std::sin(theta);
+
+        return Vector3(sinTheta * std::cos(phi),
+            sinTheta * std::sin(phi),
+            std::cos(theta));
+    }
+
+}

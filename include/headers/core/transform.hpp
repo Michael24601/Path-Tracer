@@ -1,23 +1,20 @@
-
-
 #ifndef PATH_TRACER_TRANSFORM_HPP
 #define PATH_TRACER_TRANSFORM_HPP
 
-#include "../math/vector3.hpp"
-#include "../math/matrix3.hpp"
-#include "../math/matrix4.hpp"
-#include "../core/ray.hpp"
-#include "../intersection/surfaceDifferentials.hpp"
+#include <string>
+#include "math/matrix3.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
 
-    // Forward declaration
+    class Ray;
     class SurfacePoint;
+    class SurfaceDifferentials;
 
     class Transform{
 
     private:
-        
+
         // Scaling and rotation
         Matrix3 m_transform;
         // Translation
@@ -26,156 +23,70 @@ namespace pathtracer{
     public:
 
         static Transform IDENTITY;
-    
+
         // Identity matrix and no translation
-        Transform(){
-            m_transform = Matrix3::IDENTITY;
-            m_translation = Vector3::ORIGIN;
-        }
+        Transform();
 
+        Transform(const Vector3& angles, const Vector3& scale,
+            const Vector3& translation);
 
-        Transform(const Vector3& angles, const Vector3& scale, 
-            const Vector3& translation) : m_translation(translation) {
+        Transform(const Matrix3& transform, const Vector3& translation);
 
-            for(int i = 0; i <= 2; i++){
-                m_transform.addRotation(angles[i], i);
-            }
-            for(int i = 0; i <= 2; i++){
-                m_transform.scale(scale[i], i);
-            }
-        }
+        const Matrix3& getMatrix() const;
 
-
-        Transform(const Matrix3& transform, const Vector3& translation) : 
-            m_translation(translation), m_transform(transform) {}
-
-
-        const Matrix3& getMatrix() const {
-            return m_transform;
-        }
-
-
-        Transform inverse() const{
-            Matrix3 invM = m_transform.inverse();
-            Vector3 invT = -(invM * m_translation);
-            return Transform(invM, invT);
-        }
-
+        Transform inverse() const;
 
         // Returns the inverse tranpose without the translation
-        Transform inverseTranspose() const{
-            Matrix3 invM = m_transform.inverse().transposed();
-            Vector3 t = Vector3::ORIGIN;
-            return Transform(invM, t);
-        }
-
+        Transform inverseTranspose() const;
 
         // Transforms a point
-        Vector3 transform(const Vector3& point) const{
-            return (m_transform * point) + m_translation;
-        }
+        Vector3 transform(const Vector3& point) const;
 
+        const Matrix3& transform() const;
 
-        const Matrix3& transform() const{
-            return m_transform;
-        }
-
-
-        const Vector3& translation() const{
-            return m_translation;
-        }
-
+        const Vector3& translation() const;
 
         // Transforms a point
-        Vector3 inverseTransform(const Vector3& point) const{
-            Matrix3 m = m_transform.inverse();
-            return (m * point) - (m * m_translation);
-        }
-
+        Vector3 inverseTransform(const Vector3& point) const;
 
         // Transforms a direction (no translation, must remain normal)
-        Vector3 transformDirection(const Vector3& direction) const{
-            return (m_transform * direction).normalized();
-        }
+        Vector3 transformDirection(const Vector3& direction) const;
 
-
-        Vector3 transformDirectionKeepScale(const Vector3& direction) const{
-            return (m_transform * direction);
-        }
-
+        Vector3 transformDirectionKeepScale(const Vector3& direction) const;
 
         // Transforms a direction
-        Vector3 inverseTransformDirection(const Vector3& direction) const{
-            Matrix3 m = m_transform.inverse();
-            return (m * direction).normalized();
-        }
-
+        Vector3 inverseTransformDirection(const Vector3& direction) const;
 
         // Transforms a normal (must remain orthogonal),
         // so we use the inverse transposed
-        Vector3 transformNormal(const Vector3& normal) const{
-            return (m_transform.inverse().transposed() * normal).normalized();
-        }
-
+        Vector3 transformNormal(const Vector3& normal) const;
 
         // Transforms a normal but keeps the scale
-        Vector3 transformNormalKeepScale(const Vector3& normal) const{
-            return (m_transform.inverse().transposed() * normal);
-        }
-
-
+        Vector3 transformNormalKeepScale(const Vector3& normal) const;
 
         // Inverse transforms a normal (from world to local)
-        Vector3 inverseTransformNormal(const Vector3& normal) const {
-            return (m_transform.transposed() * normal).normalized();
-        }
+        Vector3 inverseTransformNormal(const Vector3& normal) const;
 
-        
         // Transforms a ray
-        Ray transform(const Ray& ray) const{
-            Ray r(transform(ray.origin()), 
-                transformDirection(ray.direction()));
-            return r;
-        }
-
+        Ray transform(const Ray& ray) const;
 
         // Transforms a ray but does not normalize the direction
-        Ray transformKeepScale(const Ray& ray) const{
-            Ray r(transform(ray.origin()), 
-                transformDirectionKeepScale(ray.direction()));
-            return r;
-        }
+        Ray transformKeepScale(const Ray& ray) const;
 
-
-        Ray inverseTransform(const Ray& ray) const{
-            Ray r(inverseTransform(ray.origin()), 
-                inverseTransformDirection(ray.direction()));
-            return r;
-        }
-
+        Ray inverseTransform(const Ray& ray) const;
 
         // Transforms surface points (like intersections)
         SurfacePoint transformSurfacePoint(const SurfacePoint& it) const;
-
 
         // Transforms surface differentials
         SurfaceDifferentials transformDifferentials(
             const SurfaceDifferentials& d, const Vector3& localNormal,
             const Vector3& worldNormal) const;
 
-
         // Returns the determinant of the transform matrix
-        real determinant() const{
-            return m_transform.determinant();
-        }
+        real determinant() const;
 
-
-        std::string toString() const {
-            return "Transform(\n" 
-                + m_transform.toString() + "\n"
-                + m_translation.toString() + "\n)";
-        }
-       
+        std::string toString() const;
     };
 
 }

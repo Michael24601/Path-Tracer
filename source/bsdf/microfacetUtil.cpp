@@ -1,0 +1,84 @@
+#include "bsdf/microfacetUtil.hpp"
+#include <algorithm>
+#include <cmath>
+#include "math/vector2.hpp"
+#include "math/vector3.hpp"
+#include "math/constants.hpp"
+#include "math/mathUtil.hpp"
+
+namespace pathtracer{
+
+    namespace Microfacet{
+
+        real smithG1(real alpha, const Vector3& wh, const Vector3& w) {
+            if (w.dot(wh) * ShadingSpace::cosineTheta(w) * ShadingSpace::cosineTheta(wh) <= 0){
+                return 0;
+            }
+
+            if (ShadingSpace::absCosineTheta(w) >= 1){
+                return 1;
+            }
+
+            const real cos = ShadingSpace::cosineTheta(w);
+            const real tanTheta2 = (1 - cos * cos) / (cos * cos);
+            const real a2tanTheta2 = (alpha * alpha) * tanTheta2;
+
+            return 2 / (1 + sqrtReal(1 + a2tanTheta2));
+        }
+
+
+        real evaluateGGX(real alpha, const Vector3& wh) {
+            real nDotH = ShadingSpace::cosineTheta(wh);
+            real a = ShadingSpace::cosinePhiSineTheta(wh) / alpha;
+            real b = ShadingSpace::sinePhiSineTheta(wh) / alpha;
+            real c = (a * a) + (b * b) + (nDotH * nDotH);
+
+            return 1 / (PI * (alpha * c) * (alpha * c));
+        }
+
+
+        Vector3 sampleGGXVNDF(real alpha, const Vector3& wo, 
+            const Vector2& rnd) {
+
+            real sgn = copysign(1, ShadingSpace::cosineTheta(wo));
+
+            Vector3 Vh =
+                Vector3(alpha * wo.x(), alpha * wo.y(), wo.z()).normalized() * sgn;
+
+            real lensq = Vh.x() * Vh.x() + Vh.y() * Vh.y();
+
+            Vector3 T1 =
+                lensq > 0
+                    ? Vector3(-Vh.y(), Vh.x(), 0) * (1.0 / sqrtReal(lensq))
+                    : Vector3(1, 0, 0);
+
+            Vector3 T2 = Vh.cross(T1);
+
+            real r   = sqrtReal(rnd.x());
+            real phi = TWO_PI * rnd.y();
+            real t1  = r * cos(phi);
+            real t2  = r * sin(phi);
+            real s   = 0.5f * (1 + Vh.z());
+
+            t2 = (1 - s) * sqrtReal(1 - (t1) * (t1)) + s * t2;
+
+            Vector3 Nh =
+                T1 * t1 +
+                T2 * t2 +
+                Vh * sqrtReal(1 - (t1) * (t1) - (t2) * (t2));
+
+            Vector3 Ne = Vector3(alpha * Nh.x(), alpha * Nh.y(), 
+                std::max(0.0, Nh.z())).normalized();
+
+            return Ne * sgn;
+        }
+
+
+        real pdfGGXVNDF(real alpha, const Vector3& wh, const Vector3& wo) {
+            return evaluateGGX(alpha, wh) *
+                smithG1(alpha, wh, wo) *
+                abs(wh.dot(wo)) / ShadingSpace::absCosineTheta(wo);
+        }
+
+    }
+}

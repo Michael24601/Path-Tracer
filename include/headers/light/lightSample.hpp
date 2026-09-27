@@ -2,13 +2,11 @@
 #ifndef PATH_TRACER_LIGHT_SAMPLE_HPP
 #define PATH_TRACER_LIGHT_SAMPLE_HPP
 
-#include "../math/vector3.hpp"
-#include "../logger.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
 
     class Light;
-    
     class LightSample{
 
     private:
@@ -38,44 +36,31 @@ namespace pathtracer{
 
         const Light* m_caster;
 
-
     public:
 
         static LightSample INVALID;
 
         LightSample(const Vector3& wi, const Vector3& radiance,
-            const Vector3& position, real pdf, real distance, const Light* caster,
-            real cosine = 0.0, int triangleIndex = -1): 
-            m_wi(wi), m_radiance(radiance), m_position(position), 
-            m_pdf(pdf), m_distance{distance}, m_caster{caster}, 
-            m_cosine{cosine}, m_triangleIndex{triangleIndex}{}
+            const Vector3& position, real pdf, real distance,
+            const Light* caster, real cosine = 0.0, int triangleIndex = -1);
 
+        real pdf() const;
 
-        real pdf() const { return m_pdf; }
+        const Vector3& wi() const;
 
+        const real cosine() const;
 
-        const Vector3& wi() const { return m_wi; }
+        const Vector3& radiance() const;
 
+        const Vector3& position() const;
 
-        const real cosine() const { return m_cosine; }
+        real distance() const;
 
+        bool isValid() const;
 
-        const Vector3& radiance() const { return m_radiance; }
+        const Light* caster() const;
 
-
-        const Vector3& position() const { return m_position; }
-
-
-        real distance() const { return m_distance; }
-        
-
-        bool isValid() const { return m_distance > 0.0; }
-
-
-        const Light* caster() const { return m_caster; }
-
-
-        int triangleIndex() const { return m_triangleIndex; }
+        int triangleIndex() const;
 
     };
 

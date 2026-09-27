@@ -3,10 +3,12 @@
 #ifndef PATH_TRACER_INTEGRATOR_HPP
 #define PATH_TRACER_INTEGRATOR_HPP
 
-#include "../core/scene.hpp"
-#include "../logger.hpp"
-
 namespace pathtracer{
+
+    // Forward declarations
+    class Scene;
+    class Ray;
+    class Vector3;
 
     class Integrator{
 

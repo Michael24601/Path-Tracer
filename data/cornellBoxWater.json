@@ -240,10 +240,10 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 30
+            "sample-count": 10
         },
         "integrator": {
-            "type": "path-tracer-sms",
+            "type": "path-tracer-nee",
             "parameters": {
                 "max-depth": 100
             }

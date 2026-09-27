@@ -1,21 +1,23 @@
 
-
 #ifndef PATH_TRACER_INSTANCE_HPP
 #define PATH_TRACER_INSTANCE_HPP
 
-#include "../shapes/shape.hpp"
-#include "../texture/texture.hpp"
-#include "../bsdf/bsdf.hpp"
-#include "../emission/emission.hpp"
-#include "../intersection/surfaceDifferentials.hpp"
-#include "transform.hpp"
+#include "core/transform.hpp"
 
 namespace pathtracer{
 
-    // Forward declaration
-    class AreaSample;
+    class Shape;
+    class Texture;
+    class Bsdf;
+    class Emission;
     class Light;
     class Scene;
+    class AreaSample;
+    class SurfaceDifferentials;
+    class SurfaceSample;
+    class SurfacePoint;
+    class AxisAlignedBox;
+    class Vector2;
 
     class Instance{
 
@@ -41,9 +43,7 @@ namespace pathtracer{
         friend class Scene;
 
         
-        void setInScene(bool inScene){
-            m_inScene = inScene;
-        }
+        void setInScene(bool inScene);
 
     public:
 
@@ -51,87 +51,45 @@ namespace pathtracer{
         Instance(const Shape* shape,
             const Texture* alpha, const Texture* normal,
             const Bsdf* bsdf, const Emission* emission, 
-            const Transform& transform) : 
-            m_shape(shape), m_alpha(alpha), m_normal(normal),
-            m_bsdf(bsdf), m_emission(emission),
-            m_transform(transform), m_light{nullptr}, m_inScene{false} {}
+            const Transform& transform);
 
         
-        bool hasAlphaTexture() const{
-            return m_alpha != nullptr;
-        }
+        bool hasAlphaTexture() const;
 
 
-        bool hasNormalTexture() const{
-            return m_normal != nullptr;
-        }
+        bool hasNormalTexture() const;
 
 
-        bool inScene() const {return m_inScene; }
+        bool inScene() const;
 
 
         // Transforms shape's box to global coordinates and then finds
         // AABB that fits it (not the tightest fit but fast).
-        AxisAlignedBox getBoundingBox() const{
-
-            AxisAlignedBox localBounds = m_shape->getBoundingBox();
-
-            Vector3 min = localBounds.minCorner();
-            Vector3 max = localBounds.maxCorner();
-
-            AxisAlignedBox result;
-
-            result.extend(m_transform.transform(Vector3(min.x(), min.y(), min.z())));
-            result.extend(m_transform.transform(Vector3(max.x(), min.y(), min.z())));
-            result.extend(m_transform.transform(Vector3(min.x(), max.y(), min.z())));
-            result.extend(m_transform.transform(Vector3(max.x(), max.y(), min.z())));
-
-            result.extend(m_transform.transform(Vector3(min.x(), min.y(), max.z())));
-            result.extend(m_transform.transform(Vector3(max.x(), min.y(), max.z())));
-            result.extend(m_transform.transform(Vector3(min.x(), max.y(), max.z())));
-            result.extend(m_transform.transform(Vector3(max.x(), max.y(), max.z())));
-
-            return result;
-
-        }
+        AxisAlignedBox getBoundingBox() const;
 
 
-        const Texture* const alphaTexture() const{
-            return m_alpha;
-        }
+        const Texture* const alphaTexture() const;
 
 
-        const Texture* const normalTexture() const{
-            return m_normal;
-        }
+        const Texture* const normalTexture() const;
 
 
-        const Transform& transform() const{
-            return m_transform;
-        }
+        const Transform& transform() const;
 
 
-        const Shape* const shape() const{
-            return m_shape;
-        }
+        const Shape* const shape() const;
 
 
-        const Emission* const emission() const{
-            return m_emission;
-        }
+        const Emission* const emission() const;
 
 
-        const Bsdf* const bsdf() const {
-            return m_bsdf;
-        }
+        const Bsdf* const bsdf() const;
         
 
-        void setLight(Light* light){
-            m_light = light;
-        }
+        void setLight(Light* light);
 
 
-        Light* light() const{ return m_light; }
+        Light* light() const;
 
 
         // Samples random point on surface area, and returns the
@@ -150,11 +108,9 @@ namespace pathtracer{
         SurfaceDifferentials computeDifferentials(const SurfacePoint&) const;
 
 
-        Vector3 getPosition(const Vector2& uv, int triangleIndex) const {
-            Vector3 position = m_shape->getPosition(uv, triangleIndex);
-            return m_transform.transform(position);
-        }
-        
+        // Returns position given uv coordinates
+        Vector3 getPosition(const Vector2& uv, int triangleIndex) const;
+
     };
 
 }

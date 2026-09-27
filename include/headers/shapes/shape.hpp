@@ -2,17 +2,18 @@
 #ifndef PATH_TRACER_SHAPE_HPP
 #define PATH_TRACER_SHAPE_HPP
 
-#include "../core/ray.hpp"
-#include "../bvh/axisAlignedBox.hpp"
-#include "../core/random.hpp"
-#include "../math/mathUtil.hpp"
+#include "config.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
 
-    // Forward declaration
+    // Forward declarations
     class Intersection;
     class AreaSample;
     class SurfaceDifferentials;
+    class Vector2;
+    class AxisAlignedBox;
+    class Ray;
 
 
     // Contains point sampled from surface, and optionally
@@ -21,6 +22,7 @@ namespace pathtracer{
         Vector3 point;
         int triangleIndex;
     };
+
 
     class Shape{
 

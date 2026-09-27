@@ -2,8 +2,8 @@
 #ifndef PATH_TRACER_VECTOR2_HPP
 #define PATH_TRACER_VECTOR2_HPP
 
-#include "../config.hpp"
-#include "constants.hpp"
+#include <string>
+#include "config.hpp"
 
 namespace pathtracer{
 
@@ -12,133 +12,58 @@ namespace pathtracer{
     private:
 
         real m_data[2];
-        
-    public: 
 
-        static Vector2 ORIGIN;    
+    public:
 
-        
-        Vector2(){ m_data[0] = m_data[1] = 0.0; }
+        static Vector2 ORIGIN;
 
+        Vector2();
 
-        Vector2(real x, real y){
-            m_data[0] = x;
-            m_data[1] = y;
-        }
+        Vector2(real x, real y);
 
+        Vector2(real x);
 
-        Vector2(real x){
-            m_data[0] = m_data[1] = x;
-        }
+        real x() const;
 
-
-        real x() const{ return m_data[0]; }
-
-
-        real y() const{ return m_data[1]; }
-
+        real y() const;
 
         // Access using brackets
-        const real& operator[](int index) const {
-            assert((index >= 0 && index <= 1) && "Index out of bounds");
-            return m_data[index];
-        }
-
+        const real& operator[](int index) const;
 
         // Setter using brackets
-        real& operator[](int index) {
-            assert((index >= 0 && index <= 1) && "Index out of bounds");
-            return m_data[index];
-        }
+        real& operator[](int index);
 
+        real lengthSquared() const;
 
-        real lengthSquared() const {
-            return m_data[0] * m_data[0] 
-                + m_data[1] * m_data[1];
-        }
-
-
-        real length() const {
-            return sqrtReal(lengthSquared());
-        }
-
+        real length() const;
 
         // Element-wise absolute value of the vector
-        Vector2 abs() const {
-            return Vector2(std::abs(m_data[0]), std::abs(m_data[1]));
-        }
+        Vector2 abs() const;
 
+        Vector2 operator-() const;
 
-        Vector2 operator-() const{
-            Vector2 result(-m_data[0], -m_data[1]);
-            return result;
-        }
+        Vector2 operator+(const Vector2& v) const;
 
+        Vector2 operator-(const Vector2& v) const;
 
-        Vector2 operator+(const Vector2& v) const{
-            Vector2 result(m_data[0] + v.m_data[0], 
-                m_data[1] + v.m_data[1]);
-            return result;
-        }
-
-
-        Vector2 operator-(const Vector2& v) const{
-            Vector2 result(m_data[0] - v.m_data[0], 
-                m_data[1] - v.m_data[1]);
-            return result;
-        }
-
-
-        Vector2 operator/(real s) const{
-            return Vector2(m_data[0] / s, m_data[1] / s);
-        }
-
-
+        Vector2 operator/(real s) const;
 
         // Scalar product
-        Vector2 operator*(real s) const{
-            return Vector2(m_data[0] * s, m_data[1] * s);
-        }
-
+        Vector2 operator*(real s) const;
 
         // Dot product
-        real dot(const Vector2& v) const{
-            return m_data[0] * v.m_data[0]
-                + m_data[1] * v.m_data[1];
-        }
-
+        real dot(const Vector2& v) const;
 
         // Normalizes the vector
-        void normalize(){
-            real d = length();
-            if(std::abs(d) > EPSILON){
-                m_data[0] /= d;
-                m_data[1] /= d;
-            }
-        }
-
+        void normalize();
 
         // Returns a normalized copy of the vector
-        Vector2 normalized() const{
-            Vector2 result(*this);
-            result.normalize();
-            return result;
-        }
-
+        Vector2 normalized() const;
 
         // Scalar product
-        bool operator<(const Vector2& v) const{
-            return m_data[0] < v.m_data[0] && m_data[1] < v.m_data[1];
-        }
+        bool operator<(const Vector2& v) const;
 
-
-        
-        std::string toString() const{
-            return "Vector(" + std::to_string(m_data[0]) 
-                + " " + std::to_string(m_data[1]) + ")";
-        }
-
-
+        std::string toString() const;
 
     };
 

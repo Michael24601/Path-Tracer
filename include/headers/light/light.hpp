@@ -1,24 +1,19 @@
 
-
 #ifndef PATH_TRACER_LIGHT_HPP
 #define PATH_TRACER_LIGHT_HPP
 
-#include "../core/transform.hpp"
-#include "../math/vector2.hpp"
-#include "lightSample.hpp"
-#include "../intersection/surfaceDifferentials.hpp"
-
 namespace pathtracer{
 
-    class Instance;
+    class Vector3;
+    class LightSample;
+    class SurfaceSample;
+    class SurfaceDifferentials;
 
     class Light{
 
     public:
 
-
-        Light(){}
-
+        Light(){};
 
         // Returns the amount of light that is returned, to the
         // point, by sampling a point on the light (if sampleable.)
@@ -48,8 +43,9 @@ namespace pathtracer{
 
 
         // Computes surface differentials
-        virtual SurfaceDifferentials computeDifferentials(const LightSample&) const = 0; 
-    
+        virtual SurfaceDifferentials computeDifferentials(
+            const LightSample&) const = 0;
+
     };
 
 }

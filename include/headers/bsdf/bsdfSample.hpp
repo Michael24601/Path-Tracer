@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_BSDF_SAMPLE_HPP
 #define PATH_TRACER_BSDF_SAMPLE_HPP
 
-#include "../core/ray.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
 
@@ -33,47 +33,43 @@ namespace pathtracer{
         
         
         BsdfSample(const Vector3& bsdf, const Vector3& wi, 
-            real cosine, real pdf, const Vector3& weight, bool isDelta = false): 
-            m_cosine{cosine}, m_bsdf{bsdf},  
-            m_wi(wi), m_pdf{pdf}, m_weight{weight}, m_isDelta{isDelta}{}
+            real cosine, real pdf, const Vector3& weight, bool isDelta = false);
 
 
-        BsdfSample() : m_bsdf{Vector3(0.0)}, m_wi{Vector3(0.0)}, 
-            m_cosine{0.0}, m_pdf{0.0}, m_weight{Vector3(0.0)}, 
-            m_isDelta{false}{}
+        BsdfSample();
 
 
-        bool isInvalid() const { return m_pdf <= 0.0; }
+        bool isInvalid() const;
 
         
-        real cosine() const { return m_cosine; }
+        real cosine() const;
 
 
-        const Vector3& bsdf() const { return m_bsdf; }
+        const Vector3& bsdf() const;
 
                 
-        const Vector3& weight() const { return m_weight; }
+        const Vector3& weight() const;
 
 
-        real pdf() const { return m_pdf; }
+        real pdf() const;
 
 
-        bool isDelta() const { return m_isDelta; }
-
-        
-        const Vector3& wi() const { return m_wi; }
-
-
-        void setWi(const Vector3& wi) { m_wi = wi; }
+        bool isDelta() const;
 
         
-        void setCosine(real cosine) { m_cosine = cosine; }
+        const Vector3& wi() const;
 
 
-        void setWeight(const Vector3& weight) { m_weight = weight; }
+        void setWi(const Vector3& wi);
 
         
-        void setPdf(real pdf) { m_pdf = pdf; }
+        void setCosine(real cosine);
+
+
+        void setWeight(const Vector3& weight);
+
+        
+        void setPdf(real pdf);
 
     };
 

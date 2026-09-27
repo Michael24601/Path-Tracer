@@ -1,7 +1,7 @@
 
 /.vscode
 build/
-include/libs
+include/libs/
 data/models/
 data/textures/
 output/

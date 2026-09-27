@@ -1,14 +1,11 @@
 
-
 #ifndef PATH_TRACER_POINT_LIGHT_HPP
 #define PATH_TRACER_POINT_LIGHT_HPP
 
 #include "light.hpp"
-#include "../math/vector3.hpp"
-#include "../math/constants.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
-
 
     class PointLight: public Light{
 
@@ -19,70 +16,24 @@ namespace pathtracer{
 
         // The light's color
         Vector3 m_power;
-   
+
     public:
 
-        PointLight(const Vector3& position, const Vector3& power) : 
-            m_position{position}, m_power{power}{}
-
+        PointLight(const Vector3& position, const Vector3& power);
 
         // Calculates in global coordinates.
-        LightSample sample(const Vector3& origin) const override{
-
-            // There is only one point, so we can't sample points,
-            // we have to choose the one. So the pdf is 1.0.
-            real pdf = 1.0;
-
-            // The power radiates in a sphere, so.
-            real dist = (m_position - origin).length();
-            real distSquared = dist * dist;
-            Vector3 radiance = m_power * (1.0 / (4 * PI * distSquared));
-
-            Vector3 wi = (m_position - origin).normalized();
-
-            return LightSample(wi, radiance, m_position, pdf, dist, this);
-        }
-
+        LightSample sample(const Vector3& origin) const override;
 
         LightSample evaluateLightSample(const Vector3& origin,
-            const SurfaceSample& point) const override{
-            
-            // Non intersectable light
-            return LightSample::INVALID;
-        }
+            const SurfaceSample& point) const override;
 
+        SurfaceDifferentials computeDifferentials(const LightSample& s) 
+            const override;
 
-        SurfaceDifferentials computeDifferentials(const LightSample& s) const override{
-            Vector3 n = s.wi();
-            Vector3 tangent;
-            if (std::abs(n.x()) > std::abs(n.z())){
-                tangent = Vector3(-n.y(), n.x(), 0.0).normalized();
-            }
-            else{
-                tangent = Vector3(0.0, -n.z(), n.y()).normalized();
-            }
-            Vector3 bitangent = n.cross(tangent);
+        bool hasArea() const override;
 
-            // Second derivatives all 0
-            return SurfaceDifferentials(
-                tangent, bitangent,
-                Vector3(0.0), Vector3(0.0),
-                Vector3(0.0), Vector3(0.0), Vector3(0.0),
-                tangent
-            );
-        }
+        bool isIntersectable() const override;
 
-        
-        bool hasArea() const override{
-            return true;
-        }
-
-
-        bool isIntersectable() const override{
-            return false;
-        }
-
-    
     };
 
 }

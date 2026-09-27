@@ -2,12 +2,16 @@
 #ifndef PATH_TRACER_RENDERER_HPP
 #define PATH_TRACER_RENDERER_HPP
 
-#include "../camera/camera.hpp"
-#include "../core/scene.hpp"
-#include "../integrator/integrator.hpp"
-#include <omp.h>
+#include <vector>
+#include "config.hpp"
 
 namespace pathtracer{
+
+    class Camera;
+    class Scene;
+    class Integrator;
+    class Vector2;
+    class Vector3;
 
     class Renderer{
 
@@ -21,49 +25,19 @@ namespace pathtracer{
 
     public:
 
-            Integrator* m_integrator;
+        Integrator* m_integrator;
 
-        Renderer(int width, int height, const Camera* camera, 
-            const Scene* scene, Integrator* integrator): 
-            m_camera{camera}, m_scene{scene}, m_integrator{integrator},
-            m_width{width}, m_height{height}{}
+        Renderer(
+            int width,
+            int height,
+            const Camera* camera,
+            const Scene* scene,
+            Integrator* integrator);
 
-        
-        virtual std::vector<std::vector<Vector3>> render() {
-
-            int width = m_width;
-            int height = m_height;
-
-            std::vector<std::vector<Vector3>> c(height, 
-                std::vector<Vector3>(width));
-
-            // We map these to the center of the pixels,
-            // such that the image ranged between (-1, -1) and (1, 1).
-            
-            // This is for multithreading 
-            #pragma omp parallel for
-            for(int j = 0; j < height; j++){
-                for(int i = 0; i < width; i++){
-                    c[j][i] = renderPixel(i, j);
-                }
-            }
-
-            return c;
-        }
-
+        virtual std::vector<std::vector<Vector3>> render();
 
         // Default version just calls the integrator at midpoint of pixel
-        virtual Vector3 renderPixel(int i, int j) {
-            real offsetX = 0.5, offsetY = 0.5;
-
-            real x = ((i + offsetX) / m_width) * 2.0 - 1.0;
-            real y = 1.0 - ((j + offsetY) / m_height) * 2.0;
-            Vector2 uv(x, y);
-
-            Ray ray = m_camera->generateRay(uv);
-            return m_integrator->color(ray, *m_scene);
-        }
-
+        virtual Vector3 renderPixel(int i, int j);
     };
 
 }

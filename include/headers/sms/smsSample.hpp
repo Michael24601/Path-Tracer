@@ -1,9 +1,8 @@
 
-
 #ifndef PATH_TRACER_SMS_SAMPLE_HPP
 #define PATH_TRACER_SMS_SAMPLE_HPP
 
-#include "../core/instance.hpp"
+#include "intersection/surfacePoint.hpp"
 
 namespace pathtracer{
 
@@ -12,7 +11,6 @@ namespace pathtracer{
     class SmsSample{
 
     private:
-
 
         SurfacePoint m_seedPoint;
         SurfacePoint m_finalPoint;
@@ -24,45 +22,26 @@ namespace pathtracer{
 
         bool m_isConverged;
         bool m_isReflection;
-        
 
     public:
 
+        SmsSample(const SurfacePoint& seedPoint, 
+            const SurfacePoint& finalPoint,  const Vector3& halfVector, 
+            real eta, bool isReflection, bool isConverged);
 
-        SmsSample(const SurfacePoint& seedPoint, const SurfacePoint& finalPoint,
-            const Vector3& halfVector, real eta,
-            bool isReflection, bool isConverged) : m_seedPoint{seedPoint},
-            m_finalPoint{finalPoint}, m_halfVector{halfVector}, m_eta{eta},
-            m_isReflection{isReflection}, m_isConverged{isConverged}{}
+        const SurfacePoint& seedPoint() const;
 
+        const SurfacePoint& finalPoint() const;
 
-        const SurfacePoint& seedPoint() const{
-            return m_seedPoint;
-        }
+        const Vector3& halfVector() const;
 
-        const SurfacePoint& finalPoint() const{
-            return m_finalPoint;
-        }
+        real eta() const;
 
-        const Vector3& halfVector() const {
-            return m_halfVector;
-        }
+        bool isConverged() const;
 
-        real eta() const{
-            return m_eta;
-        }
-
-        bool isConverged() const{
-            return m_isConverged;
-        }
-
-        bool isReflection() const{
-            return m_isReflection;
-        }
-
+        bool isReflection() const;
     };
 
 }
-
 
 #endif

@@ -2,13 +2,14 @@
 #ifndef PATH_TRACER_BSDF_HPP
 #define PATH_TRACER_BSDF_HPP
 
-#include "../math/vector2.hpp"
-#include "bsdfSample.hpp"
-
 namespace pathtracer{
 
-    class Bsdf{
+    // Forward declarations
+    class Vector2;
+    class Vector3;
+    class BsdfSample;
 
+    class Bsdf{
 
     public:
 

@@ -2,23 +2,19 @@
 #ifndef PATH_TRACER_EMISSION_HPP
 #define PATH_TRACER_EMISSION_HPP
 
-#include "../math/vector3.hpp"
-#include "../math/vector2.hpp"
+#include "config.hpp"
 
 namespace pathtracer{
+
+    // Forward declarations
+    class Vector3;
+    class Vector2;
+
 
     // Class representing the emission of an object at a specific
     // point.
     class Emission{
-
-    protected:
         
-        // The cosine term is the normal dot wo, and since we
-        // are in local coordinates, the normal is the z axis.
-        static real cosineTheta(const Vector3& wo) {
-            return wo.z();
-        }    
-
     public:
 
         // Note that this assumes that wo is in the shading

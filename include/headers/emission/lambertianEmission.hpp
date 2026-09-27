@@ -3,6 +3,7 @@
 #define PATH_TRACER_LAMBERTIAN_EMISSION_HPP
 
 #include "emission.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
 
@@ -11,29 +12,15 @@ namespace pathtracer{
     class LambertianEmission: public Emission{
 
     private:
-    
+
         Vector3 m_emissionColor;
 
     public:
 
-        LambertianEmission(const Vector3& emissionColor) : 
-            m_emissionColor(emissionColor){}
+        LambertianEmission(const Vector3& emissionColor);
 
-
-        Vector3 evaluate(const Vector3& wo, const Vector2& uv) 
-            const override{
-
-            // The emission in wo is weighted by the cosine of the
-            // angle the normal makes with the outgoing ray of light.
-            real cosine = Emission::cosineTheta(wo);
-
-            if(cosine <= 0) {
-                return Vector3::ORIGIN;
-            }
-
-            return m_emissionColor;
-        };
-
+        Vector3 evaluate(const Vector3& wo, const Vector2& uv)
+            const override;
     };
 
 }

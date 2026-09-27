@@ -19,23 +19,20 @@ namespace pathtracer{
 
     public:
 
-        AreaSample(const Vector3& position, 
-            const Vector3& geometryNormal, const Vector3& shadingNormal,
-            const Vector3& tangent, const Vector2& uv, 
-            const Instance* instance, real pdf) : 
-            m_pdf(pdf), SurfacePoint(position, geometryNormal, 
-                shadingNormal, tangent, uv, instance){}
+        AreaSample(const Vector3& position,
+            const Vector3& geometryNormal,
+            const Vector3& shadingNormal,
+            const Vector3& tangent,
+            const Vector2& uv,
+            const Instance* instance,
+            real pdf
+        );
 
+        AreaSample(const SurfacePoint& sp, real pdf);
 
-        AreaSample(const SurfacePoint& sp, real pdf) : 
-            m_pdf(pdf), SurfacePoint(sp){}
+        real pdf() const;
 
-
-        real pdf() const { return m_pdf; }
-
-        
-        void setPdf(real pdf) { m_pdf = pdf; }
-
+        void setPdf(real pdf);
     };
 
 }

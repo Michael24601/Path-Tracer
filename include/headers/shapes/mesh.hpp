@@ -3,10 +3,12 @@
 #define PATH_TRACER_MESH_HPP
 
 #include "triangle.hpp"
-#include "meshUtil.hpp"
-#include "../bvh/blAccelerationStructure.hpp"
+#include <vector>
+#include "bvh/axisAlignedBox.hpp"
 
 namespace pathtracer{
+
+    class BlAccelerationStructure;
 
     class Mesh : public Shape {
 
@@ -16,94 +18,36 @@ namespace pathtracer{
         std::vector<Triangle> triangles;
 
         // Surface area and bounding box stored since expensive to compute
+        // on the fly each time it's needed.
         real m_surfaceArea;
         AxisAlignedBox m_box;
 
-        BlAccelerationStructure m_bvh;
+        BlAccelerationStructure* m_bvh;
 
     public:
 
-        Mesh(const std::vector<Triangle>& triangles) : m_bvh(triangles) {
-            this->triangles = triangles;
-            
-            // The surface area is just the triangle sum
-            m_surfaceArea = 0;
-            for(int i = 0; i < triangles.size(); i++){
-                m_surfaceArea += triangles[i].getSurfaceArea();
-            }
+        Mesh(const std::vector<Triangle>& triangles);
 
-            // The axis aligned box
-            for(int i = 0; i < triangles.size(); i++){
-                AxisAlignedBox b = triangles[i].getBoundingBox();
-                m_box.extend(b);
-            }
-        }
+        ~Mesh();
 
+        real getSurfaceArea() const override;
 
+        AxisAlignedBox getBoundingBox() const override;
 
-        real getSurfaceArea() const override{
-            return m_surfaceArea;
-        }
+        Vector3 getCentroid() const override;
 
-
-        AxisAlignedBox getBoundingBox() const override{
-            return m_box;
-        }
-
-
-        Vector3 getCentroid() const override{
-            // The centroid of the mesh is that of its box
-            return (m_box.minCorner() + m_box.maxCorner()) / 2.0f;;
-        }
-
-        
         // Intersects the shape with a ray
-        Intersection intersect(const Ray& ray, real oldT) const override{
-            Intersection it = m_bvh.intersect(oldT, triangles, ray);
-            return it;
-        }
+        Intersection intersect(const Ray& ray, real oldT) const override;
 
-            
-        AreaSample sampleSurfaceArea() const override{
-            // In order to sample a point on the mesh, we choose
-            // at random (uniformly or proportionally to area)
-            // a triangle, sample it, then combine the PDFs.
-            int index = UniformTriangle::sample(triangles);
-            const Triangle& triangle = triangles[index];
-            real pdf = UniformTriangle::pdf(triangles, index);
+        AreaSample sampleSurfaceArea() const override;
 
-            AreaSample sample = triangle.sampleSurfaceArea();
-            sample.setTriangleIndex(index);
-            sample.setPdf(pdf * sample.pdf());
-            return sample;
-        }
+        AreaSample evaluateAreaSample(const SurfaceSample& point) const override;
 
+        SurfaceDifferentials computeDifferentials(const Vector3& position, 
+            const Vector3& shadingNormal, const Vector2& uv, 
+            int triangleIndex) const override;
 
-        AreaSample evaluateAreaSample(const SurfaceSample& point) const override{
-            int index = point.triangleIndex;
-            AreaSample sample = 
-                triangles[index].evaluateAreaSample(point);
-            real selectionPdf = UniformTriangle::pdf(triangles, index);
-            sample.setPdf(sample.pdf() * selectionPdf);
-            sample.setTriangleIndex(index);
-            return sample;
-        }
-
-
-        SurfaceDifferentials computeDifferentials(
-            const Vector3& position, const Vector3& shadingNormal,
-            const Vector2& uv, int triangleIndex) const override {
-
-            return triangles[triangleIndex].computeDifferentials(
-                position, shadingNormal, uv, triangleIndex);
-        }
-
-
-        
-        Vector3 getPosition(const Vector2& uv, int triangleIndex) const override{
-            return triangles[triangleIndex].getPosition(uv, 0);
-        }
-
+        Vector3 getPosition(const Vector2& uv, int triangleIndex) const override;
     };
 
 }

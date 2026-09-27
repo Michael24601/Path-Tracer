@@ -1,143 +1,73 @@
-
 #ifndef PATH_TRACER_MATH_UTIL_HPP
 #define PATH_TRACER_MATH_UTIL_HPP
 
-#include "constants.hpp"
-#include "vector3.hpp"
-#include "vector2.hpp"
-#include "vector2i.hpp"
+#include "config.hpp"
 
 namespace pathtracer{
 
-    class Util{
 
-        public:  
-
-
-        static float russianRoulette(const Vector3& c, float max = 0.75f) {
-            return std::min(max, (float)c.luminance() * 2.0f);
-        }
+    class Vector3;
+    class Vector2;
+    class Vector2i;
 
 
-        static int floor(real x){
-            return static_cast<int>(x);
-        }
+    namespace Util{
+
+        float russianRoulette(const Vector3& c, float max = 0.75f);
+
+        int floor(real x);
+
+        int ceiling(real x);
+
+        Vector2i floor(Vector2 uv);
+
+        Vector2i ceiling(Vector2 uv);
+
+        void swap(real& x, real& y);
+
+        real clamp(real value, real minVal, real maxVal);
+
+    }
 
 
-        static int ceiling(real x){
-            return static_cast<int>(x + 0.5);
-        }
-
-
-        static Vector2i floor(Vector2 uv){
-            return Vector2i(floor(uv.x()), floor(uv.y()));
-        }
-
-
-        static Vector2i ceiling(Vector2 uv){
-            return Vector2i(ceiling(uv.x()), ceiling(uv.y()));
-        }
-
-
-        static void swap(real& x, real& y){
-            real temp = x;
-            x = y;
-            y = temp;
-        }
-
-
-        static real clamp(real value, real minVal, real maxVal){
-            return (value < minVal) ? minVal : 
-                (value > maxVal ? maxVal : value);
-        }
-
-    };
-
-
-    class ShadingSpace{
-
-    public:
-
-        
-        // The cosine term is the normal dot wi, and since we
-        // are in local coordinates, the normal is the z axis.
-        static real cosineTheta(const Vector3& w) {
-            return w.z();
-        }    
-
+    namespace ShadingSpace{
 
         // The cosine term is the normal dot wi, and since we
         // are in local coordinates, the normal is the z axis.
-        static real absCosineTheta(const Vector3& w) {
-            return std::abs(w.z());
-        }
+        real cosineTheta(const Vector3& w);
 
+        // The cosine term is the normal dot wi, and since we
+        // are in local coordinates, the normal is the z axis.
+        real absCosineTheta(const Vector3& w);
 
-        static float cosinePhiSineTheta(const Vector3& w) { 
-            return w.x(); 
-        }
-        
-        static float sinePhiSineTheta(const Vector3& w) { 
-            return w.y(); 
-        }
-        
-        
+        float cosinePhiSineTheta(const Vector3& w);
+
+        float sinePhiSineTheta(const Vector3& w);
+
         // This returns the vector reflected around the normal,
         // which in local coordinates is always (0, 0, 1).
-        static Vector3 reflect(const Vector3& w){
-            return Vector3(-w.x(), -w.y(), w.z());
-        }
-
+        Vector3 reflect(const Vector3& w);
 
         // Reflects around a given normal
-        static Vector3 reflect(const Vector3 &w, const Vector3 &n) {
-            return n * 2 * n.dot(w) - w;
-        }
-
+        Vector3 reflect(const Vector3& w, const Vector3& n);
 
         // Refracts a vector given ior and normal
-        static Vector3 refract(const Vector3& w, const Vector3& n, real eta) {
-            const real invEta = 1 / eta;
-            const real k = 1 - (invEta * invEta) * (1 - (n.dot(w) * n.dot(w)));
-            if (k < 0) {
-                // total internal reflection
-                return Vector3(0.0);
-            }
-            const real cosTheta = n.dot(w);
-            return n * (invEta * cosTheta - copysign(sqrt(k), cosTheta)) - w * invEta;
-        }
+        Vector3 refract(const Vector3& w, const Vector3& n, real eta);
 
-    };
+    }
 
 
-    class Barycentric{
-
-    public:
+    namespace Barycentric{
 
         // Interpolates 3D vector
-        static Vector3 interpolate(const Vector3& v0, 
-            const Vector3& v1, const Vector3& v2, const Vector2& uv){
-
-            real u = uv.x();
-            real v = uv.y();
-            real w = 1.0 - u - v;
-
-            return v0 * w + v1 * u + v2 * v;
-        }
-
+        Vector3 interpolate(const Vector3& v0, const Vector3& v1,
+            const Vector3& v2, const Vector2& uv);
 
         // Interpolates a 2D vector
-        static Vector2 interpolate(const Vector2& v0, 
-            const Vector2& v1, const Vector2& v2, const Vector2& uv){
+        Vector2 interpolate(const Vector2& v0, const Vector2& v1,
+            const Vector2& v2, const Vector2& uv);
 
-            real u = uv.x();
-            real v = uv.y();
-            real w = 1.0 - u - v;
-
-            return v0 * w + v1 * u + v2 * v;
-        }
-
-    };
+    }
 
 
     // Converts a 2D coordinate between (0, 0) and (1, 1) to
@@ -149,124 +79,51 @@ namespace pathtracer{
     // In fact, the mapping is precisely designed using inverse
     // transform sampling in order to cancel out the variable part 
     // of the pdf, leaving a constant term.
-    class SquareToSphereUniform{
-    
-    public: 
-        
+    namespace SquareToSphereUniform{
+
         // Transforms uv coordinates in a unit square to 3D
         // coordinates on a unit sphere uniformly.
-        static Vector3 transform(const Vector2& uv){
-            real theta = 2.0 * PI * uv.x();
-            real phi   = acos(1.0 - 2.0 * uv.y());
-
-            real sinPhi = sin(phi);
-
-            return Vector3{
-                sinPhi * cos(theta),
-                sinPhi * sin(theta),
-                cos(phi)
-            };
-        }
-
+        Vector3 transform(const Vector2& uv);
 
         // Return spherical coordinates
-        static Vector2 inverse(const Vector3& d){
-            real u = std::atan2(d.y(), d.x()) / (2.0 * PI);
-            if (u < 0.0){
-                u += 1.0;   
-            }
-
-            real v = (1.0 - d.z()) * 0.5;
-
-            return Vector2{u, v};
-        }
-
+        Vector2 inverse(const Vector3& d);
 
         // The PDF is constant since it is uniform over the surface area.
         // Note that this sampling pdf is the same for local area
         // and solid angle measures.
-        static real pdf(const Vector3& point){
-            return 0.25 * INV_PI;
-        }
+        real pdf(const Vector3& point);
 
-    };
+    }
 
 
-    // Does the same for a Hemisphere 
-    class SquareToHemisphereUniform{
-    
-    public: 
-        
+    // Does the same for a Hemisphere
+    namespace SquareToHemisphereUniform{
+
         // Transforms uv coordinates in a unit square to 3D
         // coordinates on a unit hemisphere uniformly.
-        static Vector3 transform(const Vector2& uv){
-            real theta = 2.0 * PI * uv.x();
-
-            real z = uv.y();
-            real r = sqrt(1.0 - z * z);
-
-            return Vector3{
-                r * cos(theta),
-                r * sin(theta),
-                z
-            };
-        }
-
+        Vector3 transform(const Vector2& uv);
 
         // Transforms 3D coordinates on a unit hemisphere.
-        static Vector2 inverse(const Vector3& dir){
-            real theta = atan2(dir.y(), dir.x());
-            if(theta < 0.0){
-                theta += 2.0 * PI;
-            }
+        Vector2 inverse(const Vector3& dir);
 
-            real u = theta / (2.0 * PI);
-            real v = dir.z();
-
-            return Vector2{u, v};
-        }
-
-        
         // The PDF is constant since it is uniform over the hemisphere 
         // area. It is half of the surface area of a sphere.
         // Note that this sampling pdf is the same for local area
         // and solid angle measures.
-        static real pdf(const Vector3& point){
-            return 0.5 * INV_PI;
-        }
+        real pdf(const Vector3& point);
 
-    };
-
+    }
 
 
     // Cosine weighted
-    class SquareToHemisphereCosine{
-    public:
+    namespace SquareToHemisphereCosine{
 
-        static Vector3 transform(const Vector2& uv){
-            real r = sqrt(uv.x());
-            real theta = 2.0 * PI * uv.y();
-
-            real x = r * cos(theta);
-            real y = r * sin(theta);
-            real z = sqrt(1.0 - uv.x());
-
-            return Vector3{
-                x,
-                y,
-                z
-            };
-        }
+        Vector3 transform(const Vector2& uv);
 
         // The point is in shading coordinates space (normal is z axis)
-        static real pdf(const Vector3& point){
-            // Uses absolute value in case the point given is not in
-            // the upper hemisphere (can't return negative pdf, so
-            // we allow it).
-            return ShadingSpace::absCosineTheta(point) * INV_PI;
-        }
+        real pdf(const Vector3& point);
 
-    };
+    }
 
 }
 

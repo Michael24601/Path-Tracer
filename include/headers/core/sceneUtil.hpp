@@ -1,51 +1,36 @@
-
-
-
 #ifndef PATH_TRACER_SCENE_UTIL_HPP
 #define PATH_TRACER_SCENE_UTIL_HPP
 
-#include "scene.hpp"
+#include "config.hpp"
 
 namespace pathtracer{
 
+    // Forward declaration
+    class Scene;
+    class Light;
+    class Instance;
+
+
     // Samples an instance uniformly
-    class UniformInstance{
+    namespace UniformInstance{
 
-    public:
-
-        static const Instance* sample(const Scene& scene){
-            int instanceCount = scene.instanceCount();
-            int randomNum = static_cast<int>(Random::next() * instanceCount);
-            const Instance* inst = scene.instance(randomNum);
-            return inst;
-        }
-
+        const Instance* sample(const Scene& scene);
 
         // Pdf of having sampled this instance
-        static real pdf(const Scene& scene, const Instance* instance){
-            return 1.0 / scene.instanceCount();
-        }
-    };
+        real pdf(const Scene& scene, const Instance* instance);
+
+    }
 
 
     // Samples a light uniformly
-    class UniformLight{
+    namespace UniformLight{
 
-    public:
-
-        static const Light* sample(const Scene& scene){
-            int lightCount = scene.lightCount();
-            int randomNum = static_cast<int>(Random::next() * lightCount);
-            const Light* light = scene.light(randomNum);
-            return light;
-        }
-
+        const Light* sample(const Scene& scene);
 
         // Pdf of having sampled this light
-        static real pdf(const Scene& scene, const Light* light){
-            return 1.0 / scene.lightCount();
-        }
-    };
+        real pdf(const Scene& scene, const Light* light);
+
+    }
 
 }
 
