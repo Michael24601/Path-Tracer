@@ -4,6 +4,10 @@
 
 namespace pathtracer{
 
+
+    
+
+
     Transform Transform::IDENTITY = Transform( 
         Matrix3(
             Vector3(1.0,0.0,0.0),
@@ -48,16 +52,18 @@ namespace pathtracer{
         Vector3 dpdu = transformDirectionKeepScale(d.dpdu());
         Vector3 dpdv = transformDirectionKeepScale(d.dpdv());
 
+        Vector3 d2pdu2 = transformDirectionKeepScale(d.d2pdu2());
+        Vector3 d2pdudv = transformDirectionKeepScale(d.d2pdudv());
+        Vector3 d2pdv2 = transformDirectionKeepScale(d.d2pdv2());
+
         // Instead of transforming s, it is easier to just recompute it
-        Vector3 s = (dpdu - worldNormal * (worldNormal.dot(dpdu))).normalized();
+        Vector3 s = (dpdu - worldNormal * worldNormal.dot(dpdu)).normalized();
 
         return SurfaceDifferentials(
-            dpdu,
-            dpdv,
-            dndu,
-            dndv,
-            s
+            dpdu, dpdv, dndu, dndv,
+            d2pdu2, d2pdudv, d2pdv2, s
         );
+        
     }
         
 }

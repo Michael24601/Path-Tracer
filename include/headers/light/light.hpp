@@ -35,7 +35,6 @@ namespace pathtracer{
             const SurfaceSample&) const = 0;
 
 
-
         // This returns true if the light is intersectable (if it is
         // an area light, and if this area light refers to an
         // instance present in the scene.)

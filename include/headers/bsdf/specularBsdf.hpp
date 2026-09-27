@@ -20,7 +20,7 @@ namespace pathtracer{
         }
 
 
-        // Given an incoming direction, returns the weight associated
+        // Given an incoming direction, returns the bsdf associated
         // with sampling the reflected direction. 
         // It does not make the random choice to reflect or refract,
         // but returns a weight whose pdf assumes reflection was chosen.
@@ -28,12 +28,12 @@ namespace pathtracer{
         // one direction is valid anyway and it is assumed the caller
         // knows it.
         // The arguments are in local coordinates.
+        // This computes bsdf, so no cosine or pdf.
         virtual Vector3 evaluateReflection(const Vector3& wo,
             const Vector2& uv) const = 0;
 
 
-        // Same for refraction. Returns a weight of 0.0 if no
-        // refraction is possible.
+        // Same for refraction. Returns 0.0 if no refraction is possible.
         // The arguments are in local coordinates.
         virtual Vector3 evaluateRefraction(const Vector3& wo,
             const Vector2& uv) const = 0;

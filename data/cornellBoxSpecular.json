@@ -258,8 +258,7 @@
         "integrator": {
             "type": "path-tracer-sms",
             "parameters": {
-                "max-depth": 100,
-                "render-variable": "dpdv"
+                "max-depth": 100
             }
         }
     }

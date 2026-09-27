@@ -39,7 +39,7 @@ namespace pathtracer{
 
             real cosine = ShadingSpace::cosineTheta(direction);
 
-            Vector3 bsdf = m_reflectance;
+            Vector3 bsdf = m_reflectance / cosine;
             Vector3 weight = m_reflectance;
 
             return BsdfSample(bsdf, direction, cosine, pdf, weight, true);
@@ -59,7 +59,10 @@ namespace pathtracer{
         // only one works).
         Vector3 evaluateReflection(const Vector3& wo,
             const Vector2& uv) const override{
-            return m_reflectance;
+            Vector3 wi = ShadingSpace::reflect(wo);
+            real cosine = ShadingSpace::cosineTheta(wi);
+            Vector3 bsdf = m_reflectance / cosine;
+            return bsdf;
         }
 
 

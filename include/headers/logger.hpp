@@ -10,7 +10,7 @@
 #include <mutex>
 
 
-namespace pe {
+namespace pathtracer {
 
 class Logger {
 
@@ -137,12 +137,12 @@ public:
     from that file.
 */
 #define LOG_INFO(msg) \
-    pe::Logger::info(msg, __FILE__, __LINE__, __FUNCTION__)
+    pathtracer::Logger::info(msg, __FILE__, __LINE__, __FUNCTION__)
 
 #define LOG_WARNING(msg) \
-    pe::Logger::warning(msg, __FILE__, __LINE__, __FUNCTION__)
+    pathtracer::Logger::warning(msg, __FILE__, __LINE__, __FUNCTION__)
 
 #define LOG_ERROR(msg) \
-    pe::Logger::error(msg, __FILE__, __LINE__, __FUNCTION__)
+    pathtracer::Logger::error(msg, __FILE__, __LINE__, __FUNCTION__)
 
 #endif

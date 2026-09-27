@@ -3,6 +3,7 @@
 #define PATH_TRACER_AOV_INTEGRATOR_HPP
 
 #include "integrator.hpp"
+#include "../sms/smsUtil.hpp"
 
 namespace pathtracer{
 
@@ -10,17 +11,20 @@ namespace pathtracer{
 
     public:
 
-
-        enum class RenderVariable{
-            ALBEDO,
-            NORMAL,
-            DIRECTION,
-            DPDU,
-            DPDV,
-            DNDU,
-            DNDV
-        };
-
+    enum class RenderVariable{
+        ALBEDO,
+        NORMAL,
+        DIRECTION,
+        DPDU,
+        DPDV,
+        DNDU,
+        DNDV,
+        DSDU,
+        DSDV,
+        DTDU,
+        DTDV,
+        S
+    };
 
     private:
 
@@ -78,6 +82,39 @@ namespace pathtracer{
                 SurfaceDifferentials d = it.instance()->computeDifferentials(it);
                 real v = d.dndv().length();
                 color = Vector3(v);
+                break;
+            }
+            case RenderVariable::S:{
+                SurfaceDifferentials d = it.instance()->computeDifferentials(it);
+                real v = d.dndv().length();
+                color = (d.s() + Vector3(1.0)) * 0.5;
+                break;
+            }
+            case RenderVariable::DSDU:{
+                SurfaceDifferentials sd = it.instance()->computeDifferentials(it);
+                auto d = SmsUtil::computeFrameDifferentials(it.shadingNormal(), sd);
+                color = (d.dsdu + Vector3(1.0)) * 0.5;
+                break;
+            }
+
+            case RenderVariable::DSDV:{
+                SurfaceDifferentials sd = it.instance()->computeDifferentials(it);
+                auto d = SmsUtil::computeFrameDifferentials(it.shadingNormal(), sd);
+                color = (d.dsdv + Vector3(1.0)) * 0.5;
+                break;
+            }
+
+            case RenderVariable::DTDU:{
+                SurfaceDifferentials sd = it.instance()->computeDifferentials(it);
+                auto d = SmsUtil::computeFrameDifferentials(it.shadingNormal(), sd);
+                color = (d.dtdu + Vector3(1.0)) * 0.5;
+                break;
+            }
+
+            case RenderVariable::DTDV:{
+                SurfaceDifferentials sd = it.instance()->computeDifferentials(it);
+                auto d = SmsUtil::computeFrameDifferentials(it.shadingNormal(), sd);
+                color = (d.dtdv + Vector3(1.0)) * 0.5;
                 break;
             }
             default:

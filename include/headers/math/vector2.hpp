@@ -89,6 +89,12 @@ namespace pathtracer{
         }
 
 
+        Vector2 operator/(real s) const{
+            return Vector2(m_data[0] / s, m_data[1] / s);
+        }
+
+
+
         // Scalar product
         Vector2 operator*(real s) const{
             return Vector2(m_data[0] * s, m_data[1] * s);

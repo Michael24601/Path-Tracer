@@ -170,11 +170,27 @@ namespace pathtracer{
             else{
                 dpdv = Vector3(0, 0, 0);
             }
+            
+            // Second derivatives 
 
-            Vector3 s = (dpdu - shadingNormal * (shadingNormal.dot(dpdu))).normalized();
+            Vector3 d2pdu2 =
+                Vector3(-normal.x(), -normal.y(), 0.0) * (4 * PI * PI);
+
+            Vector3 d2pdudv = Vector3(-normal.z() * normal.y() / sinTheta,
+                normal.z() * normal.x() / sinTheta,
+                0.0) * (2 * PI * PI);
+
+            Vector3 d2pdv2 = -normal * (PI * PI);
+
+            Vector3 s = dpdu.normalized();
 
             // n == p, so the normal derivatives equal the position derivatives
-            return SurfaceDifferentials(dpdu, dpdv, dpdu, dpdv, s);
+            return SurfaceDifferentials(
+                dpdu, dpdv,
+                dpdu, dpdv,
+                d2pdu2, d2pdudv, d2pdv2,
+                s
+            );
             
         }
 

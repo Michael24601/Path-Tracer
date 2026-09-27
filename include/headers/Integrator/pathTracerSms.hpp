@@ -27,7 +27,9 @@ namespace pathtracer{
             Ray currRay = ray;
             Vector3 color = Vector3(0.0);
             Vector3 throughput = Vector3(1.0);
-            const Bsdf* lastBsdf;
+            
+            // saves the last sms sample bounce index
+            int lastSmsSample = -3;
 
             for(int i = 0; i < m_maxDepth; i++){
 
@@ -41,9 +43,9 @@ namespace pathtracer{
                 }
 
                 // If we have an emissive surface, add emission and break
-                if(it.instance()->emission()){
+                if(it.instance()->emission() && lastSmsSample != i-2){
                     Vector3 emission = it.evaluateEmission(wo);
-                    // color = color + emission * throughput;
+                    color = color + emission * throughput;
                     break;
                 }
 
@@ -54,7 +56,7 @@ namespace pathtracer{
                 // If the current surface is neither an emission nor specular,
                 // we can try doing SMS.
                 if(!it.instance()->bsdf()->isSpecular() && !it.instance()->emission()
-                    && it.position().y() < 0.05){
+                    && it.position().y() < 0.02){
 
                     // First we sample a point on a light.
                     const Light* light = UniformLight::sample(scene);
@@ -63,8 +65,7 @@ namespace pathtracer{
                     real pdfSelection = UniformLight::pdf(scene, light);
 
                     if(s.isValid()){
-
-                        bool success;
+                        bool success = false;
                         Vector3 contribution = sms.sample(it, s, wo, 
                             pdfSelection, &scene, success);   
                             
@@ -72,8 +73,10 @@ namespace pathtracer{
                         // weighted by throughput.
                         if(success){
                             color = color + contribution * throughput;
+                            lastSmsSample = i;
                         }
                     }
+
                 }
 
 
@@ -85,8 +88,6 @@ namespace pathtracer{
                 // sampled point is always visible.
                 BsdfSample sample = it.sampleBsdf(wo);
                 Vector3 weight = sample.weight();
-
-                lastBsdf = it.instance()->bsdf();
 
                 // Russian roulette
                 float p = Util::russianRoulette(throughput);

@@ -7,5 +7,6 @@ data/textures/
 output/
 *.png
 *.txt
+*.log
 
 source/*.py

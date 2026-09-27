@@ -99,7 +99,7 @@ namespace pathtracer{
             Ray ray(origin + direction * SHADOW_EPSILON, direction);
             real maxDistance = distance;
             Intersection it = intersect(ray, maxDistance - 2 * SHADOW_EPSILON);
-
+            
             // If we don't find an intersection we return true
             if(!it) return true;
 

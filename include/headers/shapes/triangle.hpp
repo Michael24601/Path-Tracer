@@ -375,13 +375,9 @@ namespace pathtracer{
 
             Vector3 s = (dpdu - shadingNormal * (shadingNormal.dot(dpdu))).normalized();
 
-            return SurfaceDifferentials(
-                dpdu,
-                dpdv,
-                dndu,
-                dndv,
-                s
-            );
+            // The second derivatives of p are all 0
+            return SurfaceDifferentials(dpdu, dpdv, dndu, dndv,
+                Vector3(0.0), Vector3(0.0), Vector3(0.0), s);
         }
 
 

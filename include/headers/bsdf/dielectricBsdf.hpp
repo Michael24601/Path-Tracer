@@ -16,9 +16,9 @@ namespace pathtracer
     private:
         // The color a this sample point could either come from a texture
         // or from an albedo. It is set from outside.
-        const Texture *m_reflectance;
-        const Texture *m_transmittance;
-        const Texture *m_ior;
+        const Texture* m_reflectance;
+        const Texture* m_transmittance;
+        const Texture* m_ior;
 
     public:
         DielectricBsdf(const Texture *ior, const Texture *reflectance,
@@ -26,8 +26,7 @@ namespace pathtracer
             m_reflectance{reflectance}, m_transmittance{transmittance} {}
 
         BsdfSample sample(const Vector3 &wo, const Vector2 &uv)
-            const override
-        {
+            const override{
 
             // We will randomly pick either to refract or reflect,
             // and the probability will be weighted by the Fresnel term.
@@ -152,8 +151,7 @@ namespace pathtracer
         }
 
         BsdfSample evaluate(const Vector3 &wo,
-                            const Vector3 &wi, const Vector2 &uv) const override
-        {
+            const Vector3 &wi, const Vector2 &uv) const override{
 
             // The probability of a light sample picking exactly the
             // direction 'wi' that results from reflecting or refracting
@@ -164,23 +162,14 @@ namespace pathtracer
 
     
 
-        // This evaluates the weight for reflecting (no wi is sent since
+        // This evaluates the bsdf for reflecting (no wi is sent since
         // only one works). Same logic as the sample function.
         // Assumes reflection was actually chosen.
         Vector3 evaluateReflection(const Vector3& wo, const Vector2& uv) 
             const override{
 
             real cos_wo = ShadingSpace::cosineTheta(wo);
-            real ior = m_ior->sample(uv).x();
-            real invIor = 1.0f / ior;
-
-            real n;
-            if (cos_wo > 0){
-                n = ior;
-            }
-            else{
-                n = invIor;
-            }
+            real n = eta(wo, uv);
 
             real fresnel = Fresnel::dielectric(cos_wo, n);
 
@@ -195,21 +184,11 @@ namespace pathtracer
         }
 
 
-        // This always returns 0.0 since the pure mirror does not refract.
         Vector3 evaluateRefraction(const Vector3& wo, const Vector2& uv) 
             const override{
 
             real cos_wo = ShadingSpace::cosineTheta(wo);
-            real ior = m_ior->sample(uv).x();
-            real invIor = 1.0f / ior;
-
-            real n;
-            if (cos_wo > 0){
-                n = ior;
-            }
-            else{
-                n = invIor;
-            }
+            real n = eta(wo, uv);
 
             real fresnel = Fresnel::dielectric(cos_wo, n);
 
@@ -227,9 +206,7 @@ namespace pathtracer
             real ior = m_ior->sample(uv).x();
 
             // Relative ior depends on whether we are entering or leaving.
-            return ShadingSpace::cosineTheta(wo) > 0
-                ? ior
-                : 1.0f / ior;
+            return ShadingSpace::cosineTheta(wo) > 0 ? ior : 1.0f / ior;
         }
 
     };

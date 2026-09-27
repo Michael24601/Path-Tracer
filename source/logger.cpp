@@ -1,9 +1,9 @@
 
 #include "../include/headers/logger.hpp"
 
-namespace pe {
+namespace pathtracer {
     std::ostream* Logger::output = &std::cout;
-    float Logger::MAX_TIME_INTERVAL = 5.0f;
+    float Logger::MAX_TIME_INTERVAL = -1.0f;
     std::unordered_map<std::string, float> Logger::lastLogged;
-    std::mutex pe::Logger::mutex;
+    std::mutex Logger::mutex;
 }

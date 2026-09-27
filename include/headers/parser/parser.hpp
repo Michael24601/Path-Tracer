@@ -379,6 +379,21 @@ namespace pathtracer{
                     else if(var == "dndv"){
                         integrator = new AovIntegrator(AovIntegrator::RenderVariable::DNDV);
                     }
+                    else if(var == "s"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::S);
+                    }
+                    else if(var == "dsdu"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::DSDU);
+                    }
+                    else if(var == "dsdv"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::DSDV);
+                    }
+                    else if(var == "dtdu"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::DTDU);
+                    }
+                    else if(var == "dtdv"){
+                        integrator = new AovIntegrator(AovIntegrator::RenderVariable::DTDV);
+                    }
                 }
                 else if(data["renderer"]["integrator"]["type"] == "path-tracer"){
                     int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
