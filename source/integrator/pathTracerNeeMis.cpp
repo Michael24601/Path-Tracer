@@ -135,7 +135,9 @@ namespace pathtracer{
                     light->sample(it.position());
 
                 // The visibility term.
-                bool visibility = scene.visibility(it.position(), s.position());
+                bool visibility =
+                    scene.visibility(it.position(), s.wi(), s.distance());
+
 
                 if(s.isValid() && visibility) {
 

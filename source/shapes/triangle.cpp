@@ -156,11 +156,9 @@ namespace pathtracer{
         Vector3 edge1 = v2 - v0;
 
         // Precomputed for efficiency
-        Vector3 rayE1Cross =
-            ray.direction().cross(edge1);
+        Vector3 rayE1Cross = ray.direction().cross(edge1);
 
-        Vector3 originE0Cross =
-            (origin - v0).cross(edge0);
+        Vector3 originE0Cross = (origin - v0).cross(edge0);
 
         real det = edge0.dot(rayE1Cross);
 
@@ -189,12 +187,7 @@ namespace pathtracer{
             // Here we can conclude we have an intersection
             Vector2 barycentric(u, v);
 
-            return Intersection(
-                t,
-                generateSurfacePoint(
-                    ray,
-                    t,
-                    barycentric));
+            return Intersection(t, generateSurfacePoint(ray, t, barycentric));
         }
 
         return intersection;

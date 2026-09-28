@@ -73,13 +73,14 @@ namespace pathtracer{
         // It returns the seed point, and the converged point (after newton's
         // method is used to satisfy the constraints). May return
         // a non converged result.
-        SmsSample samplePath(const Vector3& causticPoint, 
+        SmsSample samplePath(const SurfacePoint& causticPoint, 
             const Instance* specular, const Specular* bsdf, 
-            const Vector3& lightPoint, const Scene* scene);
+            const LightSample& lightPoint, const Scene* scene);
 
 
-        SmsSample newtonSolver(const Vector3& x0, const SurfacePoint& seedIt, 
-            const Vector3& x2, const Specular* bsdf, const Scene* scene);
+        SmsSample newtonSolver(const SurfacePoint& causticPoint, 
+            const SurfacePoint& seedIt, const LightSample& lightPoint, 
+            const Specular* bsdf, const Scene* scene);
 
 
         // Returns the ougoing contribution from x0 after it samples

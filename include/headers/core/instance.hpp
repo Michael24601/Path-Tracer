@@ -38,6 +38,9 @@ namespace pathtracer{
         // in the scene.
         bool m_inScene;
 
+        // This is true if the current instance is marked as a caustic
+        // receiver.
+        bool m_isCausticReceiver;
 
         // The scene is a friend class
         friend class Scene;
@@ -87,6 +90,12 @@ namespace pathtracer{
         
 
         void setLight(Light* light);
+
+
+        void setCausticReceiver(bool isCausticReceiver);
+
+
+        bool isCausticReceiver() const;
 
 
         Light* light() const;

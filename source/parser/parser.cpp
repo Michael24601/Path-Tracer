@@ -24,6 +24,7 @@
 #include "light/light.hpp"
 #include "light/areaLight.hpp"
 #include "light/pointLight.hpp"
+#include "light/directionalLight.hpp"
 #include "logger.hpp"
 #include "math/matrix3.hpp"
 #include "math/vector2.hpp"
@@ -294,6 +295,12 @@ namespace pathtracer{
                         parseTransform(inst["parameters"]["transform"]);
                 }
 
+
+                bool isCausticReceiver = false;
+                if(inst["parameters"].contains("is-caustic-receiver")){
+                    isCausticReceiver = inst["parameters"]["is-caustic-receiver"];
+                }
+
                 Texture* normalMap = nullptr;
 
                 if(inst["parameters"].contains("normal-map")){
@@ -308,20 +315,18 @@ namespace pathtracer{
                         parseTexture(inst["parameters"]["alpha-mask"]);
                 }
 
+                Instance* instance;
                 if(inst["type"] == "sphere"){
 
-                    Instance* instance = new Instance(
+                    instance = new Instance(
                         sphere,
                         nullptr,
                         nullptr,
                         materials[materialID],
                         emission,
                         transform);
-
-                    instances[id] = instance;
                 }
-
-                if(inst["type"] == "mesh"){
+                else if (inst["type"] == "mesh"){
 
                     Mesh* mesh;
 
@@ -365,7 +370,7 @@ namespace pathtracer{
                         mesh = ObjLoader::loadMesh(filename);
                     }
 
-                    instances[id] = new Instance(
+                    instance = new Instance(
                         mesh,
                         alphaMask,
                         normalMap,
@@ -373,6 +378,13 @@ namespace pathtracer{
                         emission,
                         transform);
                 }
+                else{
+                    LOG_ERROR("Instance does not have a valid shape.");
+                    exit(1);
+                }
+
+                instance->setCausticReceiver(isCausticReceiver);
+                instances[id] = instance;
             }
         }
 
@@ -396,6 +408,7 @@ namespace pathtracer{
                         exit(1);
                     }
 
+
                     if(!instances[instID]->emission()){
                         LOG_ERROR("Instance is not emissive: " + instID);
                         exit(1);
@@ -413,6 +426,16 @@ namespace pathtracer{
                         data["lights"][i]["parameters"]["position"]);
 
                     lights[id] = new PointLight(pos, power);
+                }
+                else if(data["lights"][i]["type"] == "directional"){
+
+                    Vector3 power = parseVector3(
+                        data["lights"][i]["parameters"]["power"]);
+
+                    Vector3 dir = parseVector3(
+                        data["lights"][i]["parameters"]["direction"]);
+
+                    lights[id] = new DirectionalLight(dir, power);
                 }
             }
         }

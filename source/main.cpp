@@ -3,6 +3,7 @@
 #include "logger.hpp"
 #include "image/imageIo.hpp"
 #include "renderer/renderer.hpp"
+#include <iostream>
 #include <fstream>
 
 
@@ -14,7 +15,6 @@ int main(int argc, char* argv[]) {
     
     std::ofstream logFile("file.log");
     Logger::setOutput(logFile);
-
 
     if(argc != 3) {
         LOG_ERROR("Invalid arguments");

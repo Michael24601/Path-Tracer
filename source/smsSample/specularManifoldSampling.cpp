@@ -52,9 +52,9 @@ namespace pathtracer{
         // a shape with a valid SMS sample.
         for(int i = 0; i < m_specularInstances.size(); i++){
 
-            SmsSample sample = samplePath(causticPoint.position(),
+            SmsSample sample = samplePath(causticPoint,
                 m_specularInstances[i], m_bsdfs[i],
-                lightPoint.position(), scene);
+                lightPoint, scene);
 
             // If not valid, we continue to next shape
             if(!sample.isConverged()){
@@ -63,8 +63,16 @@ namespace pathtracer{
 
             // We know x0 to x1 is visible (samplePath checks),
             // but now we check x1 to x2.
-            bool visible = scene->visibility(sample.finalPoint().position(),
-                lightPoint.position());
+            // It depends on if it is directional or not.
+            bool visible;
+            if(lightPoint.caster()->isDirectional()){
+                visible = scene->visibility(sample.finalPoint().position(),
+                    lightPoint.wi(), lightPoint.distance());
+            }
+            else{
+                visible = scene->visibility(sample.finalPoint().position(),
+                    lightPoint.position());
+            }
 
             if(!visible){
                 m_notVis++;
@@ -83,9 +91,9 @@ namespace pathtracer{
 
                 counter++;
 
-                SmsSample newSample = samplePath(causticPoint.position(),
+                SmsSample newSample = samplePath(causticPoint,
                     m_specularInstances[i], m_bsdfs[i],
-                    lightPoint.position(), scene);
+                    lightPoint, scene);
 
                 Vector3 newDir = (newSample.finalPoint().position()
                     - causticPoint.position()).normalized();
@@ -129,9 +137,9 @@ namespace pathtracer{
     }
 
 
-    SmsSample SpecularManifoldSampling::samplePath(const Vector3& causticPoint,
+    SmsSample SpecularManifoldSampling::samplePath(const SurfacePoint& causticPoint,
         const Instance* specular, const Specular* bsdf, 
-        const Vector3& lightPoint, const Scene* scene) {
+        const LightSample& lightPoint, const Scene* scene) {
 
         // We will have to first sample a point on the specular surface
         // which we can do using areaSampling.
@@ -155,12 +163,12 @@ namespace pathtracer{
         // We will first check the visibility of the sampled point
         // from x0. If not visible, we can skip newton entirely
         // and return false.
-        Vector3 dir = (sample.position() - causticPoint);
+        Vector3 dir = (sample.position() - causticPoint.position());
 
         real distance = dir.length();
         dir = dir / distance;
 
-        Ray ray(causticPoint + dir * SHADOW_EPSILON, dir);
+        Ray ray(causticPoint.position() + dir * SHADOW_EPSILON, dir);
         Intersection it = scene->intersect(ray);
 
         if(!it || it.t() < distance - 2 * SHADOW_EPSILON || it.instance() != specular){
@@ -173,8 +181,8 @@ namespace pathtracer{
     }
 
 
-    SmsSample SpecularManifoldSampling::newtonSolver(const Vector3& x0, 
-        const SurfacePoint& seedIt, const Vector3& x2, const Specular* bsdf, 
+    SmsSample SpecularManifoldSampling::newtonSolver(const SurfacePoint& x0, 
+        const SurfacePoint& seedIt, const LightSample& x2, const Specular* bsdf, 
         const Scene* scene) {
 
         // We use the newton solver to converge to a point on the
@@ -184,8 +192,17 @@ namespace pathtracer{
         // We square it so we don't need to use square root later
         real threshold = m_epsilon * m_epsilon;
 
-        Vector3 wo = (x0 - seedIt.position()).normalized();
-        Vector3 wi = (x2 - seedIt.position()).normalized();
+        Vector3 wo = (x0.position() - seedIt.position()).normalized();
+
+        // If directional, direction does not change (and position is not
+        // finite so can't be used).
+        Vector3 wi;
+        if(x2.caster()->isDirectional()){
+            wi = x2.wi();
+        }
+        else{
+            wi = (x2.position() - seedIt.position()).normalized();
+        }
 
         bool reflection = SmsUtil::isReflection(wo, seedIt, wi);
 
@@ -220,17 +237,17 @@ namespace pathtracer{
             // previous proposition.
 
             Vector2 dx = SmsUtil::computeNewtonStep(x0, x2, finalIt,
-                wo, wi, halfVector, d, reflection, eta);
+                halfVector, d, reflection, eta);
 
             // We then offset and ray trace
             Vector3 proposedPosition = finalIt.position()
                 -(d.dpdu() * dx[0] + d.dpdv() * dx[1]) * beta;
 
-            Vector3 direction = (proposedPosition - x0);
+            Vector3 direction = (proposedPosition - x0.position());
             real distance = direction.length();
             direction = direction/ distance;
 
-            Ray ray(x0 + direction * SHADOW_EPSILON, direction);
+            Ray ray(x0.position() + direction * SHADOW_EPSILON, direction);
             Intersection nextIt = scene->intersect(ray);
 
             // Note: we don't check visibility, since the point
@@ -250,8 +267,14 @@ namespace pathtracer{
             // Otherwise we check if constraints are met.
             // but first we recompute some values.
 
-            wo = (x0 - nextIt.position()).normalized();
-            wi = (x2 - nextIt.position()).normalized();
+            wo = (x0.position() - nextIt.position()).normalized();
+
+            if(x2.caster()->isDirectional()){
+                wi = x2.wi();
+            }
+            else{
+                wi = (x2.position() - nextIt.position()).normalized();
+            }
 
             reflection = SmsUtil::isReflection(wo, nextIt, wi);
             localWo = nextIt.shadingFrame().inverseTransformDirection(wo);
@@ -321,12 +344,9 @@ namespace pathtracer{
         // or the original sample, since they are the same.
         real lightPdf = (newSample.pdf() * lightSelectionPdf);
 
-        // Since the geometric term already handles solid angle
-        // conversion, we need to undo it.
         if(lightPoint.caster()->hasArea()){
-            // The conversion is done using newSample, since it depends
-            // on cosine and distance which is different in the original
-            // sample.
+            // Since the geometric term already handles solid angle
+            // conversion, we need to undo it.
             lightPdf *= (newSample.cosine()
                 / (newSample.distance() * newSample.distance()));
         }

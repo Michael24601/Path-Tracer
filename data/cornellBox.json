@@ -111,12 +111,6 @@
             "id": "light",
             "type": "mesh",
             "material": "light-bsdf",
-            "emission": {
-                "type": "lambertian",
-                "parameters": {
-                    "power": [17.0, 12.0, 4.0]
-                }
-            },
             "parameters": {
                 "transform": [
                     1.0, 0.0, 0.0, 0.0,
@@ -208,9 +202,10 @@
     "lights": [
         {
             "id": "ceiling-light",
-            "type": "area",
+            "type": "directional",
             "parameters": {
-                "instance": "light"
+                "direction": [0, -1, -1],
+                "power": [2, 2, 2]
             }
         }
     ],
@@ -234,17 +229,12 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 30,
-            "render-sample-count": 100,
-            "first-iteration-sample-count": 32,
-            "iteration-count": 4,
-            "spatial-subdivision-c": 10000
+            "sample-count": 10
         },
         "integrator": {
-            "type": "path-tracer",
+            "type": "path-tracer-nee",
             "parameters": {
-                "max-depth": 100,
-                "mis-alpha": 0.5
+                "max-depth": 100
             }
         }
     }

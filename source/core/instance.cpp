@@ -29,7 +29,8 @@ namespace pathtracer{
         m_emission(emission),
         m_transform(transform), 
         m_light{nullptr}, 
-        m_inScene{false}{}
+        m_inScene{false},
+        m_isCausticReceiver{false}{}
 
 
     bool Instance::hasAlphaTexture() const {
@@ -114,6 +115,17 @@ namespace pathtracer{
     const Bsdf* const Instance::bsdf() const {
         return m_bsdf;
     }
+
+
+    void Instance::setCausticReceiver(bool isCausticReceiver){
+        m_isCausticReceiver = isCausticReceiver;
+    }
+
+
+    bool Instance::isCausticReceiver() const{
+        return m_isCausticReceiver;
+    }
+
 
 
     void Instance::setLight(Light* light) {

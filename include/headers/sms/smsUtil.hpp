@@ -65,17 +65,16 @@ namespace pathtracer{
 
 
         HalfVectorDifferentials computeHalfVectorDifferentials(
-            const Vector3& x0, const Vector3& x2, const SurfacePoint& p, 
-            const Vector3& wo, const Vector3& wi, const Vector3& halfVector,
-            const SurfaceDifferentials& s, bool reflection, real eta);
+            const SurfacePoint& x0, const LightSample& x2, const SurfacePoint& p, 
+            const Vector3& halfVector, const SurfaceDifferentials& s, 
+            bool reflection, real eta);
 
 
         // Returns the newton update step, that is, the deltaX from
         // newton equal to nabla C inverse times C.
-        Vector2 computeNewtonStep(const Vector3& x0, const Vector3& x2, 
-            const SurfacePoint& p, const Vector3& wo, const Vector3& wi, 
-            const Vector3& halfVector, const SurfaceDifferentials& d, 
-            bool reflection, real eta);
+        Vector2 computeNewtonStep(const SurfacePoint& x0, const LightSample& x2, 
+            const SurfacePoint& p, const Vector3& halfVector, 
+            const SurfaceDifferentials& d, bool reflection, real eta);
 
 
         real geometricTerm(const SurfacePoint& x0, const SmsSample& sample, 

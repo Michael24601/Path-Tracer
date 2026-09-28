@@ -12,7 +12,7 @@
 #include "math/mathUtil.hpp"
 #include "bsdf/bsdf.hpp"
 #include "math/constants.hpp"
-
+#include "logger.hpp"
 
 namespace pathtracer{
 
@@ -89,7 +89,7 @@ namespace pathtracer{
 
                 // The visibility term.
                 bool visibility =
-                    scene.visibility(it.position(), s.position());
+                    scene.visibility(it.position(), s.wi(), s.distance());
 
                 if(s.isValid() && visibility) {
 
@@ -103,10 +103,10 @@ namespace pathtracer{
                     // and cosine. Also we ignore the pdf it returns since
                     // this is the pdf of the bsdf having generated said
                     // path (used in MIS for example).
-                    BsdfSample bsdfEval =
-                        it.evaluateBsdf(wo, s.wi());
+                    BsdfSample bsdfEval = it.evaluateBsdf(wo, s.wi());
 
                     if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0) {
+
                         Vector3 neeWeight = bsdfEval.bsdf() *
                             bsdfEval.cosine() * (1.0 / pdfPoint);
 

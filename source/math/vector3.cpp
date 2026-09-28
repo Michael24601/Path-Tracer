@@ -304,6 +304,13 @@ namespace pathtracer{
             + 0.0722 * z();
     }
 
+
+    bool Vector3::isFinite() const {
+        return std::isfinite(m_data[0]) && std::isfinite(m_data[1]) 
+            && std::isfinite(m_data[2]);
+    }
+
+
     std::string Vector3::toString() const {
 
         return "Vector("

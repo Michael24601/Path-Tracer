@@ -62,9 +62,8 @@ namespace pathtracer{
 
             // If the current surface is neither an emission nor specular,
             // we can try doing SMS.
-            if(!it.instance()->bsdf()->isSpecular() &&
-                !it.instance()->emission() &&
-                it.position().y() < 0.02){
+            if(!it.instance()->bsdf()->isSpecular() && !it.instance()->emission() &&
+                it.instance()->isCausticReceiver()){
 
                 // First we sample a point on a light.
                 const Light* light =

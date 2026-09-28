@@ -46,18 +46,17 @@ namespace pathtracer{
         Vector3 n = s.wi();
         Vector3 tangent;
 
+        // Flast orthogonal frame to wi
         if (std::abs(n.x()) > std::abs(n.z())){
-            tangent =
-                Vector3(-n.y(), n.x(), 0.0).normalized();
+            tangent = Vector3(-n.y(), n.x(), 0.0).normalized();
         }
         else{
-            tangent =
-                Vector3(0.0, -n.z(), n.y()).normalized();
+            tangent = Vector3(0.0, -n.z(), n.y()).normalized();
         }
 
         Vector3 bitangent = n.cross(tangent);
 
-        // Second derivatives all 0
+        // Since the frame is flat, dn, ds, dt... are all 0
         return SurfaceDifferentials(
             tangent, bitangent,
             Vector3(0.0), Vector3(0.0),
@@ -68,6 +67,16 @@ namespace pathtracer{
 
 
     bool PointLight::hasArea() const {
+        return false;
+    }
+
+
+    bool PointLight::isDirectional() const{
+        return false;
+    }
+
+
+    bool PointLight::isPoint() const{
         return true;
     }
     

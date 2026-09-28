@@ -108,23 +108,15 @@ namespace pathtracer{
     void SurfacePoint::computeShadingFrame() {
 
         // Reorthogonalizes the tangent
-        m_tangent =
-            (m_tangent -
-            m_shadingNormal *
+        m_tangent = (m_tangent - m_shadingNormal *
             m_tangent.dot(m_shadingNormal)).normalized();
 
         // Bitangent
-        Vector3 bit =
-            m_shadingNormal.cross(m_tangent);
+        Vector3 bit = m_shadingNormal.cross(m_tangent);
 
-        Matrix3 frame =
-            Matrix3(
-                m_tangent,
-                bit,
-                m_shadingNormal);
+        Matrix3 frame = Matrix3(m_tangent, bit, m_shadingNormal);
 
-        m_shadingFrame =
-            Transform(frame, m_position);
+        m_shadingFrame = Transform(frame, m_position);
     }
 
 
@@ -139,22 +131,16 @@ namespace pathtracer{
         }
 
         // We transform the direction wo to local coordinates
-        Vector3 localWo =
-            m_shadingFrame.inverseTransformDirection(wo);
+        Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
 
         // The bsdf functions sample and evaluate in shading
         // frame coordinates, so we need to transform the inputs,
         // and then make any necessary modifications to the output
         // as well.
-        BsdfSample sample =
-            m_instance->bsdf()->sample(
-                localWo,
-                m_uv);
+        BsdfSample sample = m_instance->bsdf()->sample(localWo,m_uv);
 
         // We then transform the result back to world coordinates
-        Vector3 wi =
-            m_shadingFrame.transformDirection(
-                sample.wi());
+        Vector3 wi = m_shadingFrame.transformDirection(sample.wi());
 
         sample.setWi(wi);
 
@@ -186,11 +172,7 @@ namespace pathtracer{
             m_shadingFrame.inverseTransformDirection(wi);
 
         // No need to transform anything else
-        BsdfSample sample =
-            m_instance->bsdf()->evaluate(
-                localWo,
-                localWi,
-                m_uv);
+        BsdfSample sample = m_instance->bsdf()->evaluate(localWo, localWi, m_uv);
 
         sample.setWi(wi);
 

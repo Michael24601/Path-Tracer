@@ -107,6 +107,8 @@ namespace pathtracer{
 
         bool operator!=(const Vector3& other) const;
 
+        bool isFinite() const;
+
         real luminance() const;
 
         std::string toString() const;

@@ -95,4 +95,14 @@ namespace pathtracer{
         return m_instance->inScene();
     }
 
+
+    bool AreaLight::isDirectional() const{
+        return false;
+    }
+
+
+    bool AreaLight::isPoint() const{
+        return false;
+    }
+
 }

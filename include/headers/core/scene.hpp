@@ -54,6 +54,10 @@ namespace pathtracer{
 
         bool visibility(const Vector3& origin, const Vector3& target) const;
 
+        
+        bool visibility(const Vector3& origin, const Vector3& direction,
+            real distance) const;
+
     };
 
 }

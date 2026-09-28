@@ -29,6 +29,8 @@ namespace pathtracer {
     void Logger::log(Level level, const std::string& message, 
         const char* file, int line, const char* function) {
 
+        std::cerr << "ENTER LOG: " << message << "\n";
+
         std::lock_guard<std::mutex> lock(mutex);
 
         if(!output){
@@ -73,6 +75,9 @@ namespace pathtracer {
         *output << file << ":" << line
                 << " (" << function << ") "
                 << message << "\n";
+
+        // Important in case the program exits early
+        output->flush();
     }
 
 

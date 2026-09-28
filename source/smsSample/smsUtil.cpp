@@ -8,6 +8,7 @@
 #include "math/matrix2.hpp"
 #include "sms/smsSample.hpp"
 #include "light/lightSample.hpp"
+#include "light/light.hpp"
 
 namespace pathtracer{
 
@@ -97,15 +98,29 @@ namespace pathtracer{
 
 
         HalfVectorDifferentials computeHalfVectorDifferentials(
-            const Vector3& x0, const Vector3& x2, const SurfacePoint& p, 
-            const Vector3& wo, const Vector3& wi, const Vector3& halfVector, 
-            const SurfaceDifferentials& s, bool reflection, real eta) {
+            const SurfacePoint& x0, const LightSample& x2,  const SurfacePoint& p, 
+            const Vector3& halfVector, const SurfaceDifferentials& s, 
+            bool reflection, real eta) {
 
             Vector3 dpdu = s.dpdu();
             Vector3 dpdv = s.dpdv();
 
-            real ilo = 1.0 / (x0 - p.position()).length();
-            real ili = 1.0 / (x2 - p.position()).length();
+            Vector3 wo = x0.position() - p.position();
+
+            // If directional, direction does not change (and position is not
+            // finite so can't be used).
+            Vector3 wi;
+            if(x2.caster()->isDirectional()){
+                wi = x2.wi();
+            }
+            else{
+                wi = (x2.position() - p.position());
+            }
+
+            real ilo = 1.0 / wo.length();
+            wo = wo * ilo;
+            real ili = 1.0 / wi.length();
+            wi = wi * ili;
 
             real ilh = 1.0 / halfVector.length();
             Vector3 h = halfVector * ilh;
@@ -141,10 +156,9 @@ namespace pathtracer{
         }
 
 
-        Vector2 computeNewtonStep(const Vector3& x0, const Vector3& x2, 
-            const SurfacePoint& p, const Vector3& wo, const Vector3& wi, 
-            const Vector3& halfVector, const SurfaceDifferentials& d, 
-            bool reflection, real eta) {
+        Vector2 computeNewtonStep(const SurfacePoint& x0, const LightSample& x2, 
+            const SurfacePoint& p, const Vector3& halfVector, 
+            const SurfaceDifferentials& d, bool reflection, real eta) {
                 
             Vector3 s = d.s();
             Vector3 t = d.t(p.shadingNormal());
@@ -154,8 +168,8 @@ namespace pathtracer{
                 p.shadingNormal(), d);
 
             HalfVectorDifferentials hd =
-                computeHalfVectorDifferentials(x0, x2, p, wo, wi,
-                halfVector, d, reflection, eta);
+                computeHalfVectorDifferentials(x0, x2, p, halfVector, d, 
+                    reflection, eta);
 
             Matrix2 dC_dX(
                 f.dsdu.dot(h) + s.dot(hd.dhdu),

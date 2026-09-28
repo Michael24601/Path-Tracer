@@ -103,7 +103,7 @@ namespace pathtracer{
 
                 // The visibility term.
                 bool visibility =
-                    scene.visibility(it.position(), s.position());
+                    scene.visibility(it.position(), s.wi(), s.distance());
 
                 if(s.isValid() && visibility) {
 

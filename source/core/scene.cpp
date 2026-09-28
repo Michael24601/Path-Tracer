@@ -1,3 +1,4 @@
+
 #include "core/scene.hpp"
 #include <cassert>
 #include "core/instance.hpp"
@@ -7,22 +8,26 @@
 #include "light/light.hpp"
 #include "math/vector3.hpp"
 #include "math/constants.hpp"
+#include "logger.hpp"
 
 
 namespace pathtracer{
 
     // Also intersects a scene but quits early if one is found
     // that is closer than some distance
-    Intersection Scene::intersect(
-        const Ray& ray, real maxDistance) const {
+    Intersection Scene::intersect(const Ray& ray, real maxDistance) const {
 
         Intersection it = Intersection::NO_HIT;
 
         for(Instance* inst: m_instances){
             RayTracer::intersect(it, ray, inst);
 
-            if(it.t() < maxDistance)
+            if(it && !std::isfinite(maxDistance)){
                 return it;
+            }
+            else if(it.t() < maxDistance){
+                return it;
+            }
         }
 
         return it;
@@ -87,22 +92,41 @@ namespace pathtracer{
     }
 
 
-    bool Scene::visibility(
-        const Vector3& origin, const Vector3& target) const {
+    bool Scene::visibility(const Vector3& origin, const Vector3& target) const {
+
+        // This function should NOT be used for directional lights, or
+        // any lights, as they can have infinitely far away points.
+        if(!target.isFinite()){
+            LOG_ERROR("Infinitely far away point should not be using this visibility function.");
+            exit(1);
+        }
 
         real distance = (origin - target).length();
         Vector3 direction = (target - origin).normalized();
+        
+        return visibility(origin, direction, distance);
+    }
+
+
+    // For lights, especially directional, it's better to use
+    // this version, with a direction and distance
+    bool Scene::visibility(const Vector3& origin, const Vector3& direction,
+        real distance) const {
         
         // We then add a small pad to avoid self intersection
         Ray ray(origin + direction * SHADOW_EPSILON, direction);
         real maxDistance = distance;
 
-        Intersection it = intersect(
-            ray, maxDistance - 2 * SHADOW_EPSILON);
+        Intersection it = intersect(ray, maxDistance - 2 * SHADOW_EPSILON);
         
         // If we don't find an intersection we return true
-        if(!it)
+        if(!it){
             return true;
+        }
+
+        if(!std::isfinite(maxDistance)){
+            return false;
+        }
 
         // If we find an intersection and it is closer we return
         // false as well.

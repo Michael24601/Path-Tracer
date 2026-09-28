@@ -42,6 +42,12 @@ namespace pathtracer{
         virtual bool hasArea() const = 0;
 
 
+        virtual bool isDirectional() const = 0;
+
+
+        virtual bool isPoint() const = 0;
+
+
         // Computes surface differentials
         virtual SurfaceDifferentials computeDifferentials(
             const LightSample&) const = 0;

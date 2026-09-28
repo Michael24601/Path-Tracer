@@ -110,7 +110,8 @@
                     "parameters":{
                         "file-name": "data/models/cornellBox/floor.obj"
                     }
-                }
+                },
+                "is-caustic-receiver": true
             }
         },
         {
@@ -138,14 +139,14 @@
             "emission": {
                 "type": "lambertian",
                 "parameters": {
-                    "power": [100.0, 60.0, 25.0]
+                    "power": [200.0, 120.0, 50.0]
                 }
             },
             "parameters": {
                 "transform": [
-                    0.5, 0.0, 0.0, 0.0,
+                    0.25, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 0.5, 0.0
+                    0.0, 0.0, 0.25, 0.0
                 ],
                 "vertex-data":{ 
                     "format": "obj",
@@ -240,10 +241,10 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 10
+            "sample-count": 5
         },
         "integrator": {
-            "type": "path-tracer-nee",
+            "type": "path-tracer-sms",
             "parameters": {
                 "max-depth": 100
             }

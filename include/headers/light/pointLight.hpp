@@ -32,6 +32,10 @@ namespace pathtracer{
 
         bool hasArea() const override;
 
+        bool isDirectional() const override;
+
+        bool isPoint() const override;
+
         bool isIntersectable() const override;
 
     };
