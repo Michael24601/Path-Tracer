@@ -125,6 +125,16 @@ namespace pathtracer{
 
     }
 
+
+    namespace SphericalCoordinates{
+
+        // Converts a direction to spherical coordinates.
+        // This is similar to the square to hemisphere function
+        // but the u and v are not normalized.
+        Vector2 transform(const Vector3& w);
+
+    }
+
 }
 
 #endif

@@ -240,4 +240,21 @@ namespace pathtracer{
 
     }
 
+
+    namespace SphericalCoordinates{
+
+        // Converts a direction to spherical coordinates.
+        Vector2 transform(const Vector3& w) {
+            real theta = std::acos(std::clamp(w.z(), -1.0, 1.0));
+            real phi = std::atan2(w.y(), w.x());
+
+            if (phi < 0.0) {
+                phi += 2.0 * PI;
+            }
+
+            return Vector2(theta, phi);
+        }
+
+    }
+
 }

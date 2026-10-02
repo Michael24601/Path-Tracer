@@ -9,7 +9,7 @@ namespace pathtracer {
     // Default value is the console
     std::ostream* Logger::output = &std::cout;
 
-    float Logger::MAX_TIME_INTERVAL = 1.0f;
+    float Logger::MAX_TIME_INTERVAL = -1.0f;
 
     std::unordered_map<std::string, float> Logger::lastLogged;
 
@@ -28,8 +28,6 @@ namespace pathtracer {
 
     void Logger::log(Level level, const std::string& message, 
         const char* file, int line, const char* function) {
-
-        std::cerr << "ENTER LOG: " << message << "\n";
 
         std::lock_guard<std::mutex> lock(mutex);
 

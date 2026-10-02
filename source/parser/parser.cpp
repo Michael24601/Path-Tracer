@@ -216,6 +216,19 @@ namespace pathtracer{
                     Texture* ior = parseTexture(
                         data["materials"][i]["parameters"]["ior"]);
 
+                        
+                    // Since ior values are roughly between 1 and 2,
+                    // we can map them here (since png can't hold them).
+                    if(data["materials"][i]["parameters"]["ior"]["parameters"]["type"] == "texture"){
+
+                        for(int h = 0; h < ior->getHeight(); h++){
+                            for(int w = 0; w < ior->getWidth(); w++){
+                                ior->setTexture(h, w, ior->getTexture(h, w) + 1.0);
+                            }
+                        }
+                    }
+
+
                     Texture* reflectance = parseTexture(
                         data["materials"][i]["parameters"]["reflectance"]);
 
@@ -567,9 +580,12 @@ namespace pathtracer{
 
                 int maxDepth =
                     data["renderer"]["integrator"]["parameters"]["max-depth"];
+                
+                bool useHalfVector =
+                    data["renderer"]["integrator"]["parameters"]["use-halfvector"];
 
                 integrator =
-                    new PathTracerSms(maxDepth, scene);
+                    new PathTracerSms(maxDepth, useHalfVector, scene);
             }
 
             if(data["renderer"]["type"] == "path-tracer-renderer"){

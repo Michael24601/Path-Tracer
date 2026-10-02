@@ -20,7 +20,7 @@ namespace pathtracer{
     }
 
 
-    // These are assumed to be columns
+    // These are row by row
     Matrix2::Matrix2(real c0, real c1, real c2, real c3) {
         m_data[0] = c0;
         m_data[1] = c1;

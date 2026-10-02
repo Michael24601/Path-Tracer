@@ -222,7 +222,6 @@
         }
     ],
 
-
     "camera": {
         "type": "perspective",
         "parameters": {
@@ -241,12 +240,13 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 5
+            "sample-count": 4000
         },
         "integrator": {
-            "type": "path-tracer-sms",
+            "type": "path-tracer",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 100,
+                "use-halfvector": false
             }
         }
     }

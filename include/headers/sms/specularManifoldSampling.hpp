@@ -43,6 +43,9 @@ namespace pathtracer{
         // The threshold for checking if the specular constraint is met.
         real m_epsilon;
 
+        // Uses half vector constraint instead of angle difference
+        bool m_useHalfVector;
+
     public:
 
         std::atomic<int> m_converged{0};
@@ -52,8 +55,9 @@ namespace pathtracer{
         std::atomic<int> m_notVis{0};
 
 
-        SpecularManifoldSampling(const Scene* scene, int maxIterations = 30, 
-            int maxTrials = 500, real epsilon = 1e-5, real threshold = 1e-4);
+        SpecularManifoldSampling(const Scene* scene, bool useHalfVector, 
+            int maxIterations = 50, int maxTrials = 500, real epsilon = 1e-5, 
+            real threshold = 1e-4);
 
 
         // Returns the outgoing radiance from x0, after connecting
@@ -61,8 +65,7 @@ namespace pathtracer{
         // satisfying the specular constraint.
         // The wo pointing away from x0 to the previous point is also sent.
         Vector3 sample(const SurfacePoint& causticPoint, 
-            const LightSample& lightPoint, const Vector3& wo, 
-            real lightSelectionPdf, const Scene* scene, bool& success);
+            const Vector3& wo, const Scene* scene);
 
             
         // Given a point on a light x2 (that we already 
@@ -86,11 +89,12 @@ namespace pathtracer{
         // Returns the ougoing contribution from x0 after it samples
         // x1 and x2 on the light. This will include all weight terms
         // except for the pdf at x1, which is computed outside
-        // (since it can fail, so the main function handles it).
+        // (since it can fail, so the main function handles it),
+        // and the light selection pdf.
         static Vector3 evaluatePathContribution(
             const SurfacePoint& causticPoint, const LightSample& lightPoint, 
             const SmsSample& sample, const Specular* bsdf, const Vector3& wo, 
-            real lightSelectionPdf, const Scene* scene);
+            const Scene* scene);
 
     };
 

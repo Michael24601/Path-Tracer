@@ -118,7 +118,8 @@
                     "parameters":{
                         "file-name": "data/models/specular/floor.obj"
                     }
-                }
+                },
+                "is-caustic-receiver": true
             }
         },
         {
@@ -256,7 +257,7 @@
             "sample-count": 50
         },
         "integrator": {
-            "type": "path-tracer-sms",
+            "type": "path-tracer-nee-mis",
             "parameters": {
                 "max-depth": 100
             }

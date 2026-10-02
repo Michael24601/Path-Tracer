@@ -43,6 +43,20 @@ namespace pathtracer{
         Texture(const std::vector<std::vector<Vector3>>& data, 
             BorderMode borderMode, FilterMode filterMode);
 
+        
+        int getWidth() const;
+
+
+        int getHeight() const;
+
+
+        // Sets texture
+        void setTexture(int i, int j, const Vector3& color);
+
+
+        const Vector3& getTexture(int i, int j) const;
+        
+
         // Samples the texture according to the set modes. The given
         // uv coordinate does not necessarily need to span between
         // 0 and 1, as the borderMode will handle it, nor does it

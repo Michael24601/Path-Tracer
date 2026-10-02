@@ -67,4 +67,33 @@ namespace pathtracer{
         return color;
     }
 
+
+    int Texture::getWidth() const{
+        return width;
+    }
+
+
+    int Texture::getHeight() const{
+        return height;
+    }
+
+
+    // Sets texture
+    void Texture::setTexture(int h, int w, const Vector3& color){
+
+        assert((h >= 0 && h < height) && (w >= 0 && w < width) &&
+            "Dimensions don't match the texture's");
+
+        m_data[h][w] = color;
+    }
+
+
+    const Vector3& Texture::getTexture(int h, int w) const {
+        assert((h >= 0 && h < height) && (w >= 0 && w < width) &&
+            "Dimensions don't match the texture's");
+
+        return m_data[h][w];
+    }
+
+
 }
