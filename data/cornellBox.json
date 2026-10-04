@@ -233,10 +233,10 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 20
+            "sample-count": 10
         },
         "integrator": {
-            "type": "path-tracer-nee",
+            "type": "path-tracer-nee-mis",
             "parameters": {
                 "max-depth": 100
             }

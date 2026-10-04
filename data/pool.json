@@ -268,12 +268,12 @@
     "renderer": {
         "type": "path-tracer-renderer",
         "parameters": {
-            "pixel-resolution": [1024, 1024],
-            "sample-count": 100,
+            "pixel-resolution": [512, 512],
+            "sample-count": 10,
             "message-count": 10
         },
         "integrator": {
-            "type": "path-tracer-sms",
+            "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
                 "use-halfvector": false

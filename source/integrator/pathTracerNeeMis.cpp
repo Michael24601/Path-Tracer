@@ -15,6 +15,7 @@
 #include "shapes/shape.hpp"
 #include "bsdf/bsdf.hpp"
 #include "math/constants.hpp"
+#include "nextEventEstimation/nextEventEstimation.hpp"
 
 
 namespace pathtracer{
@@ -113,80 +114,44 @@ namespace pathtracer{
             else{
                 isLastFrameSpecular = false;
 
-                // Note that NEE can't sample from emissive surfaces,
-                // but specifically from lights (emissive surfaces
-                // have to be considered an area light explicitly)
-                if(scene.lightCount() <= 0){
-                    break;
-                }
+                NextEventSample s = NextEventEstimation::sample(scene, it);
 
-                // First we pick a random light with uniform probability.
-                const Light* light =
-                    UniformLight::sample(scene);
+                // Note that we evaluate, not sample the bsdf, since
+                // we already have a wi, so we just need the value
+                // and cosine. Also we ignore the pdf it returns since
+                // this is the pdf of the bsdf having generated said
+                // path (used in MIS for example).
+                BsdfSample bsdfEval = it.evaluateBsdf(wo, s.sample.wi());
 
-                // The pdf of choosing this instance
-                real pdfInstance =
-                    UniformLight::pdf(scene, light);
+                if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0 && s.visibility) {
 
-                // Then we sample the light for a point and radiance,
-                // which returns a light sample in world coordinates
-                // in solid angle measure.
-                LightSample s =
-                    light->sample(it.position());
+                    //---------------------- MIS -----------------------
 
-                // The visibility term.
-                bool visibility =
-                    scene.visibility(it.position(), s.wi(), s.distance());
+                    real misWeight = 1.0;
 
+                    // If the light is intersectable, then bsdf can
+                    // sample it.
+                    if(s.sample.caster()->isIntersectable()){
 
-                if(s.isValid() && visibility) {
+                        // This is the current pdf that samples the
+                        // light. It needs to be in solid angles,
+                        // and the function returns it in solid angles.
+                        real pdf_nee = s.pdf;
 
-                    // The pdf of choosing this point is the pdf of
-                    // choosing the light times the pdf of choosing
-                    // the point on the light (in solid angles already).
-                    real pdfPoint =
-                        pdfInstance * s.pdf();
+                        // The pdf that the bsdf would have sampled it
+                        // is inside the evaluated sample.
+                        real pdf_bsdf = bsdfEval.pdf();
 
-                    // Note that we evaluate, not sample the bsdf, since
-                    // we already have a wi, so we just need the value
-                    // and cosine. Also we ignore the pdf it returns since
-                    // this is the pdf of the bsdf having generated said
-                    // path (used in MIS for example).
-                    BsdfSample bsdfEval =
-                        it.evaluateBsdf(wo, s.wi());
+                        if(pdf_bsdf > 0.0 && pdf_nee > 0.0) {
 
-                    if(!bsdfEval.isInvalid() &&
-                        bsdfEval.cosine() > 0) {
-
-                        //---------------------- MIS -----------------------
-
-                        real misWeight = 1.0;
-
-                        // If the light is intersectable, then bsdf can
-                        // sample it.
-                        if(light->isIntersectable()){
-
-                            // This is the current pdf that samples the
-                            // light. It needs to be in solid angles,
-                            // and the function returns it in solid angles.
-                            real pdf_nee = pdfPoint;
-
-                            // The pdf that the bsdf would have sampled it
-                            // is inside the evaluated sample.
-                            real pdf_bsdf = bsdfEval.pdf();
-
-                            if(pdf_bsdf > 0.0 && pdf_nee > 0.0) {
-
-                                misWeight = pdf_nee / (pdf_nee + pdf_bsdf);
-                            }
+                            misWeight = pdf_nee / (pdf_nee + pdf_bsdf);
                         }
-
-                        Vector3 neeWeight = bsdfEval.bsdf() *
-                            bsdfEval.cosine() * (1.0 / pdfPoint);
-
-                        color = color + s.radiance() * throughput * neeWeight 
-                            * misWeight;
                     }
+
+
+                    // Contribution includes pdf
+                    color = color + s.contribution * bsdfEval.bsdf() 
+                        * bsdfEval.cosine() * throughput * misWeight;
                 }
             }
 

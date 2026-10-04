@@ -22,8 +22,6 @@ namespace pathtracer{
 
     public:
 
-        static std::atomic<long long> n1, n2;
-
         PathTracerGuided(int maxDepth, real alpha);
 
         Vector3 color(const Ray& ray, const Scene& scene) override;

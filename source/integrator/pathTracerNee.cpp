@@ -12,6 +12,7 @@
 #include "math/mathUtil.hpp"
 #include "bsdf/bsdf.hpp"
 #include "math/constants.hpp"
+#include "nextEventEstimation/nextEventEstimation.hpp"
 #include "logger.hpp"
 
 namespace pathtracer{
@@ -70,48 +71,20 @@ namespace pathtracer{
             else{
                 isLastFrameSpecular = false;
 
-                // Note that NEE can't sample from emissive surfaces,
-                // but specifically from lights (emissive surfaces
-                // have to be considered an area light explicitly)
-                if(scene.lightCount() <= 0){
-                    break;
-                }
+                NextEventSample s = NextEventEstimation::sample(scene, it);
 
-                // First we pick a random light with uniform probability.
-                const Light* light = UniformLight::sample(scene);
-                // The pdf of choosing this instance
-                real pdfInstance = UniformLight::pdf(scene, light);
+                // Note that we evaluate, not sample the bsdf, since
+                // we already have a wi, so we just need the value
+                // and cosine. Also we ignore the pdf it returns since
+                // this is the pdf of the bsdf having generated said
+                // path (used in MIS for example).
+                BsdfSample bsdfEval = it.evaluateBsdf(wo, s.sample.wi());
 
-                // Then we sample the light for a point and radiance,
-                // which returns a light sample in world coordinates
-                // in solid angle measure.
-                LightSample s = light->sample(it.position());
+                if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0 && s.visibility) {
 
-                // The visibility term.
-                bool visibility =
-                    scene.visibility(it.position(), s.wi(), s.distance());
-
-                if(s.isValid() && visibility) {
-
-                    // The pdf of choosing this point is the pdf of
-                    // choosing the light times the pdf of choosing the point
-                    // on the light.
-                    real pdfPoint = pdfInstance * s.pdf();
-
-                    // Note that we evaluate, not sample the bsdf, since
-                    // we already have a wi, so we just need the value
-                    // and cosine. Also we ignore the pdf it returns since
-                    // this is the pdf of the bsdf having generated said
-                    // path (used in MIS for example).
-                    BsdfSample bsdfEval = it.evaluateBsdf(wo, s.wi());
-
-                    if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0) {
-
-                        Vector3 neeWeight = bsdfEval.bsdf() *
-                            bsdfEval.cosine() * (1.0 / pdfPoint);
-
-                        color = color + s.radiance() * throughput * neeWeight;
-                    }
+                    // Contribution includes pdf
+                    color = color + s.contribution * bsdfEval.bsdf() 
+                        * bsdfEval.cosine() * throughput;
                 }
             }
 

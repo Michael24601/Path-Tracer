@@ -112,10 +112,10 @@ namespace pathtracer{
         // How many samples per leaf node we tolerate
         int m_threshold;
 
-    public:
-
         // The root of the tree
         NodePtr m_root;
+
+    public:
 
         // Initializes a tree with just a root and 0 flux
         KdTree(int threshold);

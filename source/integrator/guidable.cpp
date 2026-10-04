@@ -64,16 +64,12 @@ namespace pathtracer{
 
             for(int i = position.size()-1; i >= 0; i--){
 
-                Vector3 localPoint =
-                    toTreeLocalSpace(position[i], scene);
+                Vector3 localPoint = toTreeLocalSpace(position[i], scene);
 
                 Vector3 direction = wi[i];
 
-                m_trainTree->accumulate(
-                    localPoint,
-                    direction,
-                    intensity.luminance()
-                );
+                m_trainTree->accumulate(localPoint, direction,
+                    intensity.luminance());
 
                 intensity = intensity * weight[i];
             }

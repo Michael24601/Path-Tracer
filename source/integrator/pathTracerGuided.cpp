@@ -14,9 +14,6 @@
 
 
 namespace pathtracer{
-
-    std::atomic<long long> PathTracerGuided::n1{0};
-    std::atomic<long long> PathTracerGuided::n2{0};
     
 
     PathTracerGuided::PathTracerGuided(int maxDepth, real alpha) :

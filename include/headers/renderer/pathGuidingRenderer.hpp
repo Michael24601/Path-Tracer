@@ -28,7 +28,7 @@ namespace pathtracer{
         int m_c;
 
         // The SD trees used for path guiding.
-        // The first guides the second (ieration k and k+1)
+        // The first guides the second trains (ieration k+1 and k)
         KdTree* m_guideTree;
         KdTree* m_trainTree;
 
@@ -44,7 +44,8 @@ namespace pathtracer{
         // Trains tree here by calling renderAllPixels
         void preprocess() override;
 
-        // Uses the same render pixel as pathtracer
+
+        // Uses the same renderPixel() as pathtracer
     };
 
 }

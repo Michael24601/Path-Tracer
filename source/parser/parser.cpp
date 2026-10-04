@@ -21,6 +21,7 @@
 #include "integrator/pathTracerGuided.hpp"
 #include "integrator/pathTracerNeeGuided.hpp"
 #include "integrator/pathTracerSms.hpp"
+#include "integrator/pathTracerNeeSms.hpp"
 #include "light/light.hpp"
 #include "light/areaLight.hpp"
 #include "light/pointLight.hpp"
@@ -637,6 +638,17 @@ namespace pathtracer{
 
                 integrator =
                     new PathTracerSms(maxDepth, useHalfVector, scene);
+            }
+            else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-sms"){
+
+                int maxDepth =
+                    data["renderer"]["integrator"]["parameters"]["max-depth"];
+                
+                bool useHalfVector =
+                    data["renderer"]["integrator"]["parameters"]["use-halfvector"];
+
+                integrator =
+                    new PathTracerNeeSms(maxDepth, useHalfVector, scene);
             }
 
 

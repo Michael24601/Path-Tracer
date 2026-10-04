@@ -53,10 +53,10 @@ namespace pathtracer{
             // If we have an emissive surface, add emission and break.
             // If last hit was a specular (can cast caustic), we ignore it,
             // since it would have double counted SMS sample.
-            // And if last hit is not specular, we also ignore it,
-            // since it was sampled by NEE.
-            // So we only consider first hit.
-            if(it.instance()->emission() && i == 0){
+            // If last hit not specular, we can also add its contribution,
+            // as no double counting.
+            if(it.instance()->emission() 
+                && (i == 0 || !lastInst->bsdf()->isSpecular())){
 
                 Vector3 emission = it.evaluateEmission(wo);
                 color = color + emission * throughput;
@@ -77,61 +77,6 @@ namespace pathtracer{
                 // If it worked, we can just return contribution
                 // weighted by throughput. Otherwise it is 0.0 anyway.
                 color = color + contribution * throughput;
-            }
-
-
-            // ------------- This next step is NEE -------------
-
-            // We only perform NEE if the current surface is not
-            // delta surface (specular).
-            // This is both because NEE samples have a 0 probability
-            // of sampling the correct direction, and because
-            // it would double count SMS.
-            if(!it.instance()->bsdf()->isSpecular()){
-
-                // Note that NEE can't sample from emissive surfaces,
-                // but specifically from lights (emissive surfaces
-                // have to be considered an area light explicitly)
-                if(scene.lightCount() <= 0){
-                    break;
-                }
-
-                // First we pick a random light with uniform probability.
-                const Light* light = UniformLight::sample(scene);
-                // The pdf of choosing this instance
-                real pdfInstance = UniformLight::pdf(scene, light);
-
-                // Then we sample the light for a point and radiance,
-                // which returns a light sample in world coordinates
-                // in solid angle measure.
-                LightSample s = light->sample(it.position());
-
-                // The visibility term.
-                bool visibility =
-                    scene.visibility(it.position(), s.wi(), s.distance());
-
-                if(s.isValid() && visibility) {
-
-                    // The pdf of choosing this point is the pdf of
-                    // choosing the light times the pdf of choosing the point
-                    // on the light.
-                    real pdfPoint = pdfInstance * s.pdf();
-
-                    // Note that we evaluate, not sample the bsdf, since
-                    // we already have a wi, so we just need the value
-                    // and cosine. Also we ignore the pdf it returns since
-                    // this is the pdf of the bsdf having generated said
-                    // path (used in MIS for example).
-                    BsdfSample bsdfEval = it.evaluateBsdf(wo, s.wi());
-
-                    if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0) {
-
-                        Vector3 neeWeight = bsdfEval.bsdf() *
-                            bsdfEval.cosine() * (1.0 / pdfPoint);
-
-                        color = color + s.radiance() * throughput * neeWeight;
-                    }
-                }
             }
 
 
