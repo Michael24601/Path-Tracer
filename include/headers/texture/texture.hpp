@@ -38,10 +38,17 @@ namespace pathtracer{
         // (where W is the maximum width or height).
         Vector2 mapToImageSpace(const Vector2& uv) const;
 
+
+        // For color textures, we need to turn srgb to linear
+        Vector3 srgbToLinear(const Vector3& color);
+
+
     public:
 
+        // Optionally, for color textures, they can be linearized
         Texture(const std::vector<std::vector<Vector3>>& data, 
-            BorderMode borderMode, FilterMode filterMode);
+            BorderMode borderMode, FilterMode filterMode, 
+            bool linearize = false);
 
         
         int getWidth() const;

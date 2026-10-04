@@ -74,7 +74,7 @@ namespace pathtracer{
 
 
     // Expects json of a texture
-    Texture* parseTexture(const json& texture) {
+    Texture* parseTexture(const json& texture, bool linearize = false) {
 
         const json& value = texture["parameters"];
 
@@ -109,7 +109,7 @@ namespace pathtracer{
                 exit(1);
             }
 
-            return new Texture(ImageIo::loadImage(filename), bm, fm);
+            return new Texture(ImageIo::loadImage(filename), bm, fm, linearize);
         }
         else if(texture["type"] == "color"){
             Vector3 color = parseVector3(value["color"]);
@@ -134,6 +134,59 @@ namespace pathtracer{
             Vector3(value[3], value[7], value[11])
         );
     }
+
+
+
+    std::string Parser::parseOutputName(const std::string& filename){
+
+        std::ifstream file(filename);
+
+        if (!file.is_open()){
+            LOG_ERROR("File could not be opened");
+            exit(1);
+        }
+
+        json data = json::parse(file);
+
+        std::string sceneName = std::filesystem::path(filename).stem().string();
+
+        std::string algorithm = data["renderer"]["integrator"]["type"];
+
+        Vector2i resolution =
+            parseVector2i(data["renderer"]["parameters"]["pixel-resolution"]);
+
+        std::string resolutionName =
+            std::to_string(resolution.x()) + "px_" +
+            std::to_string(resolution.y()) + "px";
+
+        std::string outputName;
+
+        if (algorithm == "aov-integrator") {
+
+            std::string var =
+                data["renderer"]["integrator"]["parameters"]["render-variable"];
+
+            outputName =
+                sceneName + "_" +
+                algorithm + "_" +
+                var + "_" +
+                resolutionName;
+        }
+        else {
+
+            int sampleCount =
+                data["renderer"]["parameters"]["sample-count"];
+
+            outputName =
+                sceneName + "_" +
+                algorithm + "_" +
+                std::to_string(sampleCount) + "spp_" +
+                resolutionName;
+        }
+
+        std::replace(outputName.begin(), outputName.end(), '-', '_');
+        return outputName;
+    } 
 
 
 
@@ -199,8 +252,10 @@ namespace pathtracer{
 
                 if(data["materials"][i]["type"] == "diffuse"){
 
+                    // Since this is a color, we linearize it (if it's
+                    // an image, and not a color).
                     Texture* texture = parseTexture(
-                        data["materials"][i]["parameters"]["albedo"]);
+                        data["materials"][i]["parameters"]["albedo"], true);
 
                     materials[id] = new DiffuseBsdf(texture);
                 }
@@ -331,13 +386,9 @@ namespace pathtracer{
                 Instance* instance;
                 if(inst["type"] == "sphere"){
 
-                    instance = new Instance(
-                        sphere,
-                        nullptr,
-                        nullptr,
-                        materials[materialID],
-                        emission,
-                        transform);
+                    instance = new Instance(sphere, nullptr, nullptr,
+                        materials[materialID], emission, transform);
+                        
                 }
                 else if (inst["type"] == "mesh"){
 
@@ -588,32 +639,33 @@ namespace pathtracer{
                     new PathTracerSms(maxDepth, useHalfVector, scene);
             }
 
+
+            int messageCount = 10;
+            if(data["renderer"]["parameters"].contains("message-count")){
+                messageCount = data["renderer"]["parameters"]["message-count"];
+            }
+
             if(data["renderer"]["type"] == "path-tracer-renderer"){
 
                 int sampleCount =
                     data["renderer"]["parameters"]["sample-count"];
 
                 renderer = new PathTracerRenderer(
-                    resolution.x(),
-                    resolution.y(),
-                    camera,
-                    scene,
-                    integrator,
-                    sampleCount);
+                    resolution.x(), resolution.y(),
+                    camera, scene, integrator, sampleCount, messageCount
+                );
             }
             else if(data["renderer"]["type"] == "renderer"){
 
                 renderer = new Renderer(
-                    resolution.x(),
-                    resolution.y(),
-                    camera,
-                    scene,
-                    integrator);
+                    resolution.x(), resolution.y(), camera, scene, 
+                    integrator, messageCount
+                );
             }
             else if(data["renderer"]["type"] == "path-guiding-renderer"){
 
                 int renderSamples =
-                    data["renderer"]["parameters"]["render-sample-count"];
+                    data["renderer"]["parameters"]["sample-count"];
 
                 int firstIterationSamples =
                     data["renderer"]["parameters"]
@@ -635,7 +687,8 @@ namespace pathtracer{
                     firstIterationSamples,
                     iterationCount,
                     renderSamples,
-                    c);
+                    c, messageCount
+                );
             }
         }
         else{

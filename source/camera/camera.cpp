@@ -4,8 +4,11 @@
 #include "math/matrix3.hpp"
 #include "math/vector2.hpp"
 #include "math/vector3.hpp"
+#include "math/constants.hpp"
+
 
 namespace pathtracer{
+
 
     Transform Camera::lookAt(const Vector3& eye, 
         const Vector3& target, const Vector3& up) {
@@ -20,6 +23,7 @@ namespace pathtracer{
 
         return Transform(rotation, eye);
     }
+
 
     Camera::Camera(real width, real height, const Transform& transform) :
         m_width{width}, m_height{height}, m_transform(transform) {

@@ -16,7 +16,8 @@ namespace pathtracer {
         enum class Level {
             Info,
             Warning,
-            Error
+            Error,
+            Trace
         };
 
     private:
@@ -30,32 +31,35 @@ namespace pathtracer {
 
         static double getTime();
 
-        static void log(Level level, const std::string& message, 
+        static void log(Level level, const std::string& message,
             const char* file, int line, const char* function);
 
     public:
 
         static void setOutput(std::ostream& stream);
 
-        static void info(const std::string& message, const char* file, 
+        static void setMaxTimeInterval(float seconds);
+
+        static void info(const std::string& message, const char* file,
             int line, const char* function);
 
-        static void warning(const std::string& message, const char* file, 
+        static void warning(const std::string& message, const char* file,
             int line, const char* function);
 
-        static void error(const std::string& message, const char* file, 
+        static void error(const std::string& message, const char* file,
+            int line, const char* function);
+
+        static void trace(const std::string& message, const char* file,
             int line, const char* function);
     };
 
 }
 
 
-/*
-    These are defined to avoid  having to manually send the file,
-    line, and function each time info is logged. The processor
-    replaces the functions later so it's as if they were sent
-    from that file.
-*/
+// These are defined to avoid having to manually send the file,
+// line, and function each time info is logged. The processor
+// replaces the functions later so it's as if they were sent
+// from that file.
 #define LOG_INFO(msg) \
     pathtracer::Logger::info(msg, __FILE__, __LINE__, __FUNCTION__)
 
@@ -64,5 +68,8 @@ namespace pathtracer {
 
 #define LOG_ERROR(msg) \
     pathtracer::Logger::error(msg, __FILE__, __LINE__, __FUNCTION__)
+
+#define LOG_TRACE(msg) \
+    pathtracer::Logger::trace(msg, __FILE__, __LINE__, __FUNCTION__)
 
 #endif

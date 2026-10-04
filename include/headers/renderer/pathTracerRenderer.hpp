@@ -11,18 +11,21 @@ namespace pathtracer{
     // of the pixel. 
     class PathTracerRenderer : public Renderer{
 
-    private:
+    protected:
 
         int m_samples;
 
     public:
 
         PathTracerRenderer(int width, int height, const Camera* camera,
-            const Scene* scene, Integrator* integrator, int samples);
+            const Scene* scene, Integrator* integrator, int samples, 
+            int messageCount = 10);
+
+        virtual void preprocess() override;
 
         // The path tracer version uses multiple samples per pixel,
         // and jitters them.
-        Vector3 renderPixel(int i, int j) override;
+        virtual Vector3 renderPixel(int i, int j) override;
     };
 
 }

@@ -28,12 +28,11 @@ namespace pathtracer{
         int firstIterationSamples,
         int iterationCount,
         int renderSamples,
-        int c) :
-        Renderer(width, height, camera, scene, integrator),
+        int c,
+        int messageCount) :
+        PathTracerRenderer(width, height, camera, scene, integrator, renderSamples, messageCount),
         m_firstIterationSamples{firstIterationSamples},
-        m_iterationCount{iterationCount},
-        m_renderSamples{renderSamples},
-        m_c{c} {
+        m_iterationCount{iterationCount}, m_c{c} {
     }
 
     PathGuidingRenderer::~PathGuidingRenderer(){
@@ -41,12 +40,15 @@ namespace pathtracer{
         if(m_trainTree) delete m_trainTree;
     }
 
-    std::vector<std::vector<Vector3>> PathGuidingRenderer::render(){
+    void PathGuidingRenderer::preprocess(){
 
-        int width = m_width;
-        int height = m_height;
+        // The integrator has to be guidable (contains trees)
+        Guidable* integrator = dynamic_cast<Guidable*>(m_integrator);
+        if(!integrator){
+            LOG_ERROR("Path guiding requires a guidable integrator");
+            exit(1);
+        }
 
-        //---------------------- PATH GUIDING LOGIC ------------------------
         
         // In the first iteration, we don't use any guide tree, only
         // the training tree. The threshold is c * 2^k where k = 0.
@@ -59,14 +61,15 @@ namespace pathtracer{
         m_trainTree = new KdTree(threshold);
         m_guideTree = nullptr;
 
-        // Samples used
-        m_samplesUsed = m_firstIterationSamples;
+        // Saves the number of samples needed for the actual final render
+        // as it will be overwritten during training.
+        int renderSamples = m_samples;
 
-        // The integrator has to be guidable (contains trees)
-        Guidable* integrator = dynamic_cast<Guidable*>(m_integrator);
-        if(!integrator){
-            LOG_ERROR("Path guiding requires a guidable integrator");
-        }
+        // Samples used
+        m_samples = m_firstIterationSamples;
+        // For logging, we set up the number of paths in total
+        m_totalPathCount = static_cast<long long>(m_width) * m_height * m_samples;
+        m_pathCounter = 0;
 
         // Then loops
         for(int k = 0; k < m_iterationCount; k++){
@@ -76,12 +79,7 @@ namespace pathtracer{
             integrator->setTrainTree(m_trainTree);
 
             // Does one iteration
-            #pragma omp parallel for
-            for(int j = 0; j < height; j++){
-                for(int i = 0; i < width; i++){
-                    renderPixel(i, j);
-                }
-            }
+            renderAllPixels();
 
             // We recompute the trees and swap them
             m_trainTree->recomputeSampleCount();
@@ -93,82 +91,34 @@ namespace pathtracer{
 
             m_guideTree = m_trainTree->copyTree();
 
-            LOG_INFO(
-                std::to_string(
-                    m_trainTree->m_root->getSampleCount()));
-
             // Training tree is reset
             m_trainTree->reset();
 
-            threshold =
-                m_c * sqrt(static_cast<float>(std::pow(2, k)));
-
-            m_samplesUsed *= 2;
-
+            // Threshold is recomputed
+            threshold = m_c * sqrt(static_cast<float>(std::pow(2, k)));
             m_trainTree->setThreshold(threshold);
-              
-            Vector3 p(-2, 2.7, 0.75);
 
-            p = p - m_scene->getBoundingBox().minCorner();
+            // We update samples, counter, and total path count
+            m_samples *= 2;
+            m_totalPathCount = static_cast<long long>(m_width) * m_height * m_samples;
+            m_pathCounter = 0;
 
-            p = p / (
-                m_scene->getBoundingBox().maxCorner() -
-                m_scene->getBoundingBox().minCorner());
-
-            auto tree = m_guideTree->getDTree(p);
-
-            auto im = QuadTreeUtil::renderQuadTree(tree, 512);
-
-            ImageIo::savePNG(
-                im,
-                "output/file" + std::to_string(k) + ".png");
-
-            LOG_INFO("Iteration: " + std::to_string(k));
+            LOG_INFO("Iteration: " + std::to_string(k) + " was completed.");
         }
 
-        //--------------------------- RENDERING ----------------------------
-
-        std::vector<std::vector<Vector3>> color(
-            height,
-            std::vector<Vector3>(width));
-
+        // After this, render be called again, for the last time,
+        // and actually saved. So we need to set up the trees to be correct.
+        
+        // The guide tree is the training tree from before.
         integrator->setGuideTree(m_guideTree);
+        // The train tree is null
         integrator->setTrainTree(nullptr);
 
-        m_samplesUsed = m_renderSamples;
-
-        #pragma omp parallel for
-        for(int j = 0; j < height; j++){
-            for(int i = 0; i < width; i++){
-                color[j][i] = renderPixel(i, j);
-            }
-        }
-
-        return color;
-    }
-
-    // The path tracer version uses multiple samples per pixel,
-    // and jitters them.
-    Vector3 PathGuidingRenderer::renderPixel(int i, int j){
-
-        Vector3 color(0.0);
-
-        for(int k = 0; k < m_samplesUsed; k++){
-            real offsetX = Random::next();
-            real offsetY = Random::next();
-
-            real x = ((i + offsetX) / m_width) * 2.0 - 1.0;
-            real y = 1.0 - ((j + offsetY) / m_height) * 2.0;
-            Vector2 uv(x, y);
-
-            Ray ray = m_camera->generateRay(uv);
-
-            color = (color * k +
-                m_integrator->color(ray, *m_scene))
-                * (1.0 / (k + 1.0));
-        }
-
-        return color;
+        // The number of samples is the one initially reserved
+        // for rendering (the one we preserved).
+        m_samples = renderSamples;
+        // We can also update total path count for logging
+        m_totalPathCount = static_cast<long long>(m_width) * m_height * m_samples;
     }
 
 }

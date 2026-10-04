@@ -19,8 +19,25 @@ namespace pathtracer{
     }
 
 
+    Vector3 Texture::srgbToLinear(const Vector3& color) {
+        Vector3 result = color;
+
+        for (int i = 0; i < 3; i++) {
+            if (result[i] <= 0.04045){
+                result[i] /= 12.92;
+            }
+            else{
+                result[i] = std::pow((result[i] + 0.055) / 1.055, 2.4);
+            }
+        }
+
+        return result;
+    }
+
+
+
     Texture::Texture(const std::vector<std::vector<Vector3>>& data, 
-        BorderMode borderMode, FilterMode filterMode) :
+        BorderMode borderMode, FilterMode filterMode, bool linearize) :
         m_data{data},
         m_borderMode{borderMode},
         m_filterMode{filterMode} {
@@ -30,6 +47,15 @@ namespace pathtracer{
 
         width = data[0].size();
         height = data.size();
+
+        if(linearize){
+            for(int i = 0; i < height; i++){
+                for(int j = 0; j < width; j++){
+                    m_data[i][j] = srgbToLinear(m_data[i][j]);
+                }
+            }
+        }
+        
     }
 
 

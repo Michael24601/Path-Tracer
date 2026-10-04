@@ -6,14 +6,22 @@
 #include "math/vector3.hpp"
 #include "camera/camera.hpp"
 #include "integrator/integrator.hpp"
+#include "logger.hpp"
 
 namespace pathtracer{
 
 
     PathTracerRenderer::PathTracerRenderer(int width, int height,
         const Camera* camera, const Scene* scene, Integrator* integrator,
-        int samples) : Renderer(width, height, camera, scene, integrator),
+        int samples, int messageCount) :
+        Renderer(width, height, camera, scene, integrator, messageCount),
         m_samples{samples} {
+    }
+
+
+    void PathTracerRenderer::preprocess(){
+        // This time it also includes sample count
+        m_totalPathCount = static_cast<long long>(m_width) * m_height * m_samples;
     }
 
 
@@ -21,22 +29,16 @@ namespace pathtracer{
     // and jitters them.
     Vector3 PathTracerRenderer::renderPixel(int i, int j) {
 
-        Vector3 color(0.0);
+        Vector3 color;
 
         for(int k = 0; k < m_samples; k++){
             real offsetX = Random::next();
             real offsetY = Random::next();
 
-            real x = ((i + offsetX) / m_width) * 2.0 - 1.0;
-            real y = 1.0 - ((j + offsetY) / m_height) * 2.0;
-            Vector2 uv(x, y);
-
-            Ray ray = m_camera->generateRay(uv);
-            color = (color * k + m_integrator->color(ray, *m_scene)) 
-                * (1.0 / (k + 1.0));
+            color = color + shootRay(i, j, offsetX, offsetY);
         }
 
-        return color;
+        return color / m_samples;
     }
 
 }

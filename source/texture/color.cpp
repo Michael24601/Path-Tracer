@@ -4,8 +4,9 @@
 namespace pathtracer{
 
     Color::Color(const Vector3& color) :
+        // Not linearized
         Texture(std::vector<std::vector<Vector3>>{{color}},
-            BorderMode::CLAMP, FilterMode::NEAREST) {
+            BorderMode::CLAMP, FilterMode::NEAREST, false) {
     }
 
 

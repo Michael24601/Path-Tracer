@@ -1,4 +1,3 @@
-
 #include "logger.hpp"
 #include <chrono>
 #include <iomanip>
@@ -9,12 +8,12 @@ namespace pathtracer {
     // Default value is the console
     std::ostream* Logger::output = &std::cout;
 
+    // Be default, not max time interval
     float Logger::MAX_TIME_INTERVAL = -1.0f;
 
     std::unordered_map<std::string, float> Logger::lastLogged;
 
     std::mutex Logger::mutex;
-
 
     double Logger::getTime() {
         using namespace std::chrono;
@@ -26,7 +25,7 @@ namespace pathtracer {
     }
 
 
-    void Logger::log(Level level, const std::string& message, 
+    void Logger::log(Level level, const std::string& message,
         const char* file, int line, const char* function) {
 
         std::lock_guard<std::mutex> lock(mutex);
@@ -68,6 +67,10 @@ namespace pathtracer {
             case Level::Error:
                 *output << "[ERROR] ";
                 break;
+
+            case Level::Trace:
+                *output << "[TRACE] ";
+                break;
         }
 
         *output << file << ":" << line
@@ -84,22 +87,34 @@ namespace pathtracer {
         output = &stream;
     }
 
+    
+    void Logger::setMaxTimeInterval(float seconds) {
+        std::lock_guard<std::mutex> lock(mutex);
+        MAX_TIME_INTERVAL = seconds;
+    }
 
-    void Logger::info(const std::string& message, const char* file, 
+
+    void Logger::info(const std::string& message, const char* file,
         int line, const char* function) {
         log(Level::Info, message, file, line, function);
     }
 
 
-    void Logger::warning(const std::string& message, const char* file, 
+    void Logger::warning(const std::string& message, const char* file,
         int line, const char* function) {
         log(Level::Warning, message, file, line, function);
     }
 
 
-    void Logger::error(const std::string& message, const char* file, 
+    void Logger::error(const std::string& message, const char* file,
         int line, const char* function) {
         log(Level::Error, message, file, line, function);
+    }
+
+
+    void Logger::trace(const std::string& message, const char* file,
+        int line, const char* function) {
+        log(Level::Trace, message, file, line, function);
     }
 
 }

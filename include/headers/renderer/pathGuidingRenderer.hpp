@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_PATH_GUIDING_RENDERER_HPP
 #define PATH_TRACER_PATH_GUIDING_RENDERER_HPP
 
-#include "renderer.hpp"
+#include "pathTracerRenderer.hpp"
 #include <vector>
 
 namespace pathtracer{
@@ -12,11 +12,10 @@ namespace pathtracer{
     // We have different types of renderers as some require different
     // setups. The default renderer shoots just one sample at the center
     // of the pixel. 
-    class PathGuidingRenderer : public Renderer{
+    class PathGuidingRenderer : public PathTracerRenderer{
 
     private:
 
-        int m_renderSamples;
         // Samples used to train first iteration (doubled each iteration)
         int m_firstIterationSamples;
         // Number of iterations 
@@ -38,15 +37,14 @@ namespace pathtracer{
         PathGuidingRenderer(int width, int height, const Camera* camera,
             const Scene* scene, Integrator* integrator,
             int firstIterationSamples, int iterationCount,
-            int renderSamples, int c);
+            int renderSamples, int c, int messageCount = 10);
 
         ~PathGuidingRenderer();
 
-        std::vector<std::vector<Vector3>> render() override;
+        // Trains tree here by calling renderAllPixels
+        void preprocess() override;
 
-        // The path tracer version uses multiple samples per pixel,
-        // and jitters them.
-        Vector3 renderPixel(int i, int j) override;
+        // Uses the same render pixel as pathtracer
     };
 
 }
