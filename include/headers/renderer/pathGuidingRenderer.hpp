@@ -3,6 +3,7 @@
 #define PATH_TRACER_PATH_GUIDING_RENDERER_HPP
 
 #include "pathTracerRenderer.hpp"
+#include "integrator/guidable.hpp"
 #include <vector>
 
 namespace pathtracer{
@@ -32,12 +33,15 @@ namespace pathtracer{
         KdTree* m_guideTree;
         KdTree* m_trainTree;
 
+        // Stores downcast integrator as well
+        Guidable* m_guidableIntegrator;
+
     public:
 
         PathGuidingRenderer(int width, int height, const Camera* camera,
             const Scene* scene, Integrator* integrator,
             int firstIterationSamples, int iterationCount,
-            int renderSamples, int c, int messageCount = 10);
+            int renderSamples, int c, real alpha, int messageCount = 10);
 
         ~PathGuidingRenderer();
 

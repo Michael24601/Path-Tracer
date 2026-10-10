@@ -70,21 +70,14 @@ namespace pathtracer{
                     // angles.
                     real distance = it.t();
                     Vector3 direction = wo;
-                    SurfaceSample s{
-                        it.position(),
-                        it.triangleIndex()
-                    };
+                    SurfaceSample s{ it.position(), it.triangleIndex() };
 
-                    AreaSample areaSample =
-                        it.instance()->evaluateAreaSample(s);
+                    AreaSample areaSample = it.instance()->evaluateAreaSample(s);
 
                     real pdf_nee = areaSample.pdf();
 
                     // This is the cosine term on the light
-                    float cos =
-                        std::max(
-                            it.shadingNormal().dot(direction),
-                            0.0);
+                    float cos = std::max(it.shadingNormal().dot(direction), 0.0);
 
                     pdf_nee *= (distance * distance) / cos;
 
@@ -161,15 +154,12 @@ namespace pathtracer{
             // just update the throughput and move on.
             // Because this is a solid angle estimator, the
             // sampled point is always visible.
-            BsdfSample sample =
-                it.sampleBsdf(wo);
+            BsdfSample sample = it.sampleBsdf(wo);
 
-            Vector3 weight =
-                sample.weight();
+            Vector3 weight = sample.weight();
 
             // Russian roulette
-            float p =
-                Util::russianRoulette(throughput);
+            real p = Util::russianRoulette(throughput);
 
             if (Random::next() > p){
                 break;

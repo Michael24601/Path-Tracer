@@ -15,13 +15,9 @@ namespace pathtracer{
 
         int m_maxDepth;
 
-        // Weight used when combining bsdf sampling with guiding
-        // (defensive sampling).
-        real m_alpha;
-
     public:
 
-        PathTracerNeeGuided(int maxDepth, real alpha);
+        PathTracerNeeGuided(int maxDepth);
 
         Vector3 color(const Ray& ray, const Scene& scene) override;
     };

@@ -92,6 +92,11 @@ namespace pathtracer{
             // descendants.
             void adaptNode(real threshold);
 
+
+            // Subdivides a node some amount of depth
+            void subdivideToDepth(int depth);
+
+
             // Resets the subtree (sets flux to 0)
             void reset();
 
@@ -109,6 +114,11 @@ namespace pathtracer{
         QuadTree();
 
         ~QuadTree();
+
+
+        // Initializes empty tree with some depth
+        void initialize(int depth);
+
 
         real getFlux() const;
 

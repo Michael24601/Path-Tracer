@@ -37,6 +37,9 @@ namespace pathtracer{
         // Maximum trials allowed to compute inverse probability
         int m_maxTrials;
 
+        // Same, but for the biased version
+        int m_maxBiasedTrials;
+
         // The threshold for two samples being the same
         real m_threshold;
 
@@ -45,6 +48,9 @@ namespace pathtracer{
 
         // Uses half vector constraint instead of angle difference
         bool m_useHalfVector;
+
+        // Uses biased sms
+        bool m_biased;
 
     public:
 
@@ -56,8 +62,9 @@ namespace pathtracer{
 
 
         SpecularManifoldSampling(const Scene* scene, bool useHalfVector, 
-            int maxIterations = 50, int maxTrials = 500, real epsilon = 1e-5, 
-            real threshold = 1e-4);
+            bool biased, int maxIterations = 50, int maxTrials = 500, 
+            int maxBiasedTrials = 5, real epsilon = 1e-5, 
+            real threshold = 1e-6);
 
 
         // Returns the outgoing radiance from x0, after connecting
@@ -66,6 +73,22 @@ namespace pathtracer{
         // The wo pointing away from x0 to the previous point is also sent.
         Vector3 sample(const SurfacePoint& causticPoint, 
             const Vector3& wo, const Scene* scene);
+
+
+        // Samples a path and computes the contribution without bias.
+        // This includes all terms except the light selection pdf which sample
+        // handles.
+        Vector3 unbiasedSample(const SurfacePoint& causticPoint,
+            const Instance* specular, const Specular* bsdf,
+            const LightSample& lightPoint, const Vector3& wo, 
+            const Scene* scene);
+
+
+        // Same but biased (less variance).
+        Vector3 biasedSample(const SurfacePoint& causticPoint,
+            const Instance* specular, const Specular* bsdf,
+            const LightSample& lightPoint, const Vector3& wo, 
+            const Scene* scene);
 
             
         // Given a point on a light x2 (that we already 

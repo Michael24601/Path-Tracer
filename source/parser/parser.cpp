@@ -19,6 +19,7 @@
 #include "integrator/pathTracerNee.hpp"
 #include "integrator/pathTracerNeeMis.hpp"
 #include "integrator/pathTracerGuided.hpp"
+#include "integrator/pathTracerNeeMisGuided.hpp"
 #include "integrator/pathTracerNeeGuided.hpp"
 #include "integrator/pathTracerSms.hpp"
 #include "integrator/pathTracerNeeSms.hpp"
@@ -611,22 +612,21 @@ namespace pathtracer{
                 int maxDepth =
                     data["renderer"]["integrator"]["parameters"]["max-depth"];
 
-                real alpha =
-                    data["renderer"]["integrator"]["parameters"]["mis-alpha"];
-
-                integrator =
-                    new PathTracerGuided(maxDepth, alpha);
+                integrator = new PathTracerGuided(maxDepth);
             }
             else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-guided"){
 
                 int maxDepth =
                     data["renderer"]["integrator"]["parameters"]["max-depth"];
 
-                real alpha =
-                    data["renderer"]["integrator"]["parameters"]["mis-alpha"];
+                integrator = new PathTracerNeeGuided(maxDepth);
+            }
+            else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-mis-guided"){
 
-                integrator =
-                    new PathTracerNeeGuided(maxDepth, alpha);
+                int maxDepth =
+                    data["renderer"]["integrator"]["parameters"]["max-depth"];
+
+                integrator = new PathTracerNeeMisGuided(maxDepth);
             }
             else if(data["renderer"]["integrator"]["type"] == "path-tracer-sms"){
 
@@ -636,8 +636,11 @@ namespace pathtracer{
                 bool useHalfVector =
                     data["renderer"]["integrator"]["parameters"]["use-halfvector"];
 
+                bool biased =
+                    data["renderer"]["integrator"]["parameters"]["biased"];
+
                 integrator =
-                    new PathTracerSms(maxDepth, useHalfVector, scene);
+                    new PathTracerSms(maxDepth, useHalfVector, biased, scene);
             }
             else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-sms"){
 
@@ -647,8 +650,11 @@ namespace pathtracer{
                 bool useHalfVector =
                     data["renderer"]["integrator"]["parameters"]["use-halfvector"];
 
+                bool biased =
+                    data["renderer"]["integrator"]["parameters"]["biased"];
+
                 integrator =
-                    new PathTracerNeeSms(maxDepth, useHalfVector, scene);
+                    new PathTracerNeeSms(maxDepth, useHalfVector, biased, scene);
             }
 
 
@@ -679,16 +685,15 @@ namespace pathtracer{
                 int renderSamples =
                     data["renderer"]["parameters"]["sample-count"];
 
-                int firstIterationSamples =
-                    data["renderer"]["parameters"]
+                int firstIterationSamples = data["renderer"]["parameters"]
                         ["first-iteration-sample-count"];
 
                 int iterationCount =
                     data["renderer"]["parameters"]["iteration-count"];
 
-                int c =
-                    data["renderer"]["parameters"]
-                        ["spatial-subdivision-c"];
+                int c = data["renderer"]["parameters"]["spatial-subdivision-c"];
+
+                real alpha = data["renderer"]["parameters"]["mis-alpha"];
 
                 renderer = new PathGuidingRenderer(
                     resolution.x(),
@@ -699,7 +704,7 @@ namespace pathtracer{
                     firstIterationSamples,
                     iterationCount,
                     renderSamples,
-                    c, messageCount
+                    c, alpha, messageCount
                 );
             }
         }

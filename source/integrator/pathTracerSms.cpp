@@ -18,9 +18,9 @@
 namespace pathtracer{
 
 
-    PathTracerSms::PathTracerSms(int maxDepth, bool useHalfVector, 
+    PathTracerSms::PathTracerSms(int maxDepth, bool useHalfVector, bool biased, 
         const Scene* scene) : m_maxDepth{maxDepth} {
-        sms = new SpecularManifoldSampling(scene, useHalfVector);
+        sms = new SpecularManifoldSampling(scene, useHalfVector, biased);
     }
 
 
@@ -65,7 +65,9 @@ namespace pathtracer{
 
             lastInst = it.instance();
 
+
             //---------------------------- SMS -----------------------------
+
 
             // If the current surface is neither an emission nor specular,
             // we can try doing SMS.
@@ -80,7 +82,8 @@ namespace pathtracer{
             }
 
 
-            // ------ This next step is normal pathtracer ------
+            // ------------ This next step is normal pathtracer ------------
+
 
             // If we didn't hit an emissive surface, we can
             // just update the throughput and move on.

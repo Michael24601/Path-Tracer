@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++20 -fopenmp
-RELEASE_FLAGS = -O3 -DNDEBUG
+RELEASE_FLAGS = -O3 -DNDEBUG -march=native
 DEBUG_FLAGS = -g -O0
 
 SOURCES = $(wildcard source/*.cpp) \

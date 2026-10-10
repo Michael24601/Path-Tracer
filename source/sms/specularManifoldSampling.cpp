@@ -27,13 +27,15 @@ namespace pathtracer{
 
 
     SpecularManifoldSampling::SpecularManifoldSampling(const Scene* scene, 
-        bool useHalfVector, int maxIterations, int maxTrials, real epsilon, 
-        real threshold) :
+        bool useHalfVector, bool biased, int maxIterations, int maxTrials, 
+        int maxBiasedTrials, real epsilon, real threshold) :
         m_epsilon{epsilon},
         m_maxIterations{maxIterations},
         m_maxTrials{maxTrials},
+        m_maxBiasedTrials{maxBiasedTrials},
         m_threshold{threshold},
-        m_useHalfVector{useHalfVector} {
+        m_useHalfVector{useHalfVector},
+        m_biased{biased} {
 
         for(int i = 0; i < scene->instanceCount(); i++){
 
@@ -60,25 +62,153 @@ namespace pathtracer{
             return Vector3(0.0);
         }
 
-
         Vector3 totalColor(0.0);
-
 
         // First we loop over all shapes and search until we find
         // a shape with a valid SMS sample.
         for(int i = 0; i < m_specularInstances.size(); i++){
 
-            SmsSample sample = samplePath(causticPoint,
-                m_specularInstances[i], m_bsdfs[i], lightPoint, scene);
+            Vector3 weight; 
+            
+            if(m_biased){
+                weight = biasedSample(causticPoint, m_specularInstances[i], 
+                    m_bsdfs[i], lightPoint, wo, scene);
+            }
+            else{
+                weight = unbiasedSample(causticPoint, m_specularInstances[i], 
+                    m_bsdfs[i], lightPoint, wo, scene);
+            }
 
-            // If not valid, we continue to next shape
-            if(!sample.isConverged()){
+            // We divide weight by light selection probability
+            weight = weight / lightSelectionPdf;
+
+            // We add up the weight from each specular
+            totalColor = totalColor + weight;
+        }
+
+        // If we get here, it is a failure, and we return 0.0
+        return totalColor;
+    }
+
+
+
+    Vector3 SpecularManifoldSampling::unbiasedSample(
+        const SurfacePoint& causticPoint,
+        const Instance* specular, const Specular* bsdf,
+        const LightSample& lightPoint, const Vector3& wo, 
+        const Scene* scene){
+
+        // We sample one path at first
+        SmsSample sample = samplePath(causticPoint, specular, bsdf, 
+            lightPoint, scene);
+
+        // If not valid, we discard this path
+        if(!sample.isConverged()){
+            return Vector3(0.0);
+        }
+
+        // We know x0 to x1 is visible (samplePath checks),
+        // but now we check x1 to x2.
+        // It depends on if it is directional or not.
+        bool visible;
+        if(lightPoint.caster()->isDirectional()){
+            visible = scene->visibility(sample.finalPoint().position(),
+                lightPoint.wi(), lightPoint.distance());
+        }
+        else{
+            visible = scene->visibility(sample.finalPoint().position(),
+                lightPoint.position());
+        }
+
+        if(!visible){
+            m_notVis++;
+            return Vector3(0.0);
+        }
+
+        // If all is valid, we can calculate the path contribution.
+        int counter = 0;
+        bool found = false;
+
+        // Direction from x1 to x0
+        Vector3 dir = (sample.finalPoint().position()
+            - causticPoint.position()).normalized();
+
+        while(counter < m_maxTrials){
+
+            counter++;
+
+            SmsSample newSample = samplePath(causticPoint,
+                specular, bsdf, lightPoint, scene);
+
+            Vector3 newDir = (newSample.finalPoint().position()
+                - causticPoint.position()).normalized();
+            real angularDist = newDir.dot(dir);
+
+            if(newSample.isConverged() && std::abs(angularDist - 1) < m_threshold){
+                found = true;
+                m_sameFound++;
+                break;
+            }
+        }
+
+        // Failure (if none are found)
+        if(!found){
+            m_sameNotFound++;
+            return Vector3(0.0);
+        }
+
+        // Otherwise we can compute the probability of sampling x1.
+        // Based on the fact that this a geometric distribution,
+        // the estimate for p is 1 / number of trials until
+        // we get the same converged vertex, which means 1/p
+        // is estimated by the counter.
+        real invProbability = static_cast<real>(counter);
+
+        // Then we can evaluate the path contribution
+        // which includes the bsdf at x0 and x1, the cosine terms,
+        // the pdf for sampling x2... all except the pdf of x1.
+        Vector3 weight = evaluatePathContribution(causticPoint,
+            lightPoint, sample, bsdf, wo, scene);
+
+        // We add both the invProbability for x1.
+        weight = weight * invProbability;
+
+        return weight;
+    }
+
+
+
+    Vector3 SpecularManifoldSampling::biasedSample(
+        const SurfacePoint& causticPoint,
+        const Instance* specular, const Specular* bsdf,
+        const LightSample& lightPoint, const Vector3& wo, 
+        const Scene* scene){
+
+        Vector3 value(0.0);
+
+        // For biased SMS, we will run it M times, and then cluster
+        // the same solutions together, weight them by appropriate
+        // pdfs, and use them all to get the contribution, which is biased
+        // (since we use a max M), but does not waste samples and reuses
+        // them for less variance.
+        std::vector<Vector3> solutions;
+        solutions.reserve(m_maxBiasedTrials);
+
+        int nc = 0;
+        int nv = 0;
+        int s = 0;
+
+        for(int i = 0; i < m_maxBiasedTrials; i++){
+
+            SmsSample sample = samplePath(causticPoint, specular, bsdf,
+                lightPoint, scene);
+
+            if(!sample.isConverged()){ nc++;
                 continue;
             }
 
             // We know x0 to x1 is visible (samplePath checks),
             // but now we check x1 to x2.
-            // It depends on if it is directional or not.
             bool visible;
             if(lightPoint.caster()->isDirectional()){
                 visible = scene->visibility(sample.finalPoint().position(),
@@ -89,68 +219,53 @@ namespace pathtracer{
                     lightPoint.position());
             }
 
-            if(!visible){
+            if(!visible){ nv++;
                 m_notVis++;
                 continue;
             }
 
-            // If all is valid, we can calculate the path contribution.
-            int counter = 0;
-            bool found = false;
-
-            // Direction from x1 to x0
+            // Direction from x0 to x1.
             Vector3 dir = (sample.finalPoint().position()
                 - causticPoint.position()).normalized();
 
-            while(counter < m_maxTrials){
+            // We check if this has already been discovered before
+            bool duplicate = false;
 
-                counter++;
+            for(const Vector3& solution : solutions){
+                real angularDist = dir.dot(solution);
 
-                SmsSample newSample = samplePath(causticPoint,
-                    m_specularInstances[i], m_bsdfs[i],
-                    lightPoint, scene);
-
-                Vector3 newDir = (newSample.finalPoint().position()
-                    - causticPoint.position()).normalized();
-                real angularDist = newDir.dot(dir);
-
-                if(newSample.isConverged() && std::abs(angularDist - 1) < m_threshold){
-                    found = true;
-                    m_sameFound++;
+                if(std::abs(angularDist - 1.0) < m_threshold){
+                    duplicate = true;
                     break;
                 }
             }
 
-            // Failure
-            if(!found){
-                m_sameNotFound++;
+            // Duplicates are not needed
+            if(duplicate){ s++;
                 continue;
             }
 
-            // Otherwise we can compute the probability of sampling x1.
-            // Based on the fact that this a geometric distribution,
-            // the estimate for p is 1 / number of trials until
-            // we get the same converged vertex, which means 1/p
-            // is estimated by the counter.
-            real invProbability = static_cast<real>(counter);
+            // New unique solution is added otherwise
+            solutions.push_back(dir);
 
-            // Then we can evaluate the path contribution
-            // which includes the bsdf at x0 and x1, the cosine terms,
-            // the pdf for sampling x2... all except the pdf of x1.
             Vector3 weight = evaluatePathContribution(causticPoint,
-                lightPoint, sample, m_bsdfs[i], wo, scene);
+                lightPoint, sample, bsdf, wo, scene);
 
-            // We add both the invProbability for x1, and the
-            // light selection pdf, which are not in weight.
-            weight = weight * invProbability / lightSelectionPdf;
-
-            // We add up the weight from each specular
-            totalColor = totalColor + weight;
+            // Notice that we don't include the pdf of sampling this
+            // point on the specular (unlike unbiased where we use a counter
+            // to estimate it). This is because they cancel out (we divide
+            // and multiply by number of repetitions for same converged
+            // sample point).
+            value = value + weight;
         }
 
-        // If we get here, it is a failure, and we return 0.0
-        return totalColor;
+        //LOG_INFO(std::to_string(nc) + " " + std::to_string(nv) + " " + std::to_string(s))
+        //LOG_INFO(std::to_string(solutions.size()));
+
+        return value;
+
     }
+
 
 
     SmsSample SpecularManifoldSampling::samplePath(const SurfacePoint& causticPoint,

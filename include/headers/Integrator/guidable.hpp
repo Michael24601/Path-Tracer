@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <vector>
+#include "config.hpp"
 
 namespace pathtracer{
 
@@ -16,10 +17,12 @@ namespace pathtracer{
 
     protected:
 
+    public:
+
         KdTree* m_guideTree;
         KdTree* m_trainTree;
 
-    public:
+        real m_alpha;
 
         std::atomic<int> pathCount;
 
@@ -28,6 +31,8 @@ namespace pathtracer{
         void setGuideTree(KdTree* tree);
 
         void setTrainTree(KdTree* tree);
+
+        void setAlpha(real alpha);
 
         const KdTree* getGuideTree() const;
 
@@ -38,12 +43,27 @@ namespace pathtracer{
         Vector3 toTreeLocalSpace(
             const Vector3& position, const Scene& scene) const;
 
+
         void recordPath(
             const std::vector<Vector3>& position,
             const std::vector<Vector3>& wi,
             const std::vector<Vector3>& weight,
+            const std::vector<real>& pdf,
+            const std::vector<Vector3>& contribution,
             const Vector3& finalEmission,
-            const Scene& scene);
+            const Scene& scene
+        );
+
+
+        // Records one vertex and one direction, used for NEE samples,
+        // and other similar methods.
+        // Contribution must include bsdf weight and cosine already.
+        void recordVertex(
+            const Vector3& position,
+            const Vector3& wi,
+            const Vector3& contribution,
+            const Scene& scene
+        );
     };
 
 }

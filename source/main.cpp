@@ -5,8 +5,14 @@
 #include "renderer/renderer.hpp"
 #include "integrator/pathTracerSms.hpp"
 #include "sms/specularManifoldSampling.hpp"
+#include "core/scene.hpp"
 #include <iostream>
 #include <fstream>
+
+#include "integrator/guidable.hpp"
+#include "pathGuiding/quadTree.hpp"
+#include "pathGuiding/kdTree.hpp"
+#include "pathGuiding/quadTreeUtil.hpp"
 
 
 using namespace pathtracer;
@@ -66,6 +72,29 @@ int main(int argc, char* argv[]) {
     ImageIo::savePNG(image, output);
 
     LOG_INFO("Image saved to " + output);
+
+
+    auto renderTree = [&](Vector3 p, const std::string& name) {
+        auto guidable = dynamic_cast<Guidable*>(renderer->m_integrator);
+        auto bbox = renderer->m_scene->getBoundingBox();
+
+        if(guidable){
+
+            p = (p - bbox.minCorner()) /
+                (bbox.maxCorner() - bbox.minCorner());
+
+            auto tree = guidable->m_guideTree->getDTree(p);
+            auto image = QuadTreeUtil::renderQuadTree(tree, 512);
+
+            ImageIo::savePNG(image, "output/" + name + ".png");
+        }
+    };
+
+    renderTree(Vector3(1, 1, 2), "tree1");
+    renderTree(Vector3(1, -1, 2), "tree2");
+    renderTree(Vector3(1, -1, 0), "tree3");
+    renderTree(Vector3(1, 1, 0), "tree4");
+
 
     // Opens image when done
     std::string command = "start \"\" \"" + output + "\"";

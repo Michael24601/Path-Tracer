@@ -192,6 +192,19 @@ namespace pathtracer{
     }
 
 
+    void QuadTree::Node::subdivideToDepth(int depth){
+        if(depth <= 0) return;
+
+        if(isLeaf()){
+            subdivide();
+        }
+
+        for(int i = 0; i < 4; i++){
+            children[i]->subdivideToDepth(depth - 1);
+        }
+    }
+
+
     Vector2 QuadTree::Node::sample() const{
 
         if(isLeaf()){
@@ -199,17 +212,12 @@ namespace pathtracer{
             return Random::next2D();
         }
 
+
         // This should never happen. If it does, we just sample
         // the current node uniformly.
         if(getFlux() <= 0){
-            // uniform over the 4 children
-            int c = std::min(
-                3,
-                static_cast<int>(Random::next() * 4));
-
-            return transformFromChild(
-                children[c]->sample(),
-                c);
+            // uniform over the node
+            return Random::next2D();
         }
 
         // Otherwise, we sample a child: we sample a 1D
@@ -217,7 +225,7 @@ namespace pathtracer{
         real randomNum = Random::next();
         real target = randomNum * getFlux();
         real cumulative = 0.0;
-        int selectedChild = 0;
+        int selectedChild = -1;
 
         for(int i = 0; i < 4; i++){
             cumulative += children[i]->getFlux();
@@ -226,6 +234,12 @@ namespace pathtracer{
                 selectedChild = i;
                 break;
             }
+        }
+
+        // If all children have 0 flux, we randomly sample the node
+        if(cumulative < EPSILON){
+            // uniform over the node
+            return Random::next2D();
         }
 
         Vector2 p = children[selectedChild]->sample();
@@ -249,30 +263,27 @@ namespace pathtracer{
             return 1.0;
         }
 
-        // If no flux, fallback is to do uniform sampling over the
-        // children.
+        // If no flux, fallback is to do uniform sampling on the node
         if(getFlux() <= 0) {
-            real choicePdf{0.0};
-
-            for(int i = 0; i < 4; i++){
-                // Each gets multiplied by 4 and by 0.25 (uniform),
-                // which cancel out.
-                choicePdf += children[i]->pdf(
-                    transformToChild(p, i));
-            }
-
-            return choicePdf;
+            return 1.0;
         }
 
         real oneOverFlux = 1.0 / getFlux();
         real choicePdf{0.0};
 
+        real total = children[0]->getFlux() + children[1]->getFlux()
+            + children[2]->getFlux() + children[3]->getFlux();
+
+        // If this is the case, then we uniformly sample node
+        if(total < EPSILON){
+            return 1.0;
+        }
+
         for(int i = 0; i < 4; i++){
             // Note that child pdf is transformed to local space
             // by multiplying by 4;
             choicePdf += (children[i]->getFlux() * oneOverFlux)
-                * 4 * children[i]->pdf(
-                    transformToChild(p, i));
+                * 4 * children[i]->pdf(transformToChild(p, i));
         }
 
         return choicePdf;
@@ -336,9 +347,14 @@ namespace pathtracer{
     }
 
     // Initializes a tree with just a root and 0 flux
-    QuadTree::QuadTree() :
-        m_root{new Node(0.0)} {
+    QuadTree::QuadTree() : m_root{new Node(0.0)} {}
+
+
+    void QuadTree::initialize(int depth){
+        assert(depth >= 0);
+        m_root->subdivideToDepth(depth);
     }
+
 
     QuadTree::~QuadTree(){
         m_root->cleanSubtree();
@@ -397,7 +413,8 @@ namespace pathtracer{
         // We multiply by 1/4 PI to get the solid angle measure
         // (since unit sphere has 4 PI surface area, and it is
         // transformed to unit sphere).
-        return m_root->pdf(coord) * INV_FOUR_PI;
+        real p = m_root->pdf(coord) * INV_FOUR_PI;
+        return p;
     }
 
     // Adaptively subdivides the tree's nodes if they have too much

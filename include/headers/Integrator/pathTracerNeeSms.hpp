@@ -20,7 +20,8 @@ namespace pathtracer{
         SpecularManifoldSampling* sms;
 
         // The boolean determines which constraint is used for SMS
-        PathTracerNeeSms(int maxDepth, bool useHalfVector, const Scene* scene);
+        PathTracerNeeSms(int maxDepth, bool useHalfVector, bool biased, 
+            const Scene* scene);
 
         ~PathTracerNeeSms();
 

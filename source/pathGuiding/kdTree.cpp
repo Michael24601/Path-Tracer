@@ -3,6 +3,7 @@
 #include <cassert>
 #include "math/vector3.hpp"
 #include "pathGuiding/quadTree.hpp"
+#include "logger.hpp"
 
 
 namespace pathtracer{
@@ -295,7 +296,8 @@ namespace pathtracer{
     // given a direction, during training.
     // Assumes p is normalized to be in a hypercube (0, 0, 0) to (1, 1, 1).
     QuadTree* KdTree::getDTree(const Vector3& p){
-        return m_root->getDTree(p, 0);
+        QuadTree* tree = m_root->getDTree(p, 0);
+        return tree;
     }
 
 

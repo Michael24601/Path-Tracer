@@ -20,8 +20,8 @@
 namespace pathtracer{
 
 
-    PathTracerNeeGuided::PathTracerNeeGuided(int maxDepth, real alpha) :
-        m_maxDepth{maxDepth}, m_alpha{alpha} {}
+    PathTracerNeeGuided::PathTracerNeeGuided(int maxDepth) :
+        m_maxDepth{maxDepth}{}
 
 
     Vector3 PathTracerNeeGuided::color(
@@ -39,6 +39,12 @@ namespace pathtracer{
         std::vector<Vector3> positions;
         std::vector<Vector3> weights;
         std::vector<Vector3> directions;
+        std::vector<real> pdfs;
+
+        // The contributions at each path point (not including last one),
+        // from next event estimation.
+        std::vector<Vector3> contributions;
+        Vector3 finalEmission(0.0);
 
         for(int i = 0; i < m_maxDepth; i++){
 
@@ -48,7 +54,6 @@ namespace pathtracer{
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
-                recordPath(positions, directions, weights, Vector3(0.0), scene);
                 break;
             }
 
@@ -61,9 +66,7 @@ namespace pathtracer{
                     Vector3 emission = it.evaluateEmission(wo);
                     color = color + emission * throughput;
 
-                    if(m_trainTree){
-                        recordPath(positions, directions, weights, emission, scene);
-                    }
+                    finalEmission = emission;
 
                     break;
                 }
@@ -76,8 +79,11 @@ namespace pathtracer{
 
             // ------------- This next step is NEE -------------
 
+
+            Vector3 contrib(0.0);
+
             // We only perform NEE if the current surface is not
-            // delta surface (specular)
+            // delta surface (specular).
             if(it.instance()->bsdf()->isSpecular()){
                 isLastFrameSpecular = true;
             }
@@ -117,43 +123,26 @@ namespace pathtracer{
                     // and cosine. Also we ignore the pdf it returns since
                     // this is the pdf of the bsdf having generated said
                     // path (used in MIS for example).
-                    BsdfSample bsdfEval =
-                        it.evaluateBsdf(wo, s.wi());
+                    BsdfSample bsdfEval = it.evaluateBsdf(wo, s.wi());
 
-                    if(!bsdfEval.isInvalid() &&
-                        bsdfEval.cosine() > 0) {
+                    if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0) {
 
-                    Vector3 neeWeight = bsdfEval.bsdf() * bsdfEval.cosine() * (1.0 / pdfPoint);
-
-                    Vector3 emission = s.radiance();
-
-                    color = color + emission * throughput * neeWeight;
-
-                    if(m_trainTree){
-
-                        // We add these to complete the path
-                        positions.push_back(it.position());
-                        directions.push_back(s.wi());
-                        weights.push_back(neeWeight);
-
-                        recordPath(positions, directions, weights, emission, scene);
-
-                            // We then remove them as they are not part
-                            // of the path going forward.
-                            positions.pop_back();
-                            weights.pop_back();
-                            directions.pop_back();
-                        }
+                        Vector3 neeWeight = bsdfEval.bsdf() * bsdfEval.cosine() * (1.0 / pdfPoint);
+                        Vector3 emission = s.radiance();
+                        
+                        contrib = emission * neeWeight;
+                        color = color + contrib * throughput;
                     }
                 }
             }
+            
+            contributions.push_back(contrib);
 
             // ------ This next step is normal pathtracer ------
 
             // Russian roulette
             real p = Util::russianRoulette(throughput);
             if (Random::next() > p){
-                recordPath(positions, directions, weights, Vector3(0.0), scene);
                 break;
             }
 
@@ -165,10 +154,9 @@ namespace pathtracer{
             Vector3 wi;
             Vector3 weight;
             real pdf;
-            BsdfSample sample;
+            BsdfSample sample = BsdfSample::INVALID;
 
-            if(m_guideTree &&
-                !it.instance()->bsdf()->isSpecular()){
+            if(m_guideTree && !it.instance()->bsdf()->isSpecular()){
 
                 Vector3 localPoint =
                     toTreeLocalSpace(it.position(), scene);
@@ -192,24 +180,18 @@ namespace pathtracer{
                 real guidePdf = dTree->pdf(wi);
                 real bsdfPdf = sample.pdf();
 
-                pdf =
-                    m_alpha * guidePdf +
-                    (1.0 - m_alpha) * bsdfPdf;
-
-                weight =
-                    sample.bsdf() *
-                    sample.cosine() /
-                    pdf;
+                pdf = m_alpha * guidePdf + (1.0 - m_alpha) * bsdfPdf;
+                weight = sample.bsdf() * sample.cosine() / pdf;
             }
-
-            if(!m_guideTree ||
-                it.instance()->bsdf()->isSpecular() ||
-                sample.isInvalid()) {
-
+            else {
                 sample = it.sampleBsdf(wo);
                 wi = sample.wi();
                 weight = sample.weight();
                 pdf = sample.pdf();
+            }
+
+            if(sample.isInvalid()){
+                break;
             }
 
             // RR probability
@@ -221,15 +203,19 @@ namespace pathtracer{
                 weights.push_back(weight);
                 positions.push_back(it.position());
                 directions.push_back(wi);
+                pdfs.push_back(pdf);
             }
 
             // And we update the throughput (along with RR probability)
             throughput = throughput * weight;
             // The new ray starts at the last intersected point
             // and points towards the new intersected point.
-            currRay = Ray(
-                it.position() + wi * SHADOW_EPSILON,
-                wi);
+            currRay = Ray(it.position() + wi * SHADOW_EPSILON, wi);
+        }
+
+        if(m_trainTree){
+            recordPath(positions, directions, weights, pdfs, contributions, 
+                finalEmission, scene);
         }
 
         return color;

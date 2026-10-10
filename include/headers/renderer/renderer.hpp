@@ -19,7 +19,6 @@ namespace pathtracer{
     protected:
 
         const Camera* m_camera;
-        const Scene* m_scene;
         
         // Width and height in pixels
         int m_width;
@@ -33,6 +32,8 @@ namespace pathtracer{
 
 
     public:
+
+        const Scene* m_scene;
 
         Integrator* m_integrator;
 
