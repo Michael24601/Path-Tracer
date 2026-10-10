@@ -3,13 +3,24 @@
 
 #include <atomic>
 #include <vector>
-#include "config.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
 
     class Scene;
-    class Vector3;
     class KdTree;
+    class SurfacePoint;
+
+
+    // The guided (or bsdf fallback) sample
+    struct GuidedSample{
+        Vector3 wi;
+        // Weight includes bsdf, cosine, and the pdf
+        Vector3 weight;
+        real pdf;
+        bool isValid;
+    };
+
 
     // An interface that any integrator that needs to use path guiding
     // must implement to access trees.
@@ -33,6 +44,18 @@ namespace pathtracer{
         void setTrainTree(KdTree* tree);
 
         void setAlpha(real alpha);
+
+        real alpha() const;
+
+        // This function samples the current intersection point using alpha
+        // and checking if it is specular.
+        GuidedSample sampleGuided(const Vector3& wo,
+            const SurfacePoint& it, const Scene& scene)const;
+
+
+        // Does the same, but evaluates it using a given direction
+        GuidedSample evaluateGuided(const Vector3& wo, const Vector3& wi,
+            const SurfacePoint& it, const Scene& scene)const;
 
         const KdTree* getGuideTree() const;
 

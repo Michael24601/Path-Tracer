@@ -26,7 +26,13 @@ namespace pathtracer{
         // Samples a light, and returns the light sample, the contribution
         // (weighted by the solid angle pdf), and the visibility.
         // The surface point is the origin point sampling the light.
-        NextEventSample sample(const Scene&, const SurfacePoint&);
+        NextEventSample sample(const Scene& scene, const SurfacePoint& origin);
+
+
+        // In the same way we sample and evaluate bsdf, we can evaluate
+        // an NEE sample given the point and the light.
+        NextEventSample evaluate(const Scene& scene, const Vector3& origin,
+            const SurfacePoint& emissive);
 
     }
 

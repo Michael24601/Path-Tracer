@@ -217,7 +217,7 @@ namespace pathtracer{
         }
         // For internal nodes, prunes children
         else if(getSampleCount() <= threshold){
-            cleanSubtree();
+            // No need to prune the kdTree, unlike the quadtree
             return;
         }
 

@@ -3,7 +3,11 @@
 #include "nextEventEstimation/nextEventEstimation.hpp"
 #include "intersection/surfacePoint.hpp"
 #include "core/sceneUtil.hpp"
+#include "core/instance.hpp"
 #include "light/light.hpp"
+#include "shapes/shape.hpp"
+#include "intersection/areaSample.hpp"
+#include "logger.hpp"
 
 namespace pathtracer{
 
@@ -48,6 +52,36 @@ namespace pathtracer{
 
             return NextEventSample{s, visibility, contribution, pdfPoint};
 
+        }
+
+
+        NextEventSample evaluate(const Scene& scene, const Vector3& origin,
+            const SurfacePoint& emissive){
+
+            // The instance has to be emissive, a light (sampleable by NEE),
+            // and an area light that a bsdf can intersect.
+            if(!emissive.instance()->emission() || !emissive.instance()->light()
+                || !emissive.instance()->light()->isIntersectable()){
+
+                return NextEventSample{LightSample::INVALID, false, Vector3(0.0), 0.0};
+            }
+
+            // We can call the evaluate of the light (only works if light
+            // is intersectable).
+            SurfaceSample s{emissive.position(), emissive.triangleIndex()};
+            LightSample sample = emissive.instance()->light()
+                ->evaluateLightSample(origin, s);
+
+            // We also multiply p_nee by probability of choosing
+            // said light.
+            real pdf = sample.pdf() * UniformLight::pdf(scene, 
+                emissive.instance()->light());
+            
+            bool visibility = scene.visibility(origin, sample.wi(), sample.distance());
+
+            Vector3 contribution = sample.radiance() / pdf;
+            
+            return NextEventSample{sample, visibility, contribution, pdf};
         }
 
     }

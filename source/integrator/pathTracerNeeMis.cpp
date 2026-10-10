@@ -34,6 +34,7 @@ namespace pathtracer{
         // which is relevant information for MIS.
         BsdfSample lastFrameSample(BsdfSample::INVALID);
         bool isLastFrameSpecular = false;
+        Vector3 previousPos(0.0);
 
         for(int i = 0; i < m_maxDepth; i++){
 
@@ -58,36 +59,20 @@ namespace pathtracer{
                 // If the emissive surface is a light (NEE sees it)
                 // (If delta we can ignore MIS since NEE can't sample it,
                 // and there isn't really a numerical pdf).
-                if(i > 0 &&
-                    it.instance()->light() &&
-                    !lastFrameSample.isDelta() &&
-                    scene.lightCount() > 0){
+                if(i > 0 && it.instance()->light() &&
+                    !lastFrameSample.isDelta() && scene.lightCount() > 0){
 
                     // The pdf of the bsdf having generated it is:
                     real pdf_bsdf = lastFrameSample.pdf();
 
-                    // The pdf of the NEE is computed and converted to solid
-                    // angles.
-                    real distance = it.t();
-                    Vector3 direction = wo;
-                    SurfaceSample s{ it.position(), it.triangleIndex() };
+                    // The pdf of the NEE is computed in solid angles by
+                    // calling NEE evaluate instead of sample, and passing
+                    // the hit point (assuming it is emissive and a light).
+                    NextEventSample nee = 
+                        NextEventEstimation::evaluate(scene, previousPos, it);
 
-                    AreaSample areaSample = it.instance()->evaluateAreaSample(s);
-
-                    real pdf_nee = areaSample.pdf();
-
-                    // This is the cosine term on the light
-                    float cos = std::max(it.shadingNormal().dot(direction), 0.0);
-
-                    pdf_nee *= (distance * distance) / cos;
-
-                    // We also multiply p_nee by probability of choosing
-                    // said light
-                    pdf_nee *= 1.0 / scene.lightCount();
-
-                    if(pdf_bsdf > 0.0 && pdf_nee > 0.0 && cos > 0.0) {
-
-                        misWeight = pdf_bsdf / (pdf_nee + pdf_bsdf);
+                    if(pdf_bsdf > 0.0 && nee.sample.isValid() && nee.pdf > 0.0) {
+                        misWeight = pdf_bsdf / (nee.pdf + pdf_bsdf);
                     }
                 }
 
@@ -174,6 +159,7 @@ namespace pathtracer{
                 sample.wi());
 
             lastFrameSample = sample;
+            previousPos = it.position();
         }
 
         return color;

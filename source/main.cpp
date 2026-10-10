@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
         auto guidable = dynamic_cast<Guidable*>(renderer->m_integrator);
         auto bbox = renderer->m_scene->getBoundingBox();
 
-        if(guidable){
+        if(guidable && guidable->m_guideTree){
 
             p = (p - bbox.minCorner()) /
                 (bbox.maxCorner() - bbox.minCorner());
