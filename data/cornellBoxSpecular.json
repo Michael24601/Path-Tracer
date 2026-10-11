@@ -250,19 +250,23 @@
         }
     },
     
+
     "renderer": {
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 412],
-            "sample-count": 50
+            "sample-count": 120,
+            "first-iteration-sample-count": 4,
+            "iteration-count": 4,
+            "spatial-subdivision-c": 12000,
+            "mis-alpha": 0.5
         },
         "integrator": {
-            "type": "path-tracer-nee-mis",
+            "type": "path-tracer",
             "parameters": {
                 "max-depth": 100
             }
         }
     }
-
 
 }

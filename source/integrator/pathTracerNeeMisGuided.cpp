@@ -35,7 +35,7 @@ namespace pathtracer{
         Vector3 color = Vector3(0.0);
         Vector3 throughput = Vector3(1.0);
 
-        std::vector<Vector3> positions;
+        std::vector<SurfacePoint> positions;
         std::vector<Vector3> weights;
         std::vector<Vector3> directions;
         std::vector<real> pdfs;
@@ -154,7 +154,7 @@ namespace pathtracer{
 
                     // We train this vertex only using the incoming radiance / pdf
                     if(m_trainTree){
-                        recordVertex(it.position(), s.sample.wi(), contrib, scene);
+                        recordVertex(it, s.sample.wi(), contrib, scene);
                     }
 
                     // However, when we train the full path later, the added
@@ -193,7 +193,7 @@ namespace pathtracer{
             // at this point.
             if(m_trainTree){
                 weights.push_back(sample.weight);
-                positions.push_back(it.position());
+                positions.push_back(it);
                 directions.push_back(sample.wi);
                 pdfs.push_back(sample.pdf);
             }

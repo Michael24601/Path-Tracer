@@ -154,7 +154,7 @@ namespace pathtracer
 
 
     bool DielectricBsdf::isSpecular() const{
-        return false;
+        return true;
     }
 
 

@@ -15,6 +15,7 @@
 #include "pathGuiding/kdTree.hpp"
 #include "pathGuiding/quadTree.hpp"
 #include "math/constants.hpp"
+#include "nextEventEstimation/nextEventEstimation.hpp"
 
 
 namespace pathtracer{
@@ -36,7 +37,7 @@ namespace pathtracer{
         // if it was hit.
         bool isLastFrameSpecular = false;
 
-        std::vector<Vector3> positions;
+        std::vector<SurfacePoint> positions;
         std::vector<Vector3> weights;
         std::vector<Vector3> directions;
         std::vector<real> pdfs;
@@ -82,57 +83,40 @@ namespace pathtracer{
 
             Vector3 contrib(0.0);
 
-            // We only perform NEE if the current surface is not
-            // delta surface (specular).
+                       // We only perform NEE if the current surface is not
+            // delta surface (specular)
             if(it.instance()->bsdf()->isSpecular()){
                 isLastFrameSpecular = true;
             }
             else{
                 isLastFrameSpecular = false;
 
-                // Note that NEE can't sample from emissive surfaces,
-                // but specifically from lights (emissive surfaces
-                // have to be considered an area light explicitly)
-                if(scene.lightCount() <= 0){
-                    break;
-                }
+                NextEventSample s = NextEventEstimation::sample(scene, it);
 
-                // First we pick a random light with uniform probability.
-                const Light* light = UniformLight::sample(scene);
-                // The pdf of choosing this instance
-                real pdfInstance = UniformLight::pdf(scene, light);
+                // Note that we evaluate, not sample the bsdf, since
+                // we already have a wi, so we just need the value
+                // and cosine. Also we ignore the pdf it returns since
+                // this is the pdf of the bsdf having generated said
+                // path (used in MIS for example).
+                BsdfSample bsdfEval = it.evaluateBsdf(wo, s.sample.wi());
 
-                // Then we sample the light for a point and radiance,
-                // which returns a light sample in world coordinates
-                // in solid angle measure.
-                LightSample s = light->sample(it.position());
+                if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0 && s.visibility
+                    && s.sample.isValid()) {
 
-                // The visibility term.
-                bool visibility =
-                    scene.visibility(it.position(), s.wi(), s.distance());
+                    // Contribution includes pdf already
+                    contrib = s.contribution;
 
-                if(s.isValid() && visibility) {
-
-                    // The pdf of choosing this point is the pdf of
-                    // choosing the light times the pdf of choosing the point
-                    // on the light.
-                    real pdfPoint = pdfInstance * s.pdf();
-
-                    // Note that we evaluate, not sample the bsdf, since
-                    // we already have a wi, so we just need the value
-                    // and cosine. Also we ignore the pdf it returns since
-                    // this is the pdf of the bsdf having generated said
-                    // path (used in MIS for example).
-                    BsdfSample bsdfEval = it.evaluateBsdf(wo, s.wi());
-
-                    if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0) {
-
-                        Vector3 neeWeight = bsdfEval.bsdf() * bsdfEval.cosine() * (1.0 / pdfPoint);
-                        Vector3 emission = s.radiance();
-                        
-                        contrib = emission * neeWeight;
-                        color = color + contrib * throughput;
+                    // We train this vertex only using the incoming radiance / pdf
+                    if(m_trainTree){
+                        recordVertex(it, s.sample.wi(), contrib, scene);
                     }
+
+                    // However, when we train the full path later, the added
+                    // contribution must also include the bsdf and cosine
+                    contrib = contrib * bsdfEval.bsdf() * bsdfEval.cosine();
+
+                    // Contribution includes pdf
+                    color = color + (contrib * throughput);
                 }
             }
             
@@ -165,7 +149,7 @@ namespace pathtracer{
             // at this point.
             if(m_trainTree){
                 weights.push_back(sample.weight);
-                positions.push_back(it.position());
+                positions.push_back(it);
                 directions.push_back(sample.wi);
                 pdfs.push_back(sample.pdf);
             }

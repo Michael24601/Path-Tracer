@@ -70,7 +70,7 @@ namespace pathtracer{
 
 
         void recordPath(
-            const std::vector<Vector3>& position,
+            const std::vector<SurfacePoint>& position,
             const std::vector<Vector3>& wi,
             const std::vector<Vector3>& weight,
             const std::vector<real>& pdf,
@@ -84,7 +84,7 @@ namespace pathtracer{
         // and other similar methods.
         // Contribution must include bsdf weight and cosine already.
         void recordVertex(
-            const Vector3& position,
+            const SurfacePoint& position,
             const Vector3& wi,
             const Vector3& contribution,
             const Scene& scene

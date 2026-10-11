@@ -155,7 +155,7 @@ namespace pathtracer{
 
 
     void Guidable::recordPath(
-        const std::vector<Vector3>& position,
+        const std::vector<SurfacePoint>& position,
         const std::vector<Vector3>& wi,
         const std::vector<Vector3>& weight,
         const std::vector<real>& pdf,
@@ -173,7 +173,7 @@ namespace pathtracer{
 
             for(int i = position.size()-1; i >= 0; i--){
                 
-                Vector3 localPoint = toTreeLocalSpace(position[i], scene);
+                Vector3 localPoint = toTreeLocalSpace(position[i].position(), scene);
 
                 Vector3 direction = wi[i];
 
@@ -183,9 +183,10 @@ namespace pathtracer{
                 // are unique to the wo direction during training, and will
                 // wrongly skew the result during rendering when the wo
                 // direction at the same point x is different.
-                Vector3 incoming = intensity / pdf[i];
-
-                m_trainTree->accumulate(localPoint, direction, incoming.mean());
+                if(!position[i].instance()->bsdf()->isSpecular()){
+                    Vector3 incoming = intensity / pdf[i];
+                    m_trainTree->accumulate(localPoint, direction, incoming.mean());
+                }
 
 
                 // The incoming direction for the next iteration then
@@ -200,11 +201,11 @@ namespace pathtracer{
     }
 
 
-    void Guidable::recordVertex(const Vector3& position,
+    void Guidable::recordVertex(const SurfacePoint& position,
         const Vector3& wi, const Vector3& contribution, const Scene& scene){
 
-        if(m_trainTree){
-            Vector3 localPoint = toTreeLocalSpace(position, scene);
+        if(m_trainTree && position.instance()->bsdf()->isSpecular()){
+            Vector3 localPoint = toTreeLocalSpace(position.position(), scene);
             m_trainTree->accumulate(localPoint, wi, contribution.mean());
         }
         

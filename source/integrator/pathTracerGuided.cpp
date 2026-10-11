@@ -28,7 +28,7 @@ namespace pathtracer{
         Vector3 throughput = Vector3(1.0);
 
         // Used for path guiding training
-        std::vector<Vector3> positions;
+        std::vector<SurfacePoint> positions;
         std::vector<Vector3> weights;
         std::vector<Vector3> directions;
         std::vector<real> pdfs;
@@ -89,7 +89,7 @@ namespace pathtracer{
             // at this point.
             if(m_trainTree){
                 weights.push_back(sample.weight);
-                positions.push_back(it.position());
+                positions.push_back(it);
                 directions.push_back(sample.wi);
                 pdfs.push_back(sample.pdf);
             }
