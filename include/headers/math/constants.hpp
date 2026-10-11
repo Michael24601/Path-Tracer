@@ -13,6 +13,8 @@ namespace pathtracer{
     // Small epsilon for self intersection tests
     constexpr real SHADOW_EPSILON = 1e-6;
 
+    constexpr int RR_MIN_DEPTH = 5;
+
     // Infinity
     constexpr real REAL_INFINITY = std::numeric_limits<double>::infinity();
 

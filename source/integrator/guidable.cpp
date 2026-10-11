@@ -16,7 +16,8 @@
 namespace pathtracer{
 
 
-    Guidable::Guidable() : m_guideTree{nullptr}, m_trainTree{nullptr} {}
+    Guidable::Guidable(bool debug) : m_guideTree{nullptr}, m_trainTree{nullptr},
+        m_debug{debug} {}
 
 
     void Guidable::setGuideTree(KdTree* tree) {
@@ -146,7 +147,6 @@ namespace pathtracer{
         const Vector3& position, const Scene& scene) const {
 
         Vector3 min = scene.getBoundingBox().minCorner() - Vector3(0.1);
-
         Vector3 size = scene.getBoundingBox().maxCorner() + Vector3(0.1) - min;
 
         Vector3 result = (position - min) / size;
@@ -172,7 +172,7 @@ namespace pathtracer{
             Vector3 intensity = finalEmission;
 
             for(int i = position.size()-1; i >= 0; i--){
-
+                
                 Vector3 localPoint = toTreeLocalSpace(position[i], scene);
 
                 Vector3 direction = wi[i];
@@ -185,8 +185,7 @@ namespace pathtracer{
                 // direction at the same point x is different.
                 Vector3 incoming = intensity / pdf[i];
 
-                m_trainTree->accumulate(localPoint, direction,
-                    incoming.mean());
+                m_trainTree->accumulate(localPoint, direction, incoming.mean());
 
 
                 // The incoming direction for the next iteration then

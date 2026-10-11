@@ -5,7 +5,6 @@
 #include "pathGuiding/quadTree.hpp"
 #include "logger.hpp"
 
-
 namespace pathtracer{
     
 
@@ -23,9 +22,9 @@ namespace pathtracer{
 
 
     bool KdTree::Node::inCell(const Vector3& p) const {
-        return p.x() >= 0.0 && p.x() <= 1.0 &&
-            p.y() >= 0 && p.y() <= 1.0 && 
-            p.z() >= 0 && p.z() <= 1.0;
+        return p.x() > 0.0 && p.x() <= 1.0 &&
+            p.y() > 0 && p.y() <= 1.0 && 
+            p.z() > 0 && p.z() <= 1.0;
     }
 
 
@@ -46,7 +45,7 @@ namespace pathtracer{
 
         // Since this is now a leaf, we can add a dTree to it
         // (new one).
-        dTree = new QuadTree();
+        dTree = new QuadTree(0);
     }
 
     
@@ -266,7 +265,8 @@ namespace pathtracer{
         m_threshold{threshold},
         m_root{new Node(0)} {
 
-        m_root->setDTree(new QuadTree());
+        // Initializes it with depth 3 by default
+        m_root->setDTree(new QuadTree(0));
     }
 
 
@@ -345,6 +345,51 @@ namespace pathtracer{
         m_root->copy(newTree->m_root);
 
         return newTree;
+    }
+
+
+    void KdTree::Node::printNode(int depth) const {
+        std::string indent(depth * 2, ' ');
+
+        if(isLeaf()){
+            LOG_INFO(indent + "Leaf | depth=" + std::to_string(depth) +
+                " samples=" + std::to_string(getSampleCount()));
+            return;
+        }
+
+        LOG_INFO(indent + "Node | depth=" + std::to_string(depth) +
+            " samples=" + std::to_string(getSampleCount()));
+
+        children[0]->printNode(depth + 1);
+        children[1]->printNode(depth + 1);
+    }
+
+    void KdTree::printStructure() const {
+        m_root->printNode(0);
+    }
+
+
+    int KdTree::Node::getSampleCount(const Vector3& p, int depth) const {
+
+        if(isLeaf()){
+            // Just samples the tree
+            return getSampleCount();
+        }
+
+        Vector3 p0 = transformToChild(p, 0, depth);
+        Vector3 p1 = transformToChild(p, 1, depth);
+
+        if(children[0]->inCell(p0)){
+            return children[0]->getSampleCount(p0, depth + 1);
+        }
+        else {
+            return children[1]->getSampleCount(p1, depth + 1);
+        }
+    }
+
+
+    int KdTree::getSampleCount(const Vector3& p) const{
+        return m_root->getSampleCount(p, 0);
     }
 
 }

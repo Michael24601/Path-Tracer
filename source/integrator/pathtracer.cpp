@@ -52,7 +52,7 @@ namespace pathtracer{
             Vector3 weight = sample.weight();
 
             // Russian roulette
-            float p = Util::russianRoulette(throughput);
+            float p = Util::russianRoulette(throughput, i);
             if (Random::next() > p){
                 break;
             }

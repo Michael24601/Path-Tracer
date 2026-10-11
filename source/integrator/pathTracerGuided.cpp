@@ -11,7 +11,7 @@
 #include "pathGuiding/kdTree.hpp"
 #include "pathGuiding/quadTree.hpp"
 #include "math/constants.hpp"
-
+#include "logger.hpp"
 
 namespace pathtracer{
     
@@ -49,6 +49,7 @@ namespace pathtracer{
                 break;
             }
 
+            
             // If we have an emissive surface, add emission and break
             if(it.instance()->emission()){
                 Vector3 emission = it.evaluateEmission(wo);
@@ -63,7 +64,7 @@ namespace pathtracer{
             // ------ This next step is normal pathtracer ------
 
             // Russian roulette
-            real p = Util::russianRoulette(throughput);
+            real p = Util::russianRoulette(throughput, i);
             if (Random::next() > p){
                 break;
             }

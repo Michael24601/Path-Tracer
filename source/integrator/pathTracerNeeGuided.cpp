@@ -141,7 +141,7 @@ namespace pathtracer{
             // ------ This next step is normal pathtracer ------
 
             // Russian roulette
-            real p = Util::russianRoulette(throughput);
+            real p = Util::russianRoulette(throughput, i);
             if (Random::next() > p){
                 break;
             }

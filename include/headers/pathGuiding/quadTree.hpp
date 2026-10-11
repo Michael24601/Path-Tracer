@@ -103,6 +103,9 @@ namespace pathtracer{
             // Creates a copy of the structure of the tree, with the same flux.
             // Sets the children of newNode.
             void copy(NodePtr newNode) const;
+
+
+            real getFlux(const Vector2& p) const;
         };
 
         // The root of the tree
@@ -111,14 +114,12 @@ namespace pathtracer{
     public:
 
         // Initializes a tree with just a root and 0 flux
-        QuadTree();
+        QuadTree(int baseDepth);
 
         ~QuadTree();
 
-
         // Initializes empty tree with some depth
         void initialize(int depth);
-
 
         real getFlux() const;
 
@@ -172,6 +173,10 @@ namespace pathtracer{
 
         // Returns a tree with the same structure and flux
         QuadTree* copyTree();
+
+
+        real getFlux(const Vector3& direction) const;
+
     };
 
 }

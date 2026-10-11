@@ -107,6 +107,12 @@ namespace pathtracer{
             // Creates a copy of the structure of the tree, with the same flux.
             // Sets the children of newNode.
             void copy(NodePtr newNode) const;
+
+
+            void printNode(int depth) const;
+
+
+            int getSampleCount(const Vector3& p, int depth) const;
         };
 
         // How many samples per leaf node we tolerate
@@ -160,6 +166,11 @@ namespace pathtracer{
         // Returns a tree with the same structure and sample count and
         // dTrees, but all copied.
         KdTree* copyTree();
+
+        void printStructure() const;
+
+
+        int getSampleCount(const Vector3& p) const;
     };
 
 }

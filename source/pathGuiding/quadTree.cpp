@@ -150,9 +150,7 @@ namespace pathtracer{
     }
 
 
-    void QuadTree::Node::accumulate(
-        const Vector2& p,
-        real contribution){
+    void QuadTree::Node::accumulate(const Vector2& p, real contribution){
 
         if(!inQuadrant(p)){
             return;
@@ -165,9 +163,7 @@ namespace pathtracer{
 
             // Otherwise, check children
             for(int i = 0; i < 4; i++){
-                children[i]->accumulate(
-                    transformToChild(p, i),
-                    contribution);
+                children[i]->accumulate( transformToChild(p, i), contribution);
             }
         }
     }
@@ -347,7 +343,9 @@ namespace pathtracer{
     }
 
     // Initializes a tree with just a root and 0 flux
-    QuadTree::QuadTree() : m_root{new Node(0.0)} {}
+    QuadTree::QuadTree(int baseDepth) : m_root{new Node(0.0)} {
+        initialize(baseDepth);
+    }
 
 
     void QuadTree::initialize(int depth){
@@ -364,6 +362,34 @@ namespace pathtracer{
     real QuadTree::getFlux() const{
         return m_root->getFlux();
     }
+
+
+    real QuadTree::getFlux(const Vector3& direction) const{
+        Vector2 coord = SquareToSphereUniform::inverse(direction);
+        return m_root->getFlux(coord);
+    }
+
+
+    real QuadTree::Node::getFlux(const Vector2& p) const{
+
+        if(!inQuadrant(p)){
+            return 0.0;
+        }
+        else{
+            if(isLeaf()){
+                return getFlux();
+            }
+
+            // Otherwise, check children
+            real flux = 0.0;
+            for(int i = 0; i < 4; i++){
+                flux += children[i]->getFlux(transformToChild(p, i));
+            }
+            return flux;
+        }
+    }
+
+
 
     // Accumulates / adds flux into the appropriate leaf node,
     // given a direction, during training. 
@@ -448,10 +474,9 @@ namespace pathtracer{
     // Returns a tree with the same structure and flux
     QuadTree* QuadTree::copyTree(){
 
-        QuadTree* newTree = new QuadTree();
+        QuadTree* newTree = new QuadTree(0);
 
-        newTree->m_root->addFlux(
-            m_root->getFlux());
+        newTree->m_root->addFlux(m_root->getFlux());
 
         m_root->copy(newTree->m_root);
 

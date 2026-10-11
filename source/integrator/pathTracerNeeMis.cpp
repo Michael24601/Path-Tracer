@@ -144,7 +144,7 @@ namespace pathtracer{
             Vector3 weight = sample.weight();
 
             // Russian roulette
-            real p = Util::russianRoulette(throughput);
+            real p = Util::russianRoulette(throughput, i);
 
             if (Random::next() > p){
                 break;

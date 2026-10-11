@@ -123,7 +123,8 @@ namespace pathtracer{
                 // path (used in MIS for example).
                 BsdfSample bsdfEval = it.evaluateBsdf(wo, s.sample.wi());
 
-                if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0 && s.visibility) {
+                if(!bsdfEval.isInvalid() && bsdfEval.cosine() > 0 && s.visibility
+                    && s.sample.isValid()) {
 
                     //---------------------- MIS -----------------------
 
@@ -172,7 +173,7 @@ namespace pathtracer{
             // ------------------ This next step is guiding --------------------
 
             // Russian roulette
-            real p = Util::russianRoulette(throughput);
+            real p = Util::russianRoulette(throughput, i);
 
             if (Random::next() > p){
                 break;

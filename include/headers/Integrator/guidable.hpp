@@ -37,7 +37,9 @@ namespace pathtracer{
 
         std::atomic<int> pathCount;
 
-        Guidable();
+        bool m_debug;
+
+        Guidable(bool debug = false);
 
         void setGuideTree(KdTree* tree);
 

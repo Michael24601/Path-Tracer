@@ -13,7 +13,8 @@ namespace pathtracer{
 
     namespace Util{
 
-        float russianRoulette(const Vector3& c, float max = 0.75f);
+        // Returns 1.0 when still under the RR minimum depth (no RR is done)
+        real russianRoulette(const Vector3& c, int depth, float max = 0.75f);
 
         int floor(real x);
 

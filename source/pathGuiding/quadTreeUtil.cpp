@@ -28,8 +28,7 @@ namespace pathtracer{
                     Vector2 coord(u, v);
 
                     // Converts square coordinate to direction before sending
-                    Vector3 direction =
-                        SquareToSphereUniform::transform(coord);
+                    Vector3 direction = SquareToSphereUniform::transform(coord);
 
                     real pdf = tree->pdf(direction);
 
@@ -44,7 +43,8 @@ namespace pathtracer{
         std::vector<std::vector<Vector3>> renderSamples(
             QuadTree* tree,
             int dimension,
-            int sampleCount){
+            int sampleCount
+        ){
 
             std::vector<std::vector<Vector3>> data(
                 dimension,

@@ -13,8 +13,13 @@ namespace pathtracer{
 
     namespace Util{
 
-        float russianRoulette(const Vector3& c, float max) {
-            return std::min(max, (float)c.luminance() * 2.0f);
+        real russianRoulette(const Vector3& c, int bounce, float max) {
+            if(bounce < RR_MIN_DEPTH){
+                return 1.0;
+            }
+            else{
+                return std::min(max, (float)c.luminance() * 2.0f);
+            }
         }
 
         int floor(real x) {

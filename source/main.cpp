@@ -8,6 +8,7 @@
 #include "core/scene.hpp"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include "integrator/guidable.hpp"
 #include "pathGuiding/quadTree.hpp"
@@ -23,7 +24,7 @@ int main(int argc, char* argv[]) {
     
     std::ofstream logFile("file.log");
     Logger::setOutput(logFile);
-    Logger::setMaxTimeInterval(0.00001);
+    Logger::setMaxTimeInterval(-1.0);
 
 
     if(argc != 3 && argc != 2) {
@@ -84,16 +85,25 @@ int main(int argc, char* argv[]) {
                 (bbox.maxCorner() - bbox.minCorner());
 
             auto tree = guidable->m_guideTree->getDTree(p);
+
+            std::stringstream ss;
+            ss << static_cast<const void*>(tree);
+            LOG_INFO("name: " + ss.str());
+
+            int c = guidable->m_guideTree->getSampleCount(p);
+            LOG_INFO("count " + std::to_string(c));
+
             auto image = QuadTreeUtil::renderQuadTree(tree, 512);
 
             ImageIo::savePNG(image, "output/" + name + ".png");
         }
     };
 
-    renderTree(Vector3(1, 1, 2), "tree1");
-    renderTree(Vector3(1, -1, 2), "tree2");
-    renderTree(Vector3(1, -1, 0), "tree3");
-    renderTree(Vector3(1, 1, 0), "tree4");
+    renderTree(Vector3(0, 1.99, 0), "tree0");
+    renderTree(Vector3(0.99, 1.99, 0.99), "tree1");
+    renderTree(Vector3(0.99, 1.99, -0.99), "tree2");
+    renderTree(Vector3(0.99, 0, -0.99), "tree3");
+    renderTree(Vector3(0.99, 0, 0.99), "tree4");
 
 
     // Opens image when done

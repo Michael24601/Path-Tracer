@@ -62,9 +62,9 @@ namespace pathtracer{
         // If training tree is nullptr, then they just render and don't train.
         // If neither is nullptr, then they train using guiding tree.
         m_trainTree = new KdTree(threshold);
-        // Chooses a random point to initialize for now
-        m_trainTree->getDTree(Vector3(0.5))->initialize(4);
         m_guideTree = nullptr;
+
+        KdTree* tree;
 
         // Saves the number of samples needed for the actual final render
         // as it will be overwritten during training.
