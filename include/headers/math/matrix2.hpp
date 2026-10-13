@@ -55,7 +55,11 @@ namespace pathtracer{
 
         Matrix2 operator-(const Matrix2& m) const;
 
+        Matrix2 operator-() const;
+
         Matrix2 operator*(const Matrix2& m) const;
+
+        Matrix2 operator*(real scalar) const;
 
         Vector2 operator*(const Vector2& v) const;
 

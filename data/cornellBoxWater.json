@@ -133,30 +133,6 @@
             }
         },
         {
-            "id": "light",
-            "type": "mesh",
-            "material": "light-bsdf",
-            "emission": {
-                "type": "lambertian",
-                "parameters": {
-                    "power": [200.0, 120.0, 50.0]
-                }
-            },
-            "parameters": {
-                "transform": [
-                    0.25, 0.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 0.25, 0.0
-                ],
-                "vertex-data":{ 
-                    "format": "obj",
-                    "parameters":{
-                        "file-name": "data/models/cornellBox/ceilingLight.obj"
-                    }
-                }
-            }
-        },
-        {
             "id": "right-wall",
             "type": "mesh",
             "material": "diffuse-green",
@@ -214,10 +190,11 @@
 
     "lights": [
         {
-            "id": "ceiling-light",
-            "type": "area",
+            "id": "light",
+            "type": "directional",
             "parameters": {
-                "instance": "light"
+                "power": [1.0, 0.8, 0.7],
+                "direction": [-0.1, -0.6, -1]
             }
         }
     ],
@@ -240,13 +217,14 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 4000
+            "sample-count": 150
         },
         "integrator": {
-            "type": "path-tracer",
+            "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
-                "use-halfvector": false
+                "use-halfvector": false,
+                "biased": false
             }
         }
     }

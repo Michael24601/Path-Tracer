@@ -16,8 +16,7 @@
 namespace pathtracer{
 
 
-    Guidable::Guidable(bool debug) : m_guideTree{nullptr}, m_trainTree{nullptr},
-        m_debug{debug} {}
+    Guidable::Guidable() : m_guideTree{nullptr}, m_trainTree{nullptr} {}
 
 
     void Guidable::setGuideTree(KdTree* tree) {

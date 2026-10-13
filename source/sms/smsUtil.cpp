@@ -7,10 +7,11 @@
 #include "intersection/surfaceDifferentials.hpp"
 #include "math/matrix2.hpp"
 #include "sms/smsSample.hpp"
-#include "light/lightSample.hpp"
 #include "light/light.hpp"
 #include "math/constants.hpp"
+#include "shapes/shape.hpp"
 #include "logger.hpp"
+
 
 namespace pathtracer{
 
@@ -84,9 +85,58 @@ namespace pathtracer{
 
 
 
+        SmsLightSample lightContribution(const LightSample& sample, const Vector3& x1){
+
+            // For area light
+            if(sample.caster()->hasArea()){
+
+                // We need the light sample contribution, with respect to the new point.
+                SurfaceSample s{sample.position(), sample.triangleIndex()};
+                LightSample newSample = sample.caster()->evaluateLightSample(x1, s);
+
+                // For the light pdf, we can use either the one from newSample
+                // or the original sample, since they are the same.
+                real lightPdf = newSample.pdf();
+
+                // Since the geometric term already handles solid angle
+                // conversion, we need to undo it.
+                lightPdf *= (newSample.cosine()
+                    / (newSample.distance() * newSample.distance()));
+
+                Vector3 lightContribution = newSample.radiance() / lightPdf;
+
+                return SmsLightSample{newSample, lightContribution};
+            }
+            else if(sample.caster()->isPoint()){
+
+                // Point lights can be evaluated, and don't need to be,
+                // since they sample the same point always. So we can just
+                // use sample instead.
+                LightSample newSample = sample.caster()->sample(x1);
+
+                // We also undo solid angle conversion, even though we
+                // don't have a cosine or a valid pdf for point light.
+                Vector3 lightContribution = newSample.radiance() 
+                    * sample.distance() * sample.distance();
+
+                return SmsLightSample{newSample, lightContribution};
+            }
+            else if(sample.caster()->isDirectional()){
+                // For a directional light, origin is irrelevant, so
+                // we can just reuse the old sample.
+                Vector3 lightContribution = sample.radiance();
+                return SmsLightSample{sample, lightContribution};
+            }
+
+            LOG_ERROR("Light type is now known.");
+            exit(1);
+        }
+
+
+
         real geometricTerm(const SurfacePoint& x0, const SmsSample& sample, 
-            const LightSample& x2, const SurfaceDifferentials& d1, 
-            const SurfaceDifferentials& d2) {
+            const LightSample& x2, const SurfaceDifferentials& d0,
+            const SurfaceDifferentials& d1, const SurfaceDifferentials& d2) {
 
             static const real kMinDistance = 1e-5;
             static const real kMinDeterminant = EPSILON;
@@ -97,6 +147,21 @@ namespace pathtracer{
             // Note that wi and wo are flipped in this function, so we multiply
             // wi by eta (since wi is the one connected back to x0).
 
+            Vector3 wo;
+            if(x2.caster() && x2.caster()->isDirectional()){
+                wo = x2.wi();
+            }
+            else{
+                wo = (x2.position() - x1.position());
+            }
+
+            real ilo = wo.length();
+            if(ilo < kMinDistance){
+                return 0.0;
+            }
+            ilo = 1.0 / ilo;
+            wo = wo * ilo;
+
             Vector3 wi = x0.position() - x1.position();
             real ili = wi.length();
             if(ili < kMinDistance){
@@ -105,15 +170,27 @@ namespace pathtracer{
             ili = 1.0 / ili;
             wi = wi * ili;
 
-            Vector3 wo = x2.position() - x1.position();
-            real ilo = wo.length();
-            if(ilo < kMinDistance){
-                return 0.0;
-            }
-            ilo = 1.0 / ilo;
-            wo = wo * ilo;
-
             Matrix2 dc1_dx0, dc2_dx1, dc2_dx2;
+
+            if (x2.caster()->isDirectional()) {
+
+                // Derivative of directional light constraint with respect to x1
+                Vector3 dc2_du1 = (d1.dpdu() - wo * wo.dot(d1.dpdu())) * ilo,
+                        dc2_dv1 = (d1.dpdv() - wo * wo.dot(d1.dpdv())) * ilo;
+                dc2_dx1 = Matrix2(
+                    dc2_du1.dot(d2.dpdu()), dc2_dv1.dot(d2.dpdu()),
+                    dc2_du1.dot(d2.dpdv()), dc2_dv1.dot(d2.dpdv())
+                );
+
+                // Derivative of directional light constraint with respect to x2
+                Vector3 dc2_du2 = (d2.dpdu() - wo * wo.dot(d2.dpdu())) * (-ilo),
+                        dc2_dv2 = (d2.dpdv() - wo * wo.dot(d2.dpdv())) * (-ilo);
+
+                dc2_dx2 = Matrix2(
+                    dc2_du2.dot(d2.dpdu()), dc2_dv2.dot(d2.dpdu()),
+                    dc2_du2.dot(d2.dpdv()), dc2_dv2.dot(d2.dpdv())
+                );
+            }
 
             // Setup generalized half-vector
             real eta = sample.eta();
@@ -142,7 +219,26 @@ namespace pathtracer{
             Vector3 t = d1.dpdv() - x1.shadingNormal() * dot_dpdv_n;
 
             Vector3 dh_du, dh_dv;
-            // Derivative of specular constraint w.r.t. x1
+
+            if (x2.caster()->isDirectional()) {
+                // Derivative of specular constraint w.r.t. v0
+                dh_du = (d0.dpdu() - wi * wi.dot(d0.dpdu())) * ili;
+                dh_dv = (d0.dpdv() - wi * wi.dot(d0.dpdv())) * ili;
+                dh_du = dh_du - h * dh_du.dot(h);
+                dh_dv = dh_dv - h * dh_dv.dot(h);
+
+                if (!sample.isReflection()) {
+                    dh_du = -dh_du;
+                    dh_dv = -dh_dv;
+                }
+
+                dc1_dx0 = Matrix2(
+                    dh_du.dot(s), dh_dv.dot(s),
+                    dh_du.dot(t), dh_dv.dot(t)
+                );
+            }
+
+            // Derivative of specular constraint with respect to x1
             dh_du = -d1.dpdu() * (ili + ilo) + wi * (wi.dot(d1.dpdu()) * ili)
                 + wo * (wo.dot(d1.dpdu()) * ilo);
             dh_dv = -d1.dpdv() * (ili + ilo) + wi * (wi.dot(d1.dpdv()) * ili)
@@ -151,8 +247,8 @@ namespace pathtracer{
             dh_dv = dh_dv - h * dh_dv.dot(h);
 
             if(!sample.isReflection()){
-                dh_du = dh_du * -1.0;
-                dh_dv = dh_dv * -1.0;
+                dh_du = -dh_du;
+                dh_dv = -dh_dv;
             }
 
             real dot_h_n    = h.dot(x1.shadingNormal());
@@ -173,8 +269,8 @@ namespace pathtracer{
             dh_dv = dh_dv - h * dh_dv.dot(h);
 
             if(!sample.isReflection()){
-                dh_du = dh_du * -1.0;
-                dh_dv = dh_dv * -1.0;
+                dh_du = -dh_du;
+                dh_dv = -dh_dv;
             }
 
             Matrix2 dc1_dx2(
@@ -182,28 +278,61 @@ namespace pathtracer{
                 dh_du.dot(t), dh_dv.dot(t)
             );
 
-            // Invert single 2x2 matrix
-            real determinant = dc1_dx1.determinant();
-            if(std::abs(determinant) < kMinDeterminant){
-                return 0.0;
+            if (x2.caster()->isDirectional()) {
+                // Invert 2x2 block matrix system
+                real determinant = dc2_dx2.determinant();
+
+                if (abs(determinant) < 1e-6f) {
+                    return 0.0;
+                }
+
+                Matrix2 Li = dc2_dx2.inverse();
+                Matrix2 tmp = Li * dc2_dx1;
+                Matrix2 m = dc1_dx1 - dc1_dx2 * tmp;
+                determinant = m.determinant();
+
+                if (abs(determinant) < 1e-6f) {
+                    return 0.0;
+                }
+
+                Li = m.inverse();
+                Matrix2 sol1 = -Li * dc1_dx0;
+                Matrix2 sol0 = -tmp * sol1;
+
+                real G = std::abs(-sol0.determinant());
+                G = std::min(G, 10.0);
+                // Cancels out term that appears in bsdf
+                G /= std::abs(wi.dot(x0.shadingNormal()));
+                G *= (eta * eta);
+
+                return G;
             }
+            else{
 
-            Matrix2 inv_dc1_dx1 = dc1_dx1.inverse();
-            real dx1_dx2 = std::abs((inv_dc1_dx1 * dc1_dx2).determinant());
+                // Invert single 2x2 matrix
+                real determinant = dc1_dx1.determinant();
+                if(std::abs(determinant) < kMinDeterminant){
+                    return 0.0;
+                }
 
-            // Unfortunately, these geometric terms are very unstable, so to avoid
-            // severe variance we need to clamp here.
-            dx1_dx2 = std::min(dx1_dx2, real(1.0));
+                Matrix2 inv_dc1_dx1 = dc1_dx1.inverse();
+                real dx1_dx2 = std::abs((inv_dc1_dx1 * dc1_dx2).determinant());
 
-            Vector3 d = x0.position() - x1.position();
-            real inv = 1.0 / d.length();
-            d = d * inv;
+                // Unfortunately, these geometric terms are very unstable, so to avoid
+                // severe variance we need to clamp here.
+                dx1_dx2 = std::min(dx1_dx2, real(1.0));
 
-            real dw0_dx1 = std::abs(d.dot(x1.geometryNormal())) * inv * inv;
-            real G = dw0_dx1 * dx1_dx2;
+                Vector3 d = x0.position() - x1.position();
+                real inv = 1.0 / d.length();
+                d = d * inv;
 
-            return G;
+                real dw0_dx1 = std::abs(d.dot(x1.geometryNormal())) * inv * inv;
+                real G = dw0_dx1 * dx1_dx2;
+
+                return G;
+            }
         }
+
 
     }
 

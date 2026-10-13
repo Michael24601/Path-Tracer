@@ -25,8 +25,9 @@ namespace pathtracer{
         // The direction is opposite as wi starts at the origin
         Vector3 wi = -m_direction;
         // The point doesn't exist but for the sake of the sample
-        // it is infiniteky far away
-        Vector3 position = origin + wi * dist;
+        // it is 1 unit far away (if we compute origin - position we get
+        // normalized wi)
+        Vector3 position = origin + wi;
 
         return LightSample(wi, radiance, position, pdf, dist, this);
     }
@@ -65,6 +66,7 @@ namespace pathtracer{
             tangent
         );
     }
+
 
 
     bool DirectionalLight::hasArea() const {

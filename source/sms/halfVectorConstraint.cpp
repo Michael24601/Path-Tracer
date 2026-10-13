@@ -74,13 +74,18 @@ namespace pathtracer{
                 ili = ili * eta;
             }
 
-            Vector3 dh_du = -dpdu * (ili + ilo)
-                + wi * (wi.dot(dpdu) * ili)
-                + wo * (wo.dot(dpdu) * ilo);
+            Vector3 dh_du, dh_dv;
 
-            Vector3 dh_dv = -dpdv * (ili + ilo)
-                + wi * (wi.dot(dpdv) * ili)
-                + wo * (wo.dot(dpdv) * ilo);
+            if(x2.caster()->isDirectional()){
+                dh_du = (-dpdu + wo * (wo.dot(dpdu))) * ilo;
+                dh_dv = (-dpdv + wo * (wo.dot(dpdv))) * ilo;
+            }
+            else{
+                dh_du = -dpdu * (ili + ilo) + wi * (wi.dot(dpdu) * ili)
+                    + wo * (wo.dot(dpdu) * ilo);
+                dh_dv = -dpdv * (ili + ilo) + wi * (wi.dot(dpdv) * ili)
+                    + wo * (wo.dot(dpdv) * ilo);
+            }
 
             dh_du = dh_du - h * h.dot(dh_du);
             dh_dv = dh_dv - h * h.dot(dh_dv);

@@ -55,11 +55,11 @@ namespace pathtracer{
             // since it would have double counted SMS sample.
             // If last hit not specular, we can also add its contribution,
             // as no double counting.
-            if(it.instance()->emission() 
-                && (i == 0 || !lastInst->bsdf()->isSpecular())){
-
-                Vector3 emission = it.evaluateEmission(wo);
-                color = color + emission * throughput;
+            if(it.instance()->emission()){
+                if (i == 0 || !lastInst->bsdf()->isSpecular()){
+                    Vector3 emission = it.evaluateEmission(wo);
+                    color = color + emission * throughput;
+                }
                 break;
             }
 

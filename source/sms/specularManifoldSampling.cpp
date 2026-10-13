@@ -455,37 +455,34 @@ namespace pathtracer{
             s1Weight = bsdf->evaluateRefraction(secondWo, sample.finalPoint().uv());
         }
 
-        // We need the light sample contribution, with respect to the new point.
-        SurfaceSample s{lightPoint.position(), lightPoint.triangleIndex()};
-        LightSample newSample = lightPoint.caster()->evaluateLightSample(
-            sample.finalPoint().position(), s);
+        // This already includes the light pdf (in case of area light).
+        SmsLightSample lightSample = SmsUtil::lightContribution(lightPoint, 
+            sample.finalPoint().position());
 
-        Vector3 lightContribution = newSample.radiance();
+        // Next up, we need the jacobian (the differential frame must be made
+        // orthonormal).
 
-        // For the light pdf, we can use either the one from newSample
-        // or the original sample, since they are the same.
-        real lightPdf = newSample.pdf();
-
-        if(lightPoint.caster()->hasArea()){
-            // Since the geometric term already handles solid angle
-            // conversion, we need to undo it.
-            lightPdf *= (newSample.cosine()
-                / (newSample.distance() * newSample.distance()));
-        }
-
-        // Next up, we need the jacobian
+        SurfaceDifferentials d0 = causticPoint.instance()
+            ->computeDifferentials(causticPoint);
+        d0.makeOrthonormal();
 
         SurfaceDifferentials d1 = sample.finalPoint().instance()
             ->computeDifferentials(sample.finalPoint());
         d1.makeOrthonormal();
 
         // The other one, at a light
-        SurfaceDifferentials d2 = newSample.caster()->computeDifferentials(newSample);
-        d2.makeOrthonormal();
+        SurfaceDifferentials d2 = lightSample.sample.caster()
+            ->computeDifferentials(lightSample.sample);
 
-        real g = SmsUtil::geometricTerm(causticPoint, sample, newSample, d1, d2);
+        // We only make it orthonormal for area light
+        if(lightSample.sample.caster()->hasArea()){
+            d2.makeOrthonormal();
+        }
 
-        return lightContribution * s1Weight * s0Weight * g / lightPdf;
+        real g = SmsUtil::geometricTerm(causticPoint, sample, 
+            lightSample.sample, d0, d1, d2);
+
+        return lightSample.contribution * s1Weight * s0Weight * g;
     }
 
 }

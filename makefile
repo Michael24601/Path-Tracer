@@ -15,6 +15,8 @@ DEBUG_DEPS = $(DEBUG_OBJECTS:.debug.o=.debug.d)
 -include $(DEPS)
 -include $(DEBUG_DEPS)
 
+.PHONY: all debug run build-run run-debug clean
+
 # Builds
 all: build/build.exe
 
@@ -54,3 +56,5 @@ run-debug:
 # Deletes the build
 clean:
 	if exist build rmdir /s /q build
+
+	

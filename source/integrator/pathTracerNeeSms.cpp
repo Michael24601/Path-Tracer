@@ -57,10 +57,11 @@ namespace pathtracer{
             // And if last hit is not specular, we also ignore it,
             // since it was sampled by NEE.
             // So we only consider first hit.
-            if(it.instance()->emission() && i == 0){
-
-                Vector3 emission = it.evaluateEmission(wo);
-                color = color + emission * throughput;
+            if(it.instance()->emission()){
+                if(i== 0){
+                    Vector3 emission = it.evaluateEmission(wo);
+                    color = color + emission * throughput;
+                }
                 break;
             }
 

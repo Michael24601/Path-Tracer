@@ -229,7 +229,7 @@
             "emission": {
                 "type": "lambertian",
                 "parameters": {
-                    "power": [450.0, 310.0, 330.0]
+                    "power": [1000.0, 600.0, 650.0]
                 }
             },
             "parameters": {
@@ -269,8 +269,8 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [1024, 1024],
-            "sample-count": 100,
-            "message-count": 20
+            "sample-count": 40,
+            "message-count": 30
         },
         "integrator": {
             "type": "path-tracer-nee-sms",

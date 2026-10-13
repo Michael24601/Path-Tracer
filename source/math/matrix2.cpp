@@ -152,6 +152,12 @@ namespace pathtracer{
     }
 
 
+    Matrix2 Matrix2::operator-() const {
+        Matrix2 result(-m_data[0], -m_data[1], -m_data[2], -m_data[3]);
+        return result;
+    }
+
+
     Matrix2 Matrix2::operator*(const Matrix2& m) const {
         Matrix2 result;
 
@@ -161,6 +167,16 @@ namespace pathtracer{
                     m_data[r * 2 + 0] * m.m_data[0 * 2 + c] +
                     m_data[r * 2 + 1] * m.m_data[1 * 2 + c];
             }
+        }
+
+        return result;
+    }
+
+
+    Matrix2 Matrix2::operator*(real scalar) const {
+        Matrix2 result;
+        for(int i = 0; i < 4; i++){
+            result.m_data[i] = m_data[i] * scalar;
         }
 
         return result;

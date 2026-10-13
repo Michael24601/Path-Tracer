@@ -94,7 +94,12 @@ namespace pathtracer{
             const LightSample& lightPoint,
             const SurfaceDifferentials& d) {
 
-            Vector3 wi = lightPoint.position() - specularPoint.position();
+            if (lightPoint.caster() && lightPoint.caster()->isDirectional()) {
+                return DirectionDifferentials{Vector3(0.0), Vector3(0.0)};
+            }
+
+            // We know it's not directional here
+            Vector3 wi = (lightPoint.position() - specularPoint.position());
             real length = wi.length();
             wi = wi / length;
 
@@ -138,13 +143,9 @@ namespace pathtracer{
             }
 
             real cosThetaT = std::sqrt(1.0 - sin2ThetaT);
-
             real dDotWNdu = dw.dwdu.dot(shadingNormal) + w.dot(dndu);
-
             real dDotWNdv = dw.dwdv.dot(shadingNormal) + w.dot(dndv);
-
             real dCosThetaTdu = dotWN * dDotWNdu / (eta * eta * cosThetaT);
-
             real dCosThetaTdv = dotWN * dDotWNdv / (eta * eta * cosThetaT);
 
             Vector3 dSdu = (dw.dwdu - shadingNormal * dDotWNdu - dndu * dotWN)
@@ -248,7 +249,14 @@ namespace pathtracer{
 
 
             Vector3 wo = (x0.position() - p.position()).normalized();
-            Vector3 wi = (x2.position() - p.position()).normalized();
+
+            Vector3 wi;
+            if(x2.caster() && x2.caster()->isDirectional()){
+                wi = x2.wi();
+            }
+            else{
+                wi = (x2.position() - p.position()).normalized();
+            }
 
             DirectionDifferentials dwo = computeWoDifferential(x0, p, d);
             DirectionDifferentials dwi = computeWiDifferential(p, x2, d);

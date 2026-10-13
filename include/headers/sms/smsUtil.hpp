@@ -4,13 +4,13 @@
 #include "math/vector3.hpp"
 #include "math/vector2.hpp"
 #include "math/matrix2.hpp"
+#include "light/lightSample.hpp"
 
 namespace pathtracer{
 
     // Forward declarations
     class SurfacePoint;
     class SurfaceDifferentials;
-    class LightSample;
     class SmsSample;
     class Vector2;
 
@@ -26,6 +26,16 @@ namespace pathtracer{
         Vector2 dx;
         Vector2 C;
         bool success;
+    };
+
+
+    // Returns the light sample sampled from converged point (or evaluated
+    // there), and the contribution, which is divided by area pdf
+    // in case of area light.
+    // The contribution is used as is in SMS.
+    struct SmsLightSample{
+        LightSample sample;
+        Vector3 contribution;
     };
 
 
@@ -57,9 +67,18 @@ namespace pathtracer{
             const SurfaceDifferentials& d);
 
 
+        // Returns the contribution from the light, including the pdf,
+        // depending on its type. It receives the LightSample sampled
+        // at x0, but it needs to create the LightSample as sampled from
+        // the converged point x1.
+        // Returns light / pdf (in area measure, not solid angles, for area 
+        // light).
+        SmsLightSample lightContribution(const LightSample& sample, const Vector3& x1);
+
+
         real geometricTerm(const SurfacePoint& x0, const SmsSample& sample, 
-            const LightSample& x2, const SurfaceDifferentials& d1, 
-            const SurfaceDifferentials& d2);
+            const LightSample& x2, const SurfaceDifferentials& d0,
+            const SurfaceDifferentials& d1, const SurfaceDifferentials& d2);
 
     }
 
