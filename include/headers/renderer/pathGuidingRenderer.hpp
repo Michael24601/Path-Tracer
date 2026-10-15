@@ -11,8 +11,7 @@ namespace pathtracer{
     class KdTree;
 
     // We have different types of renderers as some require different
-    // setups. The default renderer shoots just one sample at the center
-    // of the pixel. 
+    // setups. 
     class PathGuidingRenderer : public PathTracerRenderer{
 
     private:

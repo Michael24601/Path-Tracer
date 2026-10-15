@@ -17,8 +17,7 @@ namespace pathtracer{
     PathTracer::PathTracer(int maxDepth) : m_maxDepth{maxDepth} {}
 
 
-    Vector3 PathTracer::color(
-        const Ray& ray, const Scene& scene) {
+    Vector3 PathTracer::color(const Ray& ray, const Scene& scene) {
 
         Ray currRay = ray;
         Vector3 color = Vector3(0.0);

@@ -21,6 +21,7 @@
 #include "integrator/pathTracerGuided.hpp"
 #include "integrator/pathTracerNeeMisGuided.hpp"
 #include "integrator/pathTracerNeeGuided.hpp"
+#include "integrator/photonMappingIntegrator.hpp"
 #include "integrator/pathTracerSms.hpp"
 #include "integrator/pathTracerNeeSms.hpp"
 #include "light/light.hpp"
@@ -35,6 +36,7 @@
 #include "renderer/renderer.hpp"
 #include "renderer/pathTracerRenderer.hpp"
 #include "renderer/pathGuidingRenderer.hpp"
+#include "renderer/photonMappingRenderer.hpp"
 #include "shapes/mesh.hpp"
 #include "shapes/sphere.hpp"
 #include "shapes/triangle.hpp"
@@ -172,6 +174,19 @@ namespace pathtracer{
                 sceneName + "_" +
                 algorithm + "_" +
                 var + "_" +
+                resolutionName;
+        }
+        else if (algorithm == "photon-mapping-integrator"){
+            int photonCount =
+                data["renderer"]["parameters"]["photon-count"];
+            real radius =
+                data["renderer"]["integrator"]["parameters"]["kernel-radius"];
+
+            outputName =
+                sceneName + "_" +
+                algorithm + "_" +
+                std::to_string(photonCount) + "photons_" +
+                std::to_string(radius) + "r_" +
                 resolutionName;
         }
         else {
@@ -656,6 +671,24 @@ namespace pathtracer{
                 integrator =
                     new PathTracerNeeSms(maxDepth, useHalfVector, biased, scene);
             }
+            else if(data["renderer"]["integrator"]["type"] == "photon-mapping-integrator"){
+
+                int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
+                real kernelRadius = data["renderer"]["integrator"]["parameters"]["kernel-radius"];
+                
+                KernelType type;
+                std::string var = data["renderer"]["integrator"]["parameters"]
+                    ["kernel-type"];
+                if(var == "uniform"){
+                    type = KernelType::UNIFORM;
+                }
+                else if (var == "epanechnikov"){
+                    type = KernelType::EPANECHNIKOV;
+                }
+
+                integrator = new PhotonMappingIntegrator(maxDepth, 
+                    kernelRadius, type);
+            }
 
 
             int messageCount = 10;
@@ -671,6 +704,18 @@ namespace pathtracer{
                 renderer = new PathTracerRenderer(
                     resolution.x(), resolution.y(),
                     camera, scene, integrator, sampleCount, messageCount
+                );
+            }
+            else if(data["renderer"]["type"] == "photon-mapping-renderer"){
+
+                int maxDepth = data["renderer"]["parameters"]["max-depth"];
+                int threshold = data["renderer"]["parameters"]["threshold"];
+                int photonCount = data["renderer"]["parameters"]["photon-count"];
+
+                renderer = new PhotonMappingRenderer(
+                    resolution.x(), resolution.y(),
+                    camera, scene, integrator, photonCount, threshold, maxDepth, 
+                    messageCount
                 );
             }
             else if(data["renderer"]["type"] == "renderer"){

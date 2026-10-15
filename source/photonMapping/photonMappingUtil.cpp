@@ -14,6 +14,7 @@
 #include "core/scene.hpp"
 #include "math/mathUtil.hpp"
 #include "core/random.hpp"
+#include "light/light.hpp"
 #include <omp.h>
 #include "logger.hpp"
 

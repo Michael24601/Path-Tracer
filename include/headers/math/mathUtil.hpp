@@ -9,12 +9,16 @@ namespace pathtracer{
     class Vector3;
     class Vector2;
     class Vector2i;
+    class SurfacePoint;
 
 
     namespace Util{
 
         // Returns 1.0 when still under the RR minimum depth (no RR is done)
         real russianRoulette(const Vector3& c, int depth, float max = 0.75f);
+
+        real shadingNormalAdjoint(const Vector3& wi, const SurfacePoint& it, 
+            const Vector3& wo);
 
         int floor(real x);
 

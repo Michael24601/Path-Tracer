@@ -2,12 +2,23 @@
 #ifndef PATH_TRACER_LIGHT_HPP
 #define PATH_TRACER_LIGHT_HPP
 
+#include "math/vector3.hpp"
+
 namespace pathtracer{
 
-    class Vector3;
     class LightSample;
     class SurfaceSample;
     class SurfaceDifferentials;
+
+    struct PhotonSample{
+        // The intensity, weighted by the direction and the area
+        // pdfs if applicable.
+        Vector3 intensity;
+        // Point sampled on light to emit photon
+        Vector3 point;
+        // The sampled direction, from photon light to the outside.
+        Vector3 direction;
+    };
 
     class Light{
 
@@ -21,6 +32,9 @@ namespace pathtracer{
         // returned result is in world coordinates.
         // The expected input is also in world coordinates.
         virtual LightSample sample(const Vector3&) const = 0;
+
+
+        virtual PhotonSample samplePhoton() const = 0;
 
 
         // Given a particular point on the light, this returns the

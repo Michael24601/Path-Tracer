@@ -86,10 +86,13 @@ namespace pathtracer{
         PrincipledBsdf(Texture* baseColor, Texture* roughness,
             Texture* metallic, Texture* specular);
 
-        BsdfSample evaluate(const Vector3& wo, const Vector3& wi,
-            const Vector2& uv) const override;
+            
+        BsdfSample sample(const Vector3 &wo, const Vector2 &uv,
+            bool adjoint = false) const override;
 
-        BsdfSample sample(const Vector3& wo, const Vector2& uv) const override;
+
+        BsdfSample evaluate(const Vector3 &wo, const Vector3 &wi, 
+            const Vector2 &uv,  bool adjoint = false) const override;
 
         bool isSpecular() const override;
     };

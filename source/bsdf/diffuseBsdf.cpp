@@ -14,7 +14,8 @@ namespace pathtracer{
     DiffuseBsdf::DiffuseBsdf(const Texture* albedo) : m_albedo(albedo){}
 
 
-    BsdfSample DiffuseBsdf::sample(const Vector3& wo, const Vector2& uv) const {
+    BsdfSample DiffuseBsdf::sample(const Vector3& wo, const Vector2& uv,
+        bool adjoint) const {
 
         // In a diffuse BSDF, we can just sample any
         // random direction in the hemisphere, and so long
@@ -51,7 +52,7 @@ namespace pathtracer{
 
 
     BsdfSample DiffuseBsdf::evaluate(const Vector3& wo, const Vector3& wi, 
-        const Vector2& uv) const{
+        const Vector2& uv, bool adjoint) const{
 
         real pdf = SquareToHemisphereCosine::pdf(wi);
 

@@ -18,7 +18,9 @@ namespace pathtracer
     {}
 
 
-    BsdfSample DielectricBsdf::sample(const Vector3 &wo, const Vector2 &uv) const{
+    BsdfSample DielectricBsdf::sample(const Vector3 &wo, const Vector2 &uv, 
+        bool adjoint) const{
+
         // We will randomly pick either to refract or reflect,
         // and the probability will be weighted by the Fresnel term.
         // So we will calculate that first.
@@ -39,15 +41,13 @@ namespace pathtracer
         // n = n_ext/n_int or n_int/n_ext depending on whether
         // we are exitting or entering.
         real n;
-        if (cos_wo > 0)
-        {
+        if (cos_wo > 0){
             // If it is negative, then we are going from exterior to
             // interior.
             // So n = no/ni = n_int/n_ext = ior
             n = ior;
         }
-        else
-        {
+        else{
             // If it is positive, then we are going from interior to
             // exterior.
             // So n = no/ni = n_ext/n_int = 1 / ior
@@ -117,11 +117,11 @@ namespace pathtracer
             // fresnel will be equal to 1, and the bsdf reduces
             // to the mirror bsdf, with the same weight.
             if (!transmittance) {
-                bsdf = reflectance_color * fresnel * (1.0 / cosineTerm);
+                bsdf = reflectance_color * fresnel / cosineTerm;
                 weight = reflectance_color * fresnel;
             }
             else {
-                bsdf = reflectance_color * fresnel * (1.0 / cosineTerm);
+                bsdf = reflectance_color * fresnel / cosineTerm;
                 weight = reflectance_color;
             }
         }
@@ -131,11 +131,15 @@ namespace pathtracer
             wi = ShadingSpace::refract(wo, normal, n);
             wi = wi.normalized();
             cosineTerm = ShadingSpace::cosineTheta(wi);
+
             // Here eta, or n, is used in the weight.
             // Otherwise it is the same as before.
-            weight = transmittance_color * (1.0 / (n * n));
-            bsdf = transmittance_color *
-                (1.0f - fresnel) * (1.0 / (n * n * cosineTerm));
+
+            // Note that in the adjoint case, we omit the 1/eta^2
+            real factor = adjoint ? 1.0 : (1.0 / (n * n));
+
+            weight = transmittance_color * factor;
+            bsdf = weight * (1.0f - fresnel) / cosineTerm;
         }
 
         return BsdfSample(bsdf, wi, cosineTerm, pdf, weight, isDelta);
@@ -143,7 +147,7 @@ namespace pathtracer
 
 
     BsdfSample DielectricBsdf::evaluate(const Vector3 &wo, const Vector3 &wi, 
-        const Vector2 &uv) const{
+        const Vector2 &uv, bool adjoint) const{
 
         // The probability of a light sample picking exactly the
         // direction 'wi' that results from reflecting or refracting

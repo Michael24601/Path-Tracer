@@ -14,6 +14,8 @@ namespace pathtracer{
     // for the refraction and reflection cases.
     class Specular{
 
+        // TODO: ADD ADJOINT FLAG, AND POSSIBLY, WI FOR GLOSSY.
+
     public:
 
         // Given an incoming direction, returns the bsdf associated

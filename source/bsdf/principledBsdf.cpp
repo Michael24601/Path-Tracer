@@ -226,11 +226,8 @@ namespace pathtracer{
     {}
 
 
-    BsdfSample PrincipledBsdf::evaluate(
-        const Vector3& wo,
-        const Vector3& wi,
-        const Vector2& uv
-    ) const {
+    BsdfSample PrincipledBsdf::evaluate(const Vector3& wo, const Vector3& wi,
+        const Vector2& uv, bool adjoint) const {
 
         const Combination combination = combine(uv, wo);
 
@@ -258,8 +255,8 @@ namespace pathtracer{
     }
 
 
-    BsdfSample PrincipledBsdf::sample(
-        const Vector3& wo, const Vector2& uv) const {
+    BsdfSample PrincipledBsdf::sample(const Vector3& wo, const Vector2& uv, 
+        bool adjoint) const {
 
         const auto combination = combine(uv, wo);
         

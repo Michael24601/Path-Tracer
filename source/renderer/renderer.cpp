@@ -44,10 +44,8 @@ namespace pathtracer {
 
         std::vector<std::vector<Vector3>> c(height, std::vector<Vector3>(width));
 
-        // We map these to the center of the pixels,
-        // such that the image ranged between (-1, -1) and (1, 1).
         // This is for multithreading
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(dynamic, 1)
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
                 c[j][i] = renderPixel(i, j);
@@ -59,6 +57,9 @@ namespace pathtracer {
 
     // By default, shoots one ray in center of pixel
     Vector3 Renderer::renderPixel(int i, int j) {
+        // We map these to the center of the pixels,
+        // such that the image ranged between (-1, -1) and (1, 1).
+
         real offsetX = 0.5;
         real offsetY = 0.5;
 

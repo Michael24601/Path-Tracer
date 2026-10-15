@@ -9,4 +9,6 @@ output/
 *.txt
 *.log
 
+build/build.exe
+
 source/*.py

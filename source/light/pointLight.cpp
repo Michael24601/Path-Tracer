@@ -3,7 +3,10 @@
 #include <cmath>
 #include "intersection/surfaceDifferentials.hpp"
 #include "light/lightSample.hpp"
+#include "math/mathUtil.hpp"
 #include "math/constants.hpp"
+#include "core/random.hpp"
+#include "math/vector2.hpp"
 
 namespace pathtracer{
 
@@ -30,6 +33,24 @@ namespace pathtracer{
 
         return LightSample(wi, radiance, m_position, pdf, dist, this);
     }
+
+
+    PhotonSample PointLight::samplePhoton() const{
+        // The point on the light is always the same, the only thing
+        // to sample is the direction.
+        
+        // Samples a random direction locally in upper hemisphere
+        Vector3 wo = SquareToSphereUniform::transform(Random::next2D());
+        real directionPdf = SquareToHemisphereUniform::pdf(wo);
+
+        // Notice that power has nothing to do with distance.
+        // In photon mapping, photons arrive with the same power no
+        // matter the distance.
+        Vector3 power = m_power / directionPdf;
+
+        return PhotonSample{power, m_position, wo};
+    }
+
 
     LightSample PointLight::evaluateLightSample(
         const Vector3& origin,

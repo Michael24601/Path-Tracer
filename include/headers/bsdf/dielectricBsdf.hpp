@@ -30,12 +30,12 @@ namespace pathtracer{
             const Texture *transmittance);
 
 
-        BsdfSample sample(const Vector3 &wo, const Vector2 &uv)
-            const override;
+        BsdfSample sample(const Vector3 &wo, const Vector2 &uv,
+            bool adjoint = false) const override;
 
 
-        BsdfSample evaluate(const Vector3 &wo,
-            const Vector3 &wi, const Vector2 &uv) const override;
+        BsdfSample evaluate(const Vector3 &wo, const Vector3 &wi, 
+            const Vector2 &uv,  bool adjoint = false) const override;
 
 
         bool isSpecular() const override;

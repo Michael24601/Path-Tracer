@@ -115,6 +115,30 @@
             }
         },
         {
+            "id": "light",
+            "type": "mesh",
+            "material": "light-bsdf",
+            "emission": {
+                "type": "lambertian",
+                "parameters": {
+                    "power": [170.0, 120.0, 50.0]
+                }
+            },
+            "parameters": {
+                "transform": [
+                    0.25, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 0.25, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cornellBox/ceilingLight.obj"
+                    }
+                }
+            }
+        },
+        {
             "id": "back-wall",
             "type": "mesh",
             "material": "diffuse-white",
@@ -190,11 +214,10 @@
 
     "lights": [
         {
-            "id": "light",
-            "type": "directional",
+            "id": "ceiling-light",
+            "type": "area",
             "parameters": {
-                "power": [1.0, 0.8, 0.7],
-                "direction": [-0.1, -0.6, -1]
+                "instance": "light"
             }
         }
     ],
@@ -214,17 +237,19 @@
         
     
     "renderer": {
-        "type": "path-tracer-renderer",
+        "type": "photon-mapping-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 150
+            "photon-count": 5000000,
+            "threshold": 4,
+            "max-depth": 100
         },
         "integrator": {
-            "type": "path-tracer-nee-sms",
+            "type": "photon-mapping-integrator",
             "parameters": {
                 "max-depth": 100,
-                "use-halfvector": false,
-                "biased": false
+                "kernel-radius": 0.02,
+                "kernel-type": "epanechnikov"   
             }
         }
     }

@@ -123,8 +123,8 @@ namespace pathtracer{
     // Samples the BSDF of the instance at this point.
     // We assume the direction wo is given in world coordinates.
     // This also returns the sample in world coordinates.
-    BsdfSample SurfacePoint::sampleBsdf(
-        const Vector3& wo) const {
+    BsdfSample SurfacePoint::sampleBsdf(const Vector3& wo, 
+        bool adjoint) const {
 
         if(!m_instance || !m_instance->bsdf()){
             return BsdfSample::INVALID;
@@ -137,7 +137,7 @@ namespace pathtracer{
         // frame coordinates, so we need to transform the inputs,
         // and then make any necessary modifications to the output
         // as well.
-        BsdfSample sample = m_instance->bsdf()->sample(localWo,m_uv);
+        BsdfSample sample = m_instance->bsdf()->sample(localWo, m_uv, adjoint);
 
         // We then transform the result back to world coordinates
         Vector3 wi = m_shadingFrame.transformDirection(sample.wi());
@@ -156,9 +156,8 @@ namespace pathtracer{
     // We are given the wi already, so there is no need to
     // sample anything.
     // This also returns the evaluation in world coordinates.
-    BsdfSample SurfacePoint::evaluateBsdf(
-        const Vector3& wo,
-        const Vector3& wi) const {
+    BsdfSample SurfacePoint::evaluateBsdf(const Vector3& wo,
+        const Vector3& wi, bool adjoint) const {
 
         if(!m_instance || !m_instance->bsdf()){
             return BsdfSample::INVALID;
@@ -172,7 +171,8 @@ namespace pathtracer{
             m_shadingFrame.inverseTransformDirection(wi);
 
         // No need to transform anything else
-        BsdfSample sample = m_instance->bsdf()->evaluate(localWo, localWi, m_uv);
+        BsdfSample sample = m_instance->bsdf()->evaluate(localWo, localWi, 
+            m_uv, adjoint);
 
         sample.setWi(wi);
 

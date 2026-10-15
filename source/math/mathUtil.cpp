@@ -6,7 +6,7 @@
 #include "math/vector2i.hpp"
 #include "math/vector3.hpp"
 #include "math/constants.hpp"
-
+#include "intersection/surfacePoint.hpp"
 
 namespace pathtracer{
 
@@ -21,6 +21,20 @@ namespace pathtracer{
                 return std::min(max, (float)c.luminance() * 2.0f);
             }
         }
+
+        
+        real shadingNormalAdjoint(const Vector3& wi, const SurfacePoint& it, 
+            const Vector3& wo) {
+
+            real numerator = std::abs(wi.dot(it.geometryNormal()) 
+                * wo.dot(it.shadingNormal()));
+
+            real denominator = std::abs(wo.dot(it.geometryNormal()) 
+                * wi.dot(it.shadingNormal()));
+
+            return denominator != 0.0f ? numerator / denominator : 0.0f;
+        }
+
 
         int floor(real x) {
             return static_cast<int>(x);

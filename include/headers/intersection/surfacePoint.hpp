@@ -86,16 +86,15 @@ namespace pathtracer{
         // Samples the BSDF of the instance at this point.
         // We assume the direction wo is given in world coordinates.
         // This also returns the sample in world coordinates.
-        BsdfSample sampleBsdf(const Vector3& wo) const;
+        BsdfSample sampleBsdf(const Vector3& wo, bool adjoint = false) const;
 
         // Evaluates the BSDF of the instance at this point.
         // We assume the direction wo is given in world coordinates.
         // We are given the wi already, so there is no need to
         // sample anything.
         // This also returns the evaluation in world coordinates.
-        BsdfSample evaluateBsdf(
-            const Vector3& wo,
-            const Vector3& wi) const;
+        BsdfSample evaluateBsdf(const Vector3& wo, const Vector3& wi, 
+            bool adjoint = false) const;
 
         // Here, we just evaluate the emission at this point.
         // Returns the emission in world coordinates

@@ -4,6 +4,7 @@
 #include "intersection/surfaceDifferentials.hpp"
 #include "light/lightSample.hpp"
 #include "math/constants.hpp"
+#include "logger.hpp"
 
 namespace pathtracer{
 
@@ -30,6 +31,13 @@ namespace pathtracer{
         Vector3 position = origin + wi;
 
         return LightSample(wi, radiance, position, pdf, dist, this);
+    }
+
+
+    PhotonSample DirectionalLight::samplePhoton() const{
+        // Nothing to sample for directional light
+        LOG_ERROR("NOT IMPLEMENTED");
+        exit(1);
     }
 
 

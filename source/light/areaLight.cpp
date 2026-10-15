@@ -4,8 +4,11 @@
 #include "core/instance.hpp"
 #include "intersection/areaSample.hpp"
 #include "light/lightSample.hpp"
+#include "math/mathUtil.hpp"
 #include "intersection/surfaceDifferentials.hpp"
 #include "shapes/shape.hpp"
+#include "core/random.hpp"
+#include "math/vector2.hpp"
 
 namespace pathtracer{
     
@@ -48,6 +51,31 @@ namespace pathtracer{
             solidAnglePdf, dist, this, cosineY, s.triangleIndex());
 
         return sample;
+    }
+
+
+    PhotonSample AreaLight::samplePhoton() const{
+
+        // Samples a random point
+        AreaSample s = m_instance->sampleArea();
+
+        // Samples a random direction locally in upper hemisphere
+        Vector3 localWo = SquareToHemisphereUniform::transform(Random::next2D());
+        Vector3 wo = s.shadingFrame().transformDirection(localWo);
+
+        // The light sample expects the pdf in solid angles
+        real cosineY = std::max(0.0, s.shadingNormal().dot(wo));
+        real solidAnglePdf = s.pdf() / cosineY;
+
+        real directionPdf = SquareToHemisphereUniform::pdf(localWo);
+
+        // The radiance is just the emission at this point
+        // (Here wo is the opposite of wi).
+        Vector3 radiance = s.evaluateEmission(wo);
+        radiance = radiance / (directionPdf * solidAnglePdf);
+
+        return PhotonSample{radiance, s.position(), wo};
+
     }
 
 

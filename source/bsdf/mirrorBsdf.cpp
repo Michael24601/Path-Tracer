@@ -8,8 +8,8 @@ namespace pathtracer{
         m_reflectance(reflectance){}
 
 
-    BsdfSample MirrorBsdf::sample(const Vector3& wo, const Vector2& uv) 
-        const {
+    BsdfSample MirrorBsdf::sample(const Vector3& wo, const Vector2& uv,
+        bool adjoint) const {
 
         // We only scatter light in the upper hemisphere.
         if(ShadingSpace::cosineTheta(wo) <= 0) {
@@ -37,7 +37,7 @@ namespace pathtracer{
 
 
     BsdfSample MirrorBsdf::evaluate(const Vector3& wo, 
-        const Vector3& wi, const Vector2& uv) const {
+        const Vector3& wi, const Vector2& uv, bool adjoint) const {
 
         // The probability that the given wi is the reflection of wo
         // is 0, so we return an invalid sample.

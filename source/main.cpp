@@ -74,38 +74,6 @@ int main(int argc, char* argv[]) {
 
     LOG_INFO("Image saved to " + output);
 
-
-    auto renderTree = [&](Vector3 p, const std::string& name) {
-        auto guidable = dynamic_cast<Guidable*>(renderer->m_integrator);
-        auto bbox = renderer->m_scene->getBoundingBox();
-
-        if(guidable && guidable->m_guideTree){
-
-            p = (p - bbox.minCorner()) /
-                (bbox.maxCorner() - bbox.minCorner());
-
-            auto tree = guidable->m_guideTree->getDTree(p);
-
-            std::stringstream ss;
-            ss << static_cast<const void*>(tree);
-            LOG_INFO("name: " + ss.str());
-
-            int c = guidable->m_guideTree->getSampleCount(p);
-            LOG_INFO("count " + std::to_string(c));
-
-            auto image = QuadTreeUtil::renderQuadTree(tree, 512);
-
-            ImageIo::savePNG(image, "output/" + name + ".png");
-        }
-    };
-
-    renderTree(Vector3(0, 1.99, 0), "tree0");
-    renderTree(Vector3(0.99, 1.99, 0.99), "tree1");
-    renderTree(Vector3(0.99, 1.99, -0.99), "tree2");
-    renderTree(Vector3(0.99, 0, -0.99), "tree3");
-    renderTree(Vector3(0.99, 0, 0.99), "tree4");
-
-
     // Opens image when done
     std::string command = "start \"\" \"" + output + "\"";
     system(command.c_str());

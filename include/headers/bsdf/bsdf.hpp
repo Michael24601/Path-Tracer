@@ -24,8 +24,8 @@ namespace pathtracer{
         // wo.
         // Note that this in the shading frame coordinates, 
         // and wo is expected to be transformed already.
-        virtual BsdfSample sample(const Vector3& wo, const Vector2& uv) 
-            const = 0;
+        virtual BsdfSample sample(const Vector3& wo, const Vector2& uv, 
+            bool adjoint = false) const = 0;
 
 
         // This is the reverse query, we pick the wi ourselves,
@@ -39,7 +39,8 @@ namespace pathtracer{
         // sample a point, which gives us a wi, and we need to
         // evaluate the bsdf value without sampling.
         virtual BsdfSample evaluate(const Vector3& wo, 
-            const Vector3& wi, const Vector2& uv) const = 0;
+            const Vector3& wi, const Vector2& uv, bool adjoint = false
+        ) const = 0;
         
 
         // Has a delta distribution

@@ -7,8 +7,7 @@
 namespace pathtracer{
 
     // We have different types of renderers as some require different
-    // setups. The default renderer shoots just one sample at the center
-    // of the pixel. 
+    // setups.
     class PathTracerRenderer : public Renderer{
 
     protected:
