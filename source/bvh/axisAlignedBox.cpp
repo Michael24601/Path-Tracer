@@ -12,8 +12,7 @@ namespace pathtracer{
 
     AxisAlignedBox::AxisAlignedBox(
         const Vector3& minCorner, const Vector3& maxCorner) : 
-        m_minCorner(minCorner), 
-        m_maxCorner(maxCorner) {
+        m_minCorner(minCorner), m_maxCorner(maxCorner) {
 
         assert((minCorner <= maxCorner) 
             && "The corner coordinates are not ordered right");
@@ -22,15 +21,15 @@ namespace pathtracer{
 
     // Increases the AABB size to fit another AABB
     void AxisAlignedBox::extend(const AxisAlignedBox& bounds) {
-        m_minCorner = m_minCorner.elementWiseMinimum(bounds.m_minCorner);
-        m_maxCorner = m_maxCorner.elementWiseMaximum(bounds.m_maxCorner);
+        m_minCorner = m_minCorner.min(bounds.m_minCorner);
+        m_maxCorner = m_maxCorner.max(bounds.m_maxCorner);
     }
 
 
     // Increases AABB size to fit a point
     void AxisAlignedBox::extend(const Vector3& point) {
-        m_minCorner = m_minCorner.elementWiseMinimum(point);
-        m_maxCorner = m_maxCorner.elementWiseMaximum(point);
+        m_minCorner = m_minCorner.min(point);
+        m_maxCorner = m_maxCorner.max(point);
     }
 
 
@@ -43,16 +42,6 @@ namespace pathtracer{
     }
 
 
-    const Vector3& AxisAlignedBox::minCorner() const {
-        return m_minCorner;
-    }
-
-
-    const Vector3& AxisAlignedBox::maxCorner() const {
-        return m_maxCorner;
-    }
-
-
     real AxisAlignedBox::intersect(const Ray& ray) const {
 
         // First we intersect every single plane in the AABB,
@@ -61,8 +50,8 @@ namespace pathtracer{
         Vector3 t2 = (m_maxCorner - ray.origin()) / ray.direction();
 
         // We then check which is actually closer (element-wise)
-        Vector3 tMax = t1.elementWiseMaximum(t2);
-        Vector3 tMin = t1.elementWiseMinimum(t2);
+        Vector3 tMax = t1.max(t2);
+        Vector3 tMin = t1.min(t2);
 
         // We then find which axis was actually entered first
         real tNear = tMin.maxElement();

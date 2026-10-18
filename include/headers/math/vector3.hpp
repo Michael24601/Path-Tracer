@@ -92,10 +92,6 @@ namespace pathtracer{
         // Returns a normalized copy of the vector
         Vector3 normalized() const;
 
-        Vector3 elementWiseMinimum(const Vector3& v) const;
-
-        Vector3 elementWiseMaximum(const Vector3& v) const;
-
         real minElement() const;
 
         real maxElement() const;

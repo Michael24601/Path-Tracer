@@ -16,24 +16,23 @@
 #include "photonMapping/photonMappingUtil.hpp"
 #include "logger.hpp"
 
-
-namespace pathtracer{
-
+namespace pathtracer
+{
 
     PhotonMappingRenderer::PhotonMappingRenderer(int width, int height,
-        const Camera* camera, const Scene* scene, Integrator* integrator,
-        int photonCount, int threshold, int maxDepth, int messageCount) :
+        const Camera *camera, const Scene *scene, Integrator *integrator,
+        int photonCount, int threshold, int maxDepth, int messageCount) : 
         Renderer(width, height, camera, scene, integrator, messageCount),
-        m_photonCount{photonCount}, m_maxDepth{maxDepth}, 
+        m_photonCount{photonCount}, m_maxDepth{maxDepth},
         m_threshold{threshold}, m_map{nullptr} {}
 
 
-    PhotonMappingRenderer::~PhotonMappingRenderer(){
-        if(m_map){
+    PhotonMappingRenderer::~PhotonMappingRenderer() {
+        if (m_map)
+        {
             delete m_map;
         }
     }
-
 
     void PhotonMappingRenderer::preprocess(){
 
@@ -41,12 +40,13 @@ namespace pathtracer{
         m_totalPathCount = static_cast<long long>(m_width) * m_height;
 
         // Once we have our photons, we can create a map
-        m_map = PhotonMapping::tracePhotons(m_photonCount, m_maxDepth, 
+        m_map = PhotonMapping::tracePhotons(m_photonCount, m_maxDepth,
             m_threshold, *m_scene);
 
-        PhotonMappingIntegrator* pmi = 
-            dynamic_cast<PhotonMappingIntegrator*>(m_integrator);
-        if(!pmi){
+        PhotonMappingIntegrator *pmi =
+            dynamic_cast<PhotonMappingIntegrator *>(m_integrator);
+
+        if (!pmi){
             LOG_ERROR("Wrong integrator type.");
             exit(1);
         }
@@ -55,5 +55,11 @@ namespace pathtracer{
         pmi->setPhotonCount(m_photonCount);
     }
 
+
+    std::string PhotonMappingRenderer::toString() const {
+        return m_integrator->toString() + " "
+            + std::to_string(m_height) + "x" 
+            + std::to_string(m_width) + "px";
+    }
 
 }

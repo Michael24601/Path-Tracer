@@ -112,4 +112,9 @@ namespace pathtracer{
         return color;
     }
 
+
+    std::string PathTracerSms::toString() const{
+        return "PT " + sms->toString();
+    }
+
 }

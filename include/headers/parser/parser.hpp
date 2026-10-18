@@ -14,9 +14,6 @@ namespace pathtracer{
 
         static Renderer* parse(const std::string& filename);
 
-
-        static std::string parseOutputName(const std::string& filename);
-
     };
 
 }

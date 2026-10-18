@@ -5,6 +5,7 @@
 #include <vector>
 #include "config.hpp"
 #include <atomic>
+#include <string>
 
 namespace pathtracer{
 
@@ -65,6 +66,10 @@ namespace pathtracer{
         // This just shoots a ray, using the supplied offsets for pixels,
         // and returns rendered colors. It also updates sample counter.
         Vector3 shootRay(int i, int j, real offsetX, real offsetY);
+
+
+        virtual std::string toString() const;
+
     };
 
 }

@@ -18,6 +18,11 @@ namespace pathtracer{
         PathTracer(int maxDepth);
 
         Vector3 color(const Ray& ray, const Scene& scene) override;
+
+        std::string toString() const override{
+            return "PT";
+        }
+
     };
 
 }

@@ -10,6 +10,14 @@ namespace pathtracer{
 
     class QuadTree;
     class Vector3;
+    class AxisAlignedBox;
+    enum class DirectionalFilter;
+    
+    enum class SpatialFilter{
+        NEAREST,
+        STOCHASTIC,
+        BOX
+    };
 
     // A three dimensional KdTree
     class KdTree{
@@ -28,14 +36,16 @@ namespace pathtracer{
 
             // The sample count in a spatial node. 
             // It is atomic as multiple threads may write (sum) into it. 
-            std::atomic<int> sampleCount;
+            // It is a real instead of an int to allow for weighting 
+            // samples differently for filters and NEE.
+            std::atomic<real> sampleWeight;
 
             // Directional tree (only in leafs)
             QuadTree* dTree;
 
         public:
 
-            Node(int sampleCount);
+            Node(real weight);
 
             ~Node();
 
@@ -48,16 +58,16 @@ namespace pathtracer{
                 return !children[0];
             }
 
-            inline void addSample(){
-                sampleCount.fetch_add(1, std::memory_order_relaxed);
+            inline void addSample(real weight){
+                sampleWeight.fetch_add(weight, std::memory_order_relaxed);
             }
 
-            inline void setSampleCount(int count){
-                sampleCount.store(count);
+            inline void setSampleCount(real weight){
+                sampleWeight.store(weight);
             }
 
-            inline int getSampleCount() const{
-                return sampleCount.load(std::memory_order_relaxed);
+            inline real getSampleWeight() const{
+                return sampleWeight.load(std::memory_order_relaxed);
             }
 
             // Takes a point p, which is in local coordinates of the
@@ -84,12 +94,13 @@ namespace pathtracer{
             // by going down the tree, adding the sample to the leaf
             // it arrives at, and then calling the accumulate function
             // of the dTree.
-            void accumulate(const Vector3& p, const Vector3& direction,
-                real contribution, int depth);
+            void accumulate(const Vector3& p, const Vector3& direction, 
+                real weight, real contribution, DirectionalFilter dFilter, 
+                int depth);
 
             // Recomputes the sample count of the parent using the childrens'
             // but first recomputes children's since they may be stale too. 
-            void recomputeSampleCount();
+            void recomputeSampleWeight();
 
             // Finds dTree in elaf associated with point p
             QuadTree* getDTree(const Vector3& p, int depth) const;
@@ -98,7 +109,7 @@ namespace pathtracer{
             // subdivides it into 2 children with half the count. 
             // If an internal node has too little samples, prunes its
             // descendants.
-            void adaptNode(int threshold);
+            void adaptNode(real threshold);
 
             // Resets the subtree (sets sample count to 0)
             // And resets all dTrees in it.
@@ -109,10 +120,27 @@ namespace pathtracer{
             void copy(NodePtr newNode) const;
 
 
-            void printNode(int depth) const;
+            real getSampleWeight(const Vector3& p, int depth) const;
+
+            // Descends into leaf containing p, jitters it so it's 
+            // possibly in another leaf, then returns jittered p in 
+            // global root coordinates. Used in filtering.
+            Vector3 jitter(const Vector3& p, int depth) const;
 
 
-            int getSampleCount(const Vector3& p, int depth) const;
+            // Returns the box centered at p of the same size as the leaf
+            // it is in.
+            AxisAlignedBox boxAt(const Vector3& p, int depth) const;
+
+
+            // This function accumulates not in leaf of point p, but in all
+            // leafs that intersect the given box.
+            // The weight that is accumulated is divided based on overlap
+            // proportion.
+            void accumulateBox(const AxisAlignedBox& box, 
+                const Vector3& direction, real weight, real contribution, 
+                DirectionalFilter dFilter, int depth);
+
         };
 
         // How many samples per leaf node we tolerate
@@ -132,18 +160,16 @@ namespace pathtracer{
 
         // Accumulates / adds flux into the appropriate leaf node,
         // given a position and direction, during training.
-        void accumulate(const Vector3& p, const Vector3& d, real contribution);
+        void accumulate(const Vector3& p, const Vector3& d, real weight, 
+            real contribution, SpatialFilter filter, DirectionalFilter dFilter);
 
         // Accumulates / adds samples and flux into the appropriate leaf node,
         // given a direction, during training.
         // Assumes p is normalized to be in a hypercube (0, 0, 0) to (1, 1, 1).
-        QuadTree* getDTree(const Vector3& p);
+        const QuadTree* getDTree(const Vector3& p) const;
 
-        // During the training process, leafs have their fluxes updated.
-        // But their parents' fluxes remain stale. After training, this
-        // recomputeFlux function is called to update the flux of every
-        // internal node.
-        void recomputeSampleCount();
+
+        void recomputeSampleWeight();
 
         // Adaptively subdivides the tree's nodes if they have too much
         // flux, or prune children if they have too little. Used after
@@ -167,10 +193,9 @@ namespace pathtracer{
         // dTrees, but all copied.
         KdTree* copyTree();
 
-        void printStructure() const;
+        real getSampleWeight(const Vector3& p) const;
 
 
-        int getSampleCount(const Vector3& p) const;
     };
 
 }

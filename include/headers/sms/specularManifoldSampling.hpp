@@ -4,13 +4,14 @@
 
 #include <atomic>
 #include <vector>
+#include <string>
 #include "config.hpp"
 
 namespace pathtracer{
 
     class SurfacePoint;
     class Instance;
-    class Specular;
+    class SpecularManifoldBsdf;
     class Scene;
     class Vector3;
     class SmsSample;
@@ -29,7 +30,7 @@ namespace pathtracer{
         // the specular bsdfs are cached here (instance holds pointer
         // to base class).
         // The downcast is necessary for specular specific functions.
-        std::vector<const Specular*> m_bsdfs;
+        std::vector<const SpecularManifoldBsdf*> m_bsdfs;
 
         // Maximum numbers of allowed iterations for the newton solver
         int m_maxIterations;
@@ -79,14 +80,14 @@ namespace pathtracer{
         // This includes all terms except the light selection pdf which sample
         // handles.
         Vector3 unbiasedSample(const SurfacePoint& causticPoint,
-            const Instance* specular, const Specular* bsdf,
+            const Instance* specular, const SpecularManifoldBsdf* bsdf,
             const LightSample& lightPoint, const Vector3& wo, 
             const Scene* scene);
 
 
         // Same but biased (less variance).
         Vector3 biasedSample(const SurfacePoint& causticPoint,
-            const Instance* specular, const Specular* bsdf,
+            const Instance* specular, const SpecularManifoldBsdf* bsdf,
             const LightSample& lightPoint, const Vector3& wo, 
             const Scene* scene);
 
@@ -100,13 +101,13 @@ namespace pathtracer{
         // method is used to satisfy the constraints). May return
         // a non converged result.
         SmsSample samplePath(const SurfacePoint& causticPoint, 
-            const Instance* specular, const Specular* bsdf, 
+            const Instance* specular, const SpecularManifoldBsdf* bsdf, 
             const LightSample& lightPoint, const Scene* scene);
 
 
         SmsSample newtonSolver(const SurfacePoint& causticPoint, 
             const SurfacePoint& seedIt, const LightSample& lightPoint, 
-            const Specular* bsdf, const Scene* scene);
+            const SpecularManifoldBsdf* bsdf, const Scene* scene);
 
 
         // Returns the ougoing contribution from x0 after it samples
@@ -116,8 +117,20 @@ namespace pathtracer{
         // and the light selection pdf.
         static Vector3 evaluatePathContribution(
             const SurfacePoint& causticPoint, const LightSample& lightPoint, 
-            const SmsSample& sample, const Specular* bsdf, const Vector3& wo, 
-            const Scene* scene);
+            const SmsSample& sample, const SpecularManifoldBsdf* bsdf, 
+            const Vector3& wo, const Scene* scene);
+
+
+        std::string toString() const{
+
+            std::string info;
+
+            info += "SMS ";
+            info += std::string(m_useHalfVector ? "HV " : "AD ");
+            info += std::string(m_biased ? "BIASED" : "UNBIASED");
+
+            return info;
+        }
 
     };
 

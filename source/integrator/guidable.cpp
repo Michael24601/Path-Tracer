@@ -2,6 +2,7 @@
 #include "integrator/guidable.hpp"
 #include "pathGuiding/kdTree.hpp"
 #include <cassert>
+#include <algorithm>
 #include "core/scene.hpp"
 #include "math/vector3.hpp"
 #include "intersection/surfacePoint.hpp"
@@ -31,11 +32,6 @@ namespace pathtracer{
 
     void Guidable::setAlpha(real alpha){
         m_alpha = alpha;
-    }
-
-
-    real Guidable::alpha() const{
-        return m_alpha;
     }
 
 
@@ -129,24 +125,13 @@ namespace pathtracer{
         return GuidedSample{wi, weight, pdf, true};
 
     }
-
-
-
-    const KdTree* Guidable::getGuideTree() const {
-        return m_guideTree;
-    }
-
-
-    KdTree* Guidable::getTrainTree() const {
-        return m_trainTree;
-    }
-
+    
 
     Vector3 Guidable::toTreeLocalSpace(
         const Vector3& position, const Scene& scene) const {
 
-        Vector3 min = scene.getBoundingBox().minCorner() - Vector3(0.1);
-        Vector3 size = scene.getBoundingBox().maxCorner() + Vector3(0.1) - min;
+        Vector3 min = scene.getBoundingBox().minCorner();
+        Vector3 size = scene.getBoundingBox().maxCorner() - min;
 
         Vector3 result = (position - min) / size;
         return result;
@@ -166,25 +151,35 @@ namespace pathtracer{
         assert(position.size() == weight.size());
         assert(position.size() == pdf.size());
 
+        // It's possible for RR to end BSDF sampling before tha path
+        // vertex is added but after NEE, so we guard against that
+        // by including it here.
+        Vector3 intensity = finalEmission;
+        if(contribution.size() > position.size()){
+            intensity = intensity + contribution.back();
+        }
+
         if(m_trainTree){
 
             Vector3 intensity = finalEmission;
 
             for(int i = position.size()-1; i >= 0; i--){
-                
-                Vector3 localPoint = toTreeLocalSpace(position[i].position(), scene);
 
-                Vector3 direction = wi[i];
-
-                // In accumulate, we add the incoming radiance from wi to
-                // current vertex, divided by the pdf of the direction wi.
-                // We DO NOT include the bsdf and the cosine because they
-                // are unique to the wo direction during training, and will
-                // wrongly skew the result during rendering when the wo
-                // direction at the same point x is different.
                 if(!position[i].instance()->bsdf()->isSpecular()){
+                    
+                    Vector3 localPoint = toTreeLocalSpace(position[i].position(), scene);
+                    Vector3 direction = wi[i];
+
+                    // In accumulate, we add the incoming radiance from wi to
+                    // current vertex, divided by the pdf of the direction wi.
+                    // We DO NOT include the bsdf and the cosine because they
+                    // are unique to the wo direction during training, and will
+                    // wrongly skew the result during rendering when the wo
+                    // direction at the same point x is different.
                     Vector3 incoming = intensity / pdf[i];
-                    m_trainTree->accumulate(localPoint, direction, incoming.mean());
+                    m_trainTree->accumulate(localPoint, direction, 1.0, 
+                        incoming.mean(), SpatialFilter::NEAREST, 
+                        DirectionalFilter::BOX);
                 }
 
 
@@ -203,9 +198,12 @@ namespace pathtracer{
     void Guidable::recordVertex(const SurfacePoint& position,
         const Vector3& wi, const Vector3& contribution, const Scene& scene){
 
-        if(m_trainTree && position.instance()->bsdf()->isSpecular()){
+        if(m_trainTree && !position.instance()->bsdf()->isSpecular()){
+
             Vector3 localPoint = toTreeLocalSpace(position.position(), scene);
-            m_trainTree->accumulate(localPoint, wi, contribution.mean());
+
+            m_trainTree->accumulate(localPoint, wi, 1.0, contribution.mean(), 
+                SpatialFilter::NEAREST, DirectionalFilter::BOX);
         }
         
     }

@@ -173,13 +173,11 @@ namespace pathtracer
 
         real fresnel = Fresnel::dielectric(cos_wo, n);
 
-        Vector3 transmittance_color = m_transmittance->sample(uv);
         Vector3 reflectance_color = m_reflectance->sample(uv);
 
-        if (transmittance_color != Vector3(0.0)){
-            return reflectance_color;
-        }
-
+        // Note, we always include fresnel here, as it does not get cancelled
+        // by the pdf, since we are sure we are choosing reflection
+        // (there is no randomness here).
         return reflectance_color * fresnel;
     }
 

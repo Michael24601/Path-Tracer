@@ -9,6 +9,7 @@
 #include "math/vector3.hpp"
 #include "math/vector2.hpp"
 #include "logger.hpp"
+#include "bvh/axisAlignedRectangle.hpp"
 #include "math/constants.hpp"
 
 
@@ -55,6 +56,14 @@ namespace pathtracer{
     real QuadTree::Node::getFlux() const{
         return flux.load(std::memory_order_relaxed);
     }
+
+
+    int QuadTree::Node::childIndex(const Vector2& p) const{
+        // Bit operator can be used to get the correct child index
+        // based on quadrant it is in.
+        return (p.x() >= 0.5 ? 1 : 0) | (p.y() >= 0.5 ? 2 : 0);
+    }
+
 
     // Takes a point p, which is in local coordinates
     // (local coordinates means each node spans from (0, 0) 
@@ -152,20 +161,14 @@ namespace pathtracer{
 
     void QuadTree::Node::accumulate(const Vector2& p, real contribution){
 
-        if(!inQuadrant(p)){
+        if(isLeaf()){
+            addFlux(contribution);
             return;
         }
-        else{
-            if(isLeaf()){
-                addFlux(contribution);
-                return;
-            }
 
-            // Otherwise, check children
-            for(int i = 0; i < 4; i++){
-                children[i]->accumulate( transformToChild(p, i), contribution);
-            }
-        }
+        // Otherwise, check children
+        int i = childIndex(p);
+        children[i]->accumulate(transformToChild(p, i), contribution);
     }
 
 
@@ -248,11 +251,6 @@ namespace pathtracer{
     // (given in the local space of the current node)
     real QuadTree::Node::pdf(const Vector2& p) const{
 
-        if(!inQuadrant(p)){
-            // Not sampled, so probability is 0.0
-            return 0.0;
-        }
-
         if(isLeaf()){
             // The pdf of sampling a random 2D point
             // in the local space that is from (0, 0) to (1, 1).
@@ -264,23 +262,16 @@ namespace pathtracer{
             return 1.0;
         }
 
-        real oneOverFlux = 1.0 / getFlux();
-        real choicePdf{0.0};
-
-        real total = children[0]->getFlux() + children[1]->getFlux()
-            + children[2]->getFlux() + children[3]->getFlux();
-
         // If this is the case, then we uniformly sample node
-        if(total < EPSILON){
+        if(getFlux() < EPSILON){
             return 1.0;
         }
 
-        for(int i = 0; i < 4; i++){
-            // Note that child pdf is transformed to local space
-            // by multiplying by 4;
-            choicePdf += (children[i]->getFlux() * oneOverFlux)
-                * 4 * children[i]->pdf(transformToChild(p, i));
-        }
+        real oneOverFlux = 1.0 / getFlux();
+        
+        int i = childIndex(p);
+        real choicePdf = (children[i]->getFlux() * oneOverFlux)
+            * 4 * children[i]->pdf(transformToChild(p, i));
 
         return choicePdf;
     }
@@ -372,21 +363,14 @@ namespace pathtracer{
 
     real QuadTree::Node::getFlux(const Vector2& p) const{
 
-        if(!inQuadrant(p)){
-            return 0.0;
+        if(isLeaf()){
+            return getFlux();
         }
-        else{
-            if(isLeaf()){
-                return getFlux();
-            }
 
-            // Otherwise, check children
-            real flux = 0.0;
-            for(int i = 0; i < 4; i++){
-                flux += children[i]->getFlux(transformToChild(p, i));
-            }
-            return flux;
-        }
+        // Otherwise, check children
+        int i = childIndex(p);
+        return children[i]->getFlux(transformToChild(p, i));
+        
     }
 
 
@@ -394,13 +378,27 @@ namespace pathtracer{
     // Accumulates / adds flux into the appropriate leaf node,
     // given a direction, during training. 
     // Each node represents a range of angles in spherical coordinates.
-    void QuadTree::accumulate(
-        const Vector3& direction,
-        real contribution){
+    void QuadTree::accumulate(const Vector3& direction, real contribution,
+        DirectionalFilter filter){
 
         // First we map the direction to spherical coordinate
         Vector2 coord = SquareToSphereUniform::inverse(direction);
-        m_root->accumulate(coord, contribution);
+
+        if(filter == DirectionalFilter::NEAREST){
+            // Nothing changes here
+            m_root->accumulate(coord, contribution);
+        }
+        else if(filter == DirectionalFilter::BOX){
+            AxisAlignedRectangle box = m_root->boxAt(coord);
+            // We can clip the box to ensure we don't leave the (0, 1) at root
+            box.setMaxCorner(box.maxCorner().min(Vector2(1.0)));
+            box.setMinCorner(box.minCorner().max(Vector2(0.0)));
+            m_root->accumulateBox(box, contribution);
+        }
+        else{
+            LOG_WARNING("Unknown filtering selected, defaulting to nearest.");
+            m_root->accumulate(coord, contribution);
+        }
     }
 
     // During the training process, leafs have their fluxes updated.
@@ -481,6 +479,71 @@ namespace pathtracer{
         m_root->copy(newTree->m_root);
 
         return newTree;
+    }
+
+
+    AxisAlignedRectangle QuadTree::Node::boxAt(const Vector2& p) const{
+
+        if (isLeaf()) {
+            // Here we just return the box centered at p with 0.5 to either
+            // side (size in local coordinates).
+            return AxisAlignedRectangle(p - Vector2(0.5), p + Vector2(0.5));
+        }
+
+        int i = childIndex(p);
+        Vector2 newP = transformToChild(p, i);
+        AxisAlignedRectangle box = children[i]->boxAt(newP);
+
+        // Back to local space
+        return AxisAlignedRectangle(
+            transformFromChild(box.minCorner(), i),
+            transformFromChild(box.maxCorner(), i)
+        );
+    }
+
+
+    void QuadTree::Node::accumulateBox(const AxisAlignedRectangle& box, 
+        real contribution) {
+
+        Vector2 m0 = box.minCorner();
+        Vector2 m1 = box.maxCorner();
+
+        if(isLeaf()){
+
+            // We first need to determine the proportion of overlap
+            // This is the overlap size
+            Vector2 overlap = (m1.min(Vector2(1.0)) 
+                - m0.max(Vector2(0.0))).max(Vector2(0.0));
+
+            real overlapArea = overlap.x() * overlap.y();
+            real boxArea = (m1.x() - m0.x()) * (m1.y() - m0.y());
+
+            if(boxArea <= 0){
+                return;
+            }
+
+            real prop = overlapArea / boxArea;
+
+            addFlux(contribution * prop);
+            return;
+        }
+
+        // Goes into every child the box overlaps
+        for(int c = 0; c < 4; c++){
+            Vector2 childM0 = transformToChild(m0, c);
+            Vector2 childM1 = transformToChild(m1, c);
+
+            // We hit the child if every point in max is larger than the
+            // lower bound, otherwise we miss it. Same for min.
+            bool hit = Vector2(0.0) <= childM1 && childM0 <= Vector2(1.0);
+           
+            // If it overlaps this leaf
+            if(hit){
+                children[c]->accumulateBox(AxisAlignedRectangle(childM0, childM1), 
+                    contribution);
+            }
+        }
+
     }
 
 }

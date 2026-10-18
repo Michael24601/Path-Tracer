@@ -3,16 +3,19 @@
 #include <cassert>
 #include "math/vector3.hpp"
 #include "pathGuiding/quadTree.hpp"
+#include "bvh/axisAlignedBox.hpp"
+#include "core/random.hpp"
 #include "logger.hpp"
 
 namespace pathtracer{
     
 
-    KdTree::Node::Node(int sampleCount) :
-        sampleCount{sampleCount},
+    KdTree::Node::Node(real weight) :
+        sampleWeight{weight},
         children(2, nullptr),
         dTree{nullptr} {
     }
+
 
     KdTree::Node::~Node(){
         if(dTree){
@@ -22,9 +25,9 @@ namespace pathtracer{
 
 
     bool KdTree::Node::inCell(const Vector3& p) const {
-        return p.x() > 0.0 && p.x() <= 1.0 &&
-            p.y() > 0 && p.y() <= 1.0 && 
-            p.z() > 0 && p.z() <= 1.0;
+        return p.x() >= 0.0 && p.x() <= 1.0 &&
+            p.y() >= 0 && p.y() <= 1.0 && 
+            p.z() >= 0 && p.z() <= 1.0;
     }
 
 
@@ -106,7 +109,7 @@ namespace pathtracer{
             return;
         }
 
-        int halfCount = getSampleCount() / 2;
+        real halfCount = getSampleWeight() / 2.0;
 
         children[0] = new Node(halfCount);
         // No need to copy the first to save time
@@ -124,40 +127,32 @@ namespace pathtracer{
     // by going down the tree, adding the sample to the leaf
     // it arrives at, and then calling the accumulate function
     // of the dTree.
-    void KdTree::Node::accumulate(const Vector3& p, const Vector3& direction,
-        real contribution, int depth){
+    void KdTree::Node::accumulate(const Vector3& p, const Vector3& direction, 
+        real weight, real contribution, DirectionalFilter dFilter, int depth){
 
         if(isLeaf()){
-            addSample();
-            dTree->accumulate(direction, contribution);
+            addSample(weight);
+            dTree->accumulate(direction, contribution, dFilter);
             return;
         }
 
         // Goes into child that actually contains the point
 
-        Vector3 p0 = transformToChild(p, 0, depth);
-        Vector3 p1 = transformToChild(p, 1, depth);
+        Vector3 newP = transformToChild(p, 0, depth);
+        int child = children[0]->inCell(newP) ? 0 : 1;
 
-        if(children[0]->inCell(p0)){
-            children[0]->accumulate(
-                transformToChild(p, 0, depth),
-                direction,
-                contribution,
-                depth + 1);
+        if(child == 1){
+            newP = transformToChild(p, 1, depth);
         }
-        else {
-            children[1]->accumulate(
-                transformToChild(p, 1, depth),
-                direction,
-                contribution,
-                depth + 1);
-        }
+
+        children[child]->accumulate(newP, direction, weight, contribution, 
+            dFilter, depth + 1);
     }
 
 
     // Recomputes the sample count of the parent using the childrens'
     // but first recomputes children's since they may be stale too. 
-    void KdTree::Node::recomputeSampleCount(){
+    void KdTree::Node::recomputeSampleWeight(){
 
         if(isLeaf()){
             // We also recompute the dTree flux
@@ -165,15 +160,15 @@ namespace pathtracer{
             return;
         }
 
-        int total{0};
+        real total{0.0};
 
-        children[0]->recomputeSampleCount();
-        children[1]->recomputeSampleCount();
+        children[0]->recomputeSampleWeight();
+        children[1]->recomputeSampleWeight();
 
-        total += children[0]->getSampleCount()
-            + children[1]->getSampleCount();
+        total += children[0]->getSampleWeight()
+            + children[1]->getSampleWeight();
 
-        sampleCount.store(total);
+        sampleWeight.store(total);
     }
 
 
@@ -185,15 +180,14 @@ namespace pathtracer{
             return dTree;
         }
 
-        Vector3 p0 = transformToChild(p, 0, depth);
-        Vector3 p1 = transformToChild(p, 1, depth);
+        Vector3 newP = transformToChild(p, 0, depth);
+        int child = children[0]->inCell(newP) ? 0 : 1;
 
-        if(children[0]->inCell(p0)){
-            return children[0]->getDTree(p0, depth + 1);
+        if(child == 1){
+            newP = transformToChild(p, 1, depth);
         }
-        else {
-            return children[1]->getDTree(p1, depth + 1);
-        }
+
+        return children[child]->getDTree(newP, depth + 1);
     }
 
 
@@ -201,11 +195,11 @@ namespace pathtracer{
     // subdivides it into 2 children with half the count. 
     // If an internal node has too little samples, prunes its
     // descendants.
-    void KdTree::Node::adaptNode(int threshold){
+    void KdTree::Node::adaptNode(real threshold){
 
         if(isLeaf()){
 
-            if(getSampleCount() <= threshold || threshold == 0){
+            if(getSampleWeight() <= threshold || threshold == 0){
                 // First we adapt the dTree (to avoid re-adapting
                 // it if leaf is split and tree is copied)
                 dTree->adaptTree();
@@ -215,7 +209,7 @@ namespace pathtracer{
             subdivide();
         }
         // For internal nodes, prunes children
-        else if(getSampleCount() <= threshold){
+        else if(getSampleWeight() <= threshold){
             // No need to prune the kdTree, unlike the quadtree
             return;
         }
@@ -229,7 +223,7 @@ namespace pathtracer{
     // And resets all dTrees in it.
     void KdTree::Node::reset(){
 
-        sampleCount.store(0.0);
+        sampleWeight.store(0.0);
 
         if(isLeaf()){
             // We also reset the dTree
@@ -252,17 +246,14 @@ namespace pathtracer{
         }
 
         for(int i = 0; i < 2; i++){
-            newNode->children[i] =
-                new Node(children[i]->getSampleCount());
-
+            newNode->children[i] = new Node(children[i]->getSampleWeight());
             children[i]->copy(newNode->children[i]);
         }
     }
 
 
     // Initializes a tree with just a root and 0 flux
-    KdTree::KdTree(int threshold) :
-        m_threshold{threshold},
+    KdTree::KdTree(int threshold) : m_threshold{threshold},
         m_root{new Node(0)} {
 
         // Initializes it with depth 3 by default
@@ -283,20 +274,40 @@ namespace pathtracer{
 
     // Accumulates / adds flux into the appropriate leaf node,
     // given a position and direction, during training.
-    void KdTree::accumulate(
-        const Vector3& p,
-        const Vector3& d,
-        real contribution){
+    void KdTree::accumulate(const Vector3& p, const Vector3& d,
+        real weight, real contribution, SpatialFilter filter,
+        DirectionalFilter dFilter){
 
-        m_root->accumulate(p, d, contribution, 0);
+        if(filter == SpatialFilter::NEAREST){
+            // This does nothing new
+            m_root->accumulate(p, d, weight, contribution, dFilter, 0);
+        }
+        else if (filter == SpatialFilter::STOCHASTIC){
+            // We first jitter and add it to random neighbor
+            Vector3 newP = m_root->jitter(p, 0);
+            // We clamp it to ensure it does not leave the scene
+            newP = newP.max(Vector3(0.0)).min(Vector3(1.0));
+            m_root->accumulate(newP, d, weight, contribution, dFilter, 0);    
+        }
+        else if (filter == SpatialFilter::BOX){
+            AxisAlignedBox box = m_root->boxAt(p, 0);
+            // We can clip the box to ensure we don't leave the (0, 1) at root
+            box.setMaxCorner(box.maxCorner().min(Vector3(1.0)));
+            box.setMinCorner(box.minCorner().max(Vector3(0.0)));
+            m_root->accumulateBox(box, d, weight, contribution, dFilter, 0);
+        }
+        else{       
+            LOG_WARNING("Unknown filtering selected, defaulting to nearest.");
+            m_root->accumulate(p, d, weight, contribution, dFilter, 0);
+        }
     }
 
 
     // Accumulates / adds samples and flux into the appropriate leaf node,
     // given a direction, during training.
     // Assumes p is normalized to be in a hypercube (0, 0, 0) to (1, 1, 1).
-    QuadTree* KdTree::getDTree(const Vector3& p){
-        QuadTree* tree = m_root->getDTree(p, 0);
+    const QuadTree* KdTree::getDTree(const Vector3& p) const{
+        const QuadTree* tree = m_root->getDTree(p, 0);
         return tree;
     }
 
@@ -305,8 +316,8 @@ namespace pathtracer{
     // But their parents' fluxes remain stale. After training, this
     // recomputeFlux function is called to update the flux of every
     // internal node.
-    void KdTree::recomputeSampleCount(){
-        m_root->recomputeSampleCount();
+    void KdTree::recomputeSampleWeight(){
+        m_root->recomputeSampleWeight();
     }
 
 
@@ -339,57 +350,130 @@ namespace pathtracer{
     KdTree* KdTree::copyTree(){
         KdTree* newTree = new KdTree(m_threshold);
 
-        newTree->m_root->setSampleCount(
-            m_root->getSampleCount());
-
+        newTree->m_root->setSampleCount(m_root->getSampleWeight());
         m_root->copy(newTree->m_root);
-
         return newTree;
     }
+    
 
-
-    void KdTree::Node::printNode(int depth) const {
-        std::string indent(depth * 2, ' ');
-
-        if(isLeaf()){
-            LOG_INFO(indent + "Leaf | depth=" + std::to_string(depth) +
-                " samples=" + std::to_string(getSampleCount()));
-            return;
-        }
-
-        LOG_INFO(indent + "Node | depth=" + std::to_string(depth) +
-            " samples=" + std::to_string(getSampleCount()));
-
-        children[0]->printNode(depth + 1);
-        children[1]->printNode(depth + 1);
-    }
-
-    void KdTree::printStructure() const {
-        m_root->printNode(0);
-    }
-
-
-    int KdTree::Node::getSampleCount(const Vector3& p, int depth) const {
+    real KdTree::Node::getSampleWeight(const Vector3& p, int depth) const {
 
         if(isLeaf()){
             // Just samples the tree
-            return getSampleCount();
+            return getSampleWeight();
         }
 
-        Vector3 p0 = transformToChild(p, 0, depth);
-        Vector3 p1 = transformToChild(p, 1, depth);
+        Vector3 newP = transformToChild(p, 0, depth);
+        int child = children[0]->inCell(newP) ? 0 : 1;
 
-        if(children[0]->inCell(p0)){
-            return children[0]->getSampleCount(p0, depth + 1);
+        if(child == 1){
+            newP = transformToChild(p, 1, depth);
         }
-        else {
-            return children[1]->getSampleCount(p1, depth + 1);
-        }
+
+        return children[child]->getSampleWeight(newP, depth + 1);
     }
 
 
-    int KdTree::getSampleCount(const Vector3& p) const{
-        return m_root->getSampleCount(p, 0);
+    real KdTree::getSampleWeight(const Vector3& p) const{
+        return m_root->getSampleWeight(p, 0);
     }
+
+
+    Vector3 KdTree::Node::jitter(const Vector3& p, int depth) const {
+
+        if (isLeaf()) {
+            // In local coordinates, the jitter is just -0.5 to 0.5.
+            return p + Vector3(Random::next() - 0.5,
+                Random::next() - 0.5,
+                Random::next() - 0.5
+            );
+        }
+
+        Vector3 newP = transformToChild(p, 0, depth);
+        int child = children[0]->inCell(newP) ? 0 : 1;
+        
+        if(child == 1){
+            newP = transformToChild(p, 1, depth);
+        }
+
+        Vector3 res = children[child]->jitter(newP, depth + 1);
+
+        // Back to local space
+        return transformFromChild(res, child, depth);
+    }
+
+
+    AxisAlignedBox KdTree::Node::boxAt(const Vector3& p, int depth) const{
+        if (isLeaf()) {
+            // Here we just return the box centered at p with 0.5 to either
+            // side (size in local coordinates).
+            return AxisAlignedBox(p - Vector3(0.5), p + Vector3(0.5));
+        }
+
+        Vector3 newP = transformToChild(p, 0, depth);
+        int child = children[0]->inCell(newP) ? 0 : 1;
+        
+        if(child == 1){
+            newP = transformToChild(p, 1, depth);
+        }
+
+        AxisAlignedBox box = children[child]->boxAt(newP, depth + 1);
+
+        // Back to local space
+        return AxisAlignedBox(
+            transformFromChild(box.minCorner(), child, depth),
+            transformFromChild(box.maxCorner(), child, depth)
+        );
+    }
+
+
+    void KdTree::Node::accumulateBox(const AxisAlignedBox& box, 
+        const Vector3& direction, real weight, real contribution, 
+        DirectionalFilter dFilter, int depth) {
+
+        Vector3 m0 = box.minCorner();
+        Vector3 m1 = box.maxCorner();
+
+        if(isLeaf()){
+
+            // We first need to determine the proportion of overlap
+            // This is the overlap size
+            Vector3 overlap = (m1.min(Vector3(1.0)) 
+                - m0.max(Vector3(0.0))).max(Vector3(0.0));
+
+            real overlapVolume = overlap.x() * overlap.y() * overlap.z();
+            real boxVolume = (m1.x() - m0.x()) * (m1.y() - m0.y()) 
+                * (m1.z() - m0.z());
+
+            if(boxVolume <= 0){
+                return;
+            }
+
+            real prop = overlapVolume / boxVolume;
+
+            addSample(weight * prop);
+            dTree->accumulate(direction, contribution * prop, dFilter);
+            return;
+        }
+
+        // Goes into every child the box overlaps
+        for(int c = 0; c < 2; c++){
+            Vector3 childM0 = transformToChild(m0, c, depth);
+            Vector3 childM1 = transformToChild(m1, c, depth);
+
+            // We hit the child if every point in max is larger than the
+            // lower bound, otherwise we miss it. Same for min.
+            bool hit = Vector3(0.0) <= childM1 && childM0 <= Vector3(1.0);
+           
+            // If it overlaps this leaf
+            if(hit){
+                children[c]->accumulateBox(AxisAlignedBox(childM0, childM1), 
+                    direction, weight, contribution, dFilter, depth + 1);
+            }
+        }
+
+    }
+
 
 }
+

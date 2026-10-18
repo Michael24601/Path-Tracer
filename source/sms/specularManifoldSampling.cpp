@@ -6,7 +6,7 @@
 #include "intersection/intersection.hpp"
 #include "shapes/shape.hpp"
 #include "math/constants.hpp"
-#include "bsdf/specular.hpp"
+#include "bsdf/specularManifoldBsdf.hpp"
 #include "core/scene.hpp"
 #include "sms/smsSample.hpp"
 #include "light/lightSample.hpp"
@@ -39,8 +39,8 @@ namespace pathtracer{
 
         for(int i = 0; i < scene->instanceCount(); i++){
 
-            const Specular* bsdf =
-                dynamic_cast<const Specular*>(scene->instance(i)->bsdf());
+            const SpecularManifoldBsdf* bsdf =
+                dynamic_cast<const SpecularManifoldBsdf*>(scene->instance(i)->bsdf());
 
             if(bsdf){
                 m_specularInstances.push_back(scene->instance(i));
@@ -94,7 +94,7 @@ namespace pathtracer{
 
     Vector3 SpecularManifoldSampling::unbiasedSample(
         const SurfacePoint& causticPoint,
-        const Instance* specular, const Specular* bsdf,
+        const Instance* specular, const SpecularManifoldBsdf* bsdf,
         const LightSample& lightPoint, const Vector3& wo, 
         const Scene* scene){
 
@@ -180,7 +180,7 @@ namespace pathtracer{
 
     Vector3 SpecularManifoldSampling::biasedSample(
         const SurfacePoint& causticPoint,
-        const Instance* specular, const Specular* bsdf,
+        const Instance* specular, const SpecularManifoldBsdf* bsdf,
         const LightSample& lightPoint, const Vector3& wo, 
         const Scene* scene){
 
@@ -268,9 +268,10 @@ namespace pathtracer{
 
 
 
-    SmsSample SpecularManifoldSampling::samplePath(const SurfacePoint& causticPoint,
-        const Instance* specular, const Specular* bsdf, 
-        const LightSample& lightPoint, const Scene* scene) {
+    SmsSample SpecularManifoldSampling::samplePath(
+        const SurfacePoint& causticPoint, const Instance* specular, 
+        const SpecularManifoldBsdf* bsdf, const LightSample& lightPoint, 
+        const Scene* scene) {
 
         // We will have to first sample a point on the specular surface
         // which we can do using areaSampling.
@@ -313,8 +314,8 @@ namespace pathtracer{
 
 
     SmsSample SpecularManifoldSampling::newtonSolver(const SurfacePoint& x0, 
-        const SurfacePoint& seedIt, const LightSample& x2, const Specular* bsdf, 
-        const Scene* scene) {
+        const SurfacePoint& seedIt, const LightSample& x2, 
+        const SpecularManifoldBsdf* bsdf, const Scene* scene) {
 
         // We use the newton solver to converge to a point on the
         // instance that satisfies the chosen specular constraint
@@ -426,8 +427,8 @@ namespace pathtracer{
 
     Vector3 SpecularManifoldSampling::evaluatePathContribution(
         const SurfacePoint& causticPoint, const LightSample& lightPoint, 
-        const SmsSample& sample, const Specular* bsdf, const Vector3& wo, 
-        const Scene* scene) {
+        const SmsSample& sample, const SpecularManifoldBsdf* bsdf, 
+        const Vector3& wo, const Scene* scene) {
 
         Vector3 wi = (sample.finalPoint().position() - causticPoint.position()).normalized();
 

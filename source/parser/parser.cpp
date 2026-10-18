@@ -140,73 +140,6 @@ namespace pathtracer{
     }
 
 
-
-    std::string Parser::parseOutputName(const std::string& filename){
-
-        std::ifstream file(filename);
-
-        if (!file.is_open()){
-            LOG_ERROR("File could not be opened");
-            exit(1);
-        }
-
-        json data = json::parse(file);
-
-        std::string sceneName = std::filesystem::path(filename).stem().string();
-
-        std::string algorithm = data["renderer"]["integrator"]["type"];
-
-        Vector2i resolution =
-            parseVector2i(data["renderer"]["parameters"]["pixel-resolution"]);
-
-        std::string resolutionName =
-            std::to_string(resolution.x()) + "px_" +
-            std::to_string(resolution.y()) + "px";
-
-        std::string outputName;
-
-        if (algorithm == "aov-integrator") {
-
-            std::string var =
-                data["renderer"]["integrator"]["parameters"]["render-variable"];
-
-            outputName =
-                sceneName + "_" +
-                algorithm + "_" +
-                var + "_" +
-                resolutionName;
-        }
-        else if (algorithm == "photon-mapping-integrator"){
-            int photonCount =
-                data["renderer"]["parameters"]["photon-count"];
-            real radius =
-                data["renderer"]["integrator"]["parameters"]["kernel-radius"];
-
-            outputName =
-                sceneName + "_" +
-                algorithm + "_" +
-                std::to_string(photonCount) + "photons_" +
-                std::to_string(radius) + "r_" +
-                resolutionName;
-        }
-        else {
-
-            int sampleCount =
-                data["renderer"]["parameters"]["sample-count"];
-
-            outputName =
-                sceneName + "_" +
-                algorithm + "_" +
-                std::to_string(sampleCount) + "spp_" +
-                resolutionName;
-        }
-
-        std::replace(outputName.begin(), outputName.end(), '-', '_');
-        return outputName;
-    } 
-
-
-
     // Parser member function
     Renderer* Parser::parse(const std::string& filename) {
 
@@ -730,8 +663,11 @@ namespace pathtracer{
                 int renderSamples =
                     data["renderer"]["parameters"]["sample-count"];
 
-                int firstIterationSamples = data["renderer"]["parameters"]
-                        ["first-iteration-sample-count"];
+                int firstIterationSamples = 4;
+                if(data["renderer"]["parameters"].contains("first-iteration-sample-count")){
+                    firstIterationSamples = 
+                        data["renderer"]["parameters"]["first-iteration-sample-count"];
+                }
 
                 int iterationCount =
                     data["renderer"]["parameters"]["iteration-count"];
@@ -746,10 +682,11 @@ namespace pathtracer{
                     camera,
                     scene,
                     integrator,
-                    firstIterationSamples,
                     iterationCount,
                     renderSamples,
-                    c, alpha, messageCount
+                    c, alpha, 
+                    firstIterationSamples, 
+                    messageCount
                 );
             }
         }

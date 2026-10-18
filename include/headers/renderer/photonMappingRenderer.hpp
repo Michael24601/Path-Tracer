@@ -32,6 +32,9 @@ namespace pathtracer{
         // Traces the photons and builds a photon map
         virtual void preprocess() override;
 
+
+        std::string toString() const override;
+
     };
 
 }

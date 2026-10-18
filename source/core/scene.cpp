@@ -44,6 +44,9 @@ namespace pathtracer{
             inst->setInScene(true);
             m_bounds.extend(inst->getBoundingBox());
         }
+
+        // We can scale it up to avoid numerical errors
+        m_bounds.scale(1.02);
     }
 
 

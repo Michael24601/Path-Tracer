@@ -21,9 +21,6 @@ namespace pathtracer{
         // Number of iterations 
         int m_iterationCount;
 
-        // Actual samples used to render
-        int m_samplesUsed;
-
         // The c used to determine when to subdivide spatial tree
         int m_c;
 
@@ -38,9 +35,9 @@ namespace pathtracer{
     public:
 
         PathGuidingRenderer(int width, int height, const Camera* camera,
-            const Scene* scene, Integrator* integrator,
-            int firstIterationSamples, int iterationCount,
-            int renderSamples, int c, real alpha, int messageCount = 10);
+            const Scene* scene, Integrator* integrator, int iterationCount,
+            int renderSamples, int c, real alpha, int firstIterationSamples = 4,
+            int messageCount = 10);
 
         ~PathGuidingRenderer();
 
@@ -49,6 +46,9 @@ namespace pathtracer{
 
 
         // Uses the same renderPixel() as pathtracer
+
+
+        std::string toString() const override;
     };
 
 }

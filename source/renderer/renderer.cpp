@@ -92,4 +92,11 @@ namespace pathtracer {
         
         return color;
     }
+
+
+    std::string Renderer::toString() const{
+        return m_integrator->toString() + " "
+            + std::to_string(m_height) + "x" 
+            + std::to_string(m_width) + "px";
+    }
 }

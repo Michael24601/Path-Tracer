@@ -1,12 +1,13 @@
+
 #ifndef PATH_TRACER_MIRROR_BSDF_HPP
 #define PATH_TRACER_MIRROR_BSDF_HPP
 
-#include "specular.hpp"
+#include "specularManifoldBsdf.hpp"
 #include "bsdf.hpp"
 
 namespace pathtracer{
 
-    class MirrorBsdf: public Bsdf, public Specular{
+    class MirrorBsdf: public Bsdf, public SpecularManifoldBsdf{
 
         real m_reflectance;
 
@@ -34,6 +35,19 @@ namespace pathtracer{
 
         // Mirrors can't refract so ior can be 1.0 (dummy value)
         real eta(const Vector3& wo, const Vector2& uv) const override;
+
+        // It is not rough so should return false
+        bool isRough() const override{
+            return false;
+        }
+
+        virtual ManifoldNormal sampleManifoldNormal(const Vector2& uv) const 
+            override{
+
+            // In local space, the shading normal is always this, since no
+            // microfacets. Pdf is 1.0 since it's always the same.
+            return ManifoldNormal{ Vector3(0.0, 0.0, 1.0), 1.0 };
+        }
     };
 
 }

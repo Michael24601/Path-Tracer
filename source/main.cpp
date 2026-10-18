@@ -9,9 +9,10 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <filesystem>
+#include <algorithm>
 
 #include "integrator/guidable.hpp"
-#include "pathGuiding/quadTree.hpp"
 #include "pathGuiding/kdTree.hpp"
 #include "pathGuiding/quadTreeUtil.hpp"
 
@@ -48,6 +49,38 @@ int main(int argc, char* argv[]) {
     LOG_INFO("Rendering end.");
     LOG_INFO("Duration: " + std::to_string(duration) + " milliseconds");
 
+
+
+    auto renderTree = [&](Vector3 p, const std::string& name) {
+        
+        auto guidable = dynamic_cast<Guidable*>(renderer->m_integrator);
+
+        if(guidable && guidable->guideTree()){
+
+            p = guidable->toTreeLocalSpace(p, *renderer->m_scene);   
+
+            auto tree = guidable->guideTree()->getDTree(p);
+
+            std::stringstream ss;
+            ss << static_cast<const void*>(tree);
+            LOG_INFO("name: " + ss.str());
+
+            real c = guidable->guideTree()->getSampleWeight(p);
+            LOG_INFO("count " + std::to_string(c));
+
+            auto image = QuadTreeUtil::renderQuadTree(tree, 512);
+
+            ImageIo::savePNG(image, "output/" + name + ".png");
+        }
+    };
+
+    renderTree(Vector3(0, 1.98, 0), "tree0");
+    renderTree(Vector3(0.98, 1.98, 0.98), "tree1");
+    renderTree(Vector3(0.98, 1.98, -0.98), "tree2");
+    renderTree(Vector3(0.98, 0, -0.98), "tree3");
+    renderTree(Vector3(0.98, 0, 0.98), "tree4");
+
+
     std::string outputName;
 
     // Iif output name already exists, we don't parse one from scene
@@ -55,8 +88,12 @@ int main(int argc, char* argv[]) {
         outputName = argv[2];
     }
     else{
-        outputName = Parser::parseOutputName(input);
-        // The output also includes the time it took
+        std::string sceneName = std::filesystem::path(input).stem().string();
+        std::string rendererName = renderer->toString();
+        std::replace(rendererName.begin(), rendererName.end(), ' ', '_');
+
+        outputName = sceneName + "_" + rendererName;
+        // The output also includes the duration
         outputName += "_" + std::to_string(duration) + "ms";
     }
 

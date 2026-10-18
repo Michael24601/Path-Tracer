@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_DIELECTRIC_BSDF_HPP
 #define PATH_TRACER_DIELECTRIC_BSDF_HPP
 
-#include "specular.hpp"
+#include "specularManifoldBsdf.hpp"
 #include "bsdf.hpp"
 
 namespace pathtracer{
@@ -12,7 +12,7 @@ namespace pathtracer{
     class Vector3;
     class BsdfSample;
 
-    class DielectricBsdf : public Bsdf, public Specular{
+    class DielectricBsdf : public Bsdf, public SpecularManifoldBsdf{
 
     private:
 
@@ -53,6 +53,20 @@ namespace pathtracer{
 
 
         real eta(const Vector3& wo, const Vector2& uv) const override;
+
+
+        // It is not rough so should return false
+        bool isRough() const override{
+            return false;
+        }
+
+        virtual ManifoldNormal sampleManifoldNormal(const Vector2& uv) const 
+            override{
+
+            // In local space, the shading normal is always this, since no
+            // microfacets. Pdf is 1.0 since it's always the same.
+            return ManifoldNormal{ Vector3(0.0, 0.0, 1.0), 1.0 };
+        }
 
     };
 

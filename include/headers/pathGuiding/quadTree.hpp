@@ -10,6 +10,14 @@ namespace pathtracer{
 
     class Vector3;
     class Vector2;
+    class AxisAlignedRectangle;
+
+
+    enum class DirectionalFilter{
+        NEAREST,
+        BOX
+    };
+
 
     // Quadtree used to represent the flux received from each direction
     // Used in path guiding.
@@ -45,7 +53,11 @@ namespace pathtracer{
 
             void addFlux(real value);
 
-            real getFlux() const;
+            real getFlux() const;            
+            
+            // Returns the index of the child containing the point
+            // (given in node local coordinates).
+            int childIndex(const Vector2& p) const;
 
             // Takes a point p, which is in local coordinates
             // (local coordinates means each node spans from (0, 0) 
@@ -106,6 +118,19 @@ namespace pathtracer{
 
 
             real getFlux(const Vector2& p) const;
+
+
+            // Returns the box centered at p of the same size as the leaf
+            // it is in.
+            AxisAlignedRectangle boxAt(const Vector2& p) const;
+
+
+            // This function accumulates not in leaf of point p, but in all
+            // leafs that intersect the given box.
+            // The weight that is accumulated is divided based on overlap
+            // proportion.
+            void accumulateBox(const AxisAlignedRectangle& box, 
+                real contribution);
         };
 
         // The root of the tree
@@ -126,7 +151,8 @@ namespace pathtracer{
         // Accumulates / adds flux into the appropriate leaf node,
         // given a direction, during training. 
         // Each node represents a range of angles in spherical coordinates.
-        void accumulate(const Vector3& direction, real contribution);
+        void accumulate(const Vector3& direction, real contribution,
+            DirectionalFilter filter);
 
         // During the training process, leafs have their fluxes updated.
         // But their parents' fluxes remain stale. After training, this

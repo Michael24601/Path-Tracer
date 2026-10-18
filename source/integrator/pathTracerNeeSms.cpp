@@ -82,7 +82,7 @@ namespace pathtracer{
             }
 
 
-            // ------------- This next step is NEE -------------
+            // --------------------- This next step is NEE ---------------------
 
             // We only perform NEE if the current surface is not
             // delta surface (specular).
@@ -136,6 +136,11 @@ namespace pathtracer{
         }
 
         return color;
+    }
+
+
+    std::string PathTracerNeeSms::toString() const{
+        return "PT NEE " + sms->toString();
     }
 
 }

@@ -39,6 +39,20 @@ namespace pathtracer{
             m_photonCount = photonCount;
         }
 
+
+        std::string toString() const override{
+
+            std::string ker;
+            switch (m_kernelType){
+                case KernelType::UNIFORM: ker = "UNIFORM"; break;
+                case KernelType::EPANECHNIKOV: ker = "EPANECHNIKOV"; break;
+                default: ker = " ";
+            }
+
+            return "PM PHOTON_COUNT=" + std::to_string(m_photonCount)
+                + " KERNEL=" + ker + " RADIUS=" + std::to_string(m_kernelRadius);
+        }
+
     };
 
 }

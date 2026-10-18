@@ -27,10 +27,10 @@ namespace pathtracer{
         const Camera* camera,
         const Scene* scene,
         Integrator* integrator,
-        int firstIterationSamples,
         int iterationCount,
         int renderSamples,
         int c, real alpha,
+        int firstIterationSamples,
         int messageCount) :
         PathTracerRenderer(width, height, camera, scene, integrator, renderSamples, messageCount),
         m_firstIterationSamples{firstIterationSamples},
@@ -73,6 +73,7 @@ namespace pathtracer{
         // Samples used
         m_samples = m_firstIterationSamples;
         // For logging, we set up the number of paths in total
+
         m_totalPathCount = static_cast<long long>(m_width) * m_height * m_samples;
         m_pathCounter = 0;
 
@@ -87,7 +88,7 @@ namespace pathtracer{
             renderAllPixels();
 
             // We recompute the trees and swap them
-            m_trainTree->recomputeSampleCount();
+            m_trainTree->recomputeSampleWeight();
 
             if(m_guideTree) {
                 delete m_guideTree;
@@ -97,7 +98,7 @@ namespace pathtracer{
 
             // Training tree is reset
             // Threshold is recomputed
-            threshold = m_c * sqrt(static_cast<float>(std::pow(2, k+1)));
+            threshold = m_c * sqrt(static_cast<float>(std::pow(2, k)));
             m_trainTree->setThreshold(threshold);
             m_trainTree->adaptTree();
             m_trainTree->reset();
@@ -123,6 +124,15 @@ namespace pathtracer{
         m_samples = renderSamples;
         // We can also update total path count for logging
         m_totalPathCount = static_cast<long long>(m_width) * m_height * m_samples;
+    }
+
+
+    std::string PathGuidingRenderer::toString() const {
+        return m_integrator->toString() + " SPP=" 
+            + std::to_string(m_samples) + " ITERATIONS=" 
+            + std::to_string(m_iterationCount) + " "
+            + std::to_string(m_height) + "x" 
+            + std::to_string(m_width) + "px";
     }
 
 }

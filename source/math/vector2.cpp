@@ -145,6 +145,52 @@ namespace pathtracer{
             m_data[1] < v.m_data[1];
     }
 
+    
+    Vector2 Vector2::min(const Vector2& v) const {
+
+        return Vector2(
+            std::min(m_data[0], v.m_data[0]),
+            std::min(m_data[1], v.m_data[1])
+        );
+    }
+
+    Vector2 Vector2::max(const Vector2& v) const {
+
+        return Vector2(
+            std::max(m_data[0], v.m_data[0]),
+            std::max(m_data[1], v.m_data[1])
+        );
+    }
+
+    real Vector2::minElement() const {
+        return std::min(m_data[0],m_data[1]);
+    }
+
+    real Vector2::maxElement() const {
+
+        return std::max(m_data[0], m_data[1]);
+    }
+
+    // Element-wise >= operator
+    bool Vector2::operator>=(const Vector2& other) const {
+
+        return m_data[0] >= other.m_data[0]
+            && m_data[1] >= other.m_data[1];
+    }
+
+    bool Vector2::operator<=(const Vector2& other) const {
+
+        return m_data[0] <= other.m_data[0]
+            && m_data[1] <= other.m_data[1];
+    }
+
+    bool Vector2::operator!=(const Vector2& other) const {
+
+        return m_data[0] != other.m_data[0]
+            || m_data[1] != other.m_data[1];
+    }
+
+
     std::string Vector2::toString() const {
 
         return "Vector("

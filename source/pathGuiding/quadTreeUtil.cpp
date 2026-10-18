@@ -8,12 +8,13 @@
 
 
 namespace pathtracer{
+    
 
     namespace QuadTreeUtil{
 
         // Returns a texture that shows the directional pdf of a quadtree
         std::vector<std::vector<Vector3>> renderQuadTree(
-            QuadTree* tree,
+            const QuadTree* tree,
             int dimension){
 
             std::vector<std::vector<Vector3>> data(

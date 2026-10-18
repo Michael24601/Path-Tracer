@@ -41,4 +41,12 @@ namespace pathtracer{
         return color / m_samples;
     }
 
+
+    std::string PathTracerRenderer::toString() const {
+        return m_integrator->toString() + " SPP=" 
+            + std::to_string(m_samples) + " "
+            + std::to_string(m_height) + "x" 
+            + std::to_string(m_width) + "px";
+    }
+
 }

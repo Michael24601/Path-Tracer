@@ -60,7 +60,22 @@ namespace pathtracer{
         // Returns a normalized copy of the vector
         Vector2 normalized() const;
 
-        // Scalar product
+        Vector2 min(const Vector2& v) const;
+
+        Vector2 max(const Vector2& v) const;
+
+        real minElement() const;
+
+        real maxElement() const;
+
+        // Element-wise >= operator
+        bool operator>=(const Vector2& other) const;
+
+        bool operator<=(const Vector2& other) const;
+
+        bool operator!=(const Vector2& other) const;
+
+        // smaller
         bool operator<(const Vector2& v) const;
 
         std::string toString() const;

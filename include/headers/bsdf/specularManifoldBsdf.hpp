@@ -1,18 +1,23 @@
 
-#ifndef PATH_TRACER_SPECULAR_BSDF_HPP
-#define PATH_TRACER_SPECULAR_BSDF_HPP
+#ifndef PATH_TRACER_SPECULAR_MANIFOLD_BSDF_HPP
+#define PATH_TRACER_SPECULAR_MANIFOLD_BSDF_HPP
 
-#include "config.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
 
     class Vector2;
-    class Vector3;
+
+
+    struct ManifoldNormal{
+        Vector3 normal;
+        real pdf;
+    };
 
     // This is a pure abstract class that specular BSDFs inherit from
     // in order to have the evaluate functions that return the weight
     // for the refraction and reflection cases.
-    class Specular{
+    class SpecularManifoldBsdf{
 
         // TODO: ADD ADJOINT FLAG, AND POSSIBLY, WI FOR GLOSSY.
 
@@ -40,6 +45,17 @@ namespace pathtracer{
         // Returns the IOR ratio between material going in and coming out 
         // at the specular surface.
         virtual real eta(const Vector3& wo, const Vector2& uv) const = 0;
+
+
+        // Returns true if surface is rough (not pure delta)
+        virtual bool isRough() const = 0;
+
+
+        // Samples a manifold normal if the surface is rough. Returns
+        // the shading normal otherwise.
+        // NOTE: the normal is returned in local coordinates.
+        virtual ManifoldNormal sampleManifoldNormal(const Vector2& uv) const = 0;
+
 
     };
 

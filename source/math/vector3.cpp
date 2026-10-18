@@ -242,24 +242,7 @@ namespace pathtracer{
 
         return result;
     }
-
-    Vector3 Vector3::elementWiseMinimum(const Vector3& v) const {
-
-        return Vector3(
-            std::min(m_data[0], v.m_data[0]),
-            std::min(m_data[1], v.m_data[1]),
-            std::min(m_data[2], v.m_data[2])
-        );
-    }
-
-    Vector3 Vector3::elementWiseMaximum(const Vector3& v) const {
-
-        return Vector3(
-            std::max(m_data[0], v.m_data[0]),
-            std::max(m_data[1], v.m_data[1]),
-            std::max(m_data[2], v.m_data[2])
-        );
-    }
+    
 
     real Vector3::minElement() const {
 
@@ -298,10 +281,7 @@ namespace pathtracer{
     }
 
     real Vector3::luminance() const {
-
-        return 0.2126 * x()
-            + 0.7152 * y()
-            + 0.0722 * z();
+        return 0.2126 * x() + 0.7152 * y() + 0.0722 * z();
     }
 
 
@@ -314,12 +294,9 @@ namespace pathtracer{
     std::string Vector3::toString() const {
 
         return "Vector("
-            + std::to_string(m_data[0])
-            + " "
-            + std::to_string(m_data[1])
-            + " "
-            + std::to_string(m_data[2])
-            + ")";
+            + std::to_string(m_data[0]) + " "
+            + std::to_string(m_data[1]) + " "
+            + std::to_string(m_data[2]) + ")";
     }
 
 }

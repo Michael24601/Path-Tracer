@@ -28,14 +28,12 @@ namespace pathtracer{
 
     protected:
 
-    public:
-
         KdTree* m_guideTree;
         KdTree* m_trainTree;
 
         real m_alpha;
 
-        std::atomic<int> pathCount;
+    public:
 
         Guidable();
 
@@ -45,7 +43,13 @@ namespace pathtracer{
 
         void setAlpha(real alpha);
 
-        real alpha() const;
+        real alpha() const{
+            return m_alpha;
+        }
+
+        const KdTree* guideTree() const{
+            return m_guideTree;
+        }
 
         // This function samples the current intersection point using alpha
         // and checking if it is specular.
@@ -56,10 +60,6 @@ namespace pathtracer{
         // Does the same, but evaluates it using a given direction
         GuidedSample evaluateGuided(const Vector3& wo, const Vector3& wi,
             const SurfacePoint& it, const Scene& scene)const;
-
-        const KdTree* getGuideTree() const;
-
-        KdTree* getTrainTree() const;
 
         // Function that transforms the scene positions into ones
         // in (0, 0, 0), (1, 1, 1).
