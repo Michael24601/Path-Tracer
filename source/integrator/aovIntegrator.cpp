@@ -5,6 +5,9 @@
 #include "core/instance.hpp"
 #include "core/ray.hpp"
 #include "core/scene.hpp"
+#include "texture/leanMap.hpp"
+#include "core/random.hpp"
+#include "math/mathUtil.hpp"
 #include "sms/smsUtil.hpp"
 
 namespace pathtracer{
@@ -14,10 +17,6 @@ namespace pathtracer{
 
     Vector3 AovIntegrator::color(
         const Ray& ray, const Scene& scene) {
-
-        if(m_variable == RenderVariable::DIRECTION){
-            return (ray.direction() + Vector3(1.0)) * 0.5;
-        }
 
         Intersection it = scene.intersect(ray);
 
@@ -30,13 +29,30 @@ namespace pathtracer{
 
         // Otherwise
         switch(m_variable){
-        case RenderVariable::ALBEDO:
-            color = Vector3(1, 0, 0);
-            break;
 
-        case RenderVariable::NORMAL:
+        case RenderVariable::SHADING_NORMAL:
             color = (it.shadingNormal() + Vector3(1.0)) * 0.5;
             break;
+
+        case RenderVariable::GEOMETRY_NORMAL:
+            color = (it.geometryNormal() + Vector3(1.0)) * 0.5;
+            break;
+
+        case RenderVariable::LEAN_NORMAL:{
+            // Uses max level lean normal sampled from gaussian.
+            // First the slope is sampled, then transformed to normal.
+            int maxL = it.instance()->leanMap()->maxLevel(it.instance()->normalTexture());
+            Vector2 mu = it.instance()->leanMap()->mean(it.uv(), maxL);
+            Matrix2 sigma = it.instance()->leanMap()->covariance(it.uv(), maxL);
+
+            // This normal is in tangent/shading space
+            Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
+            Vector3 normal = Vector3(-slope[0], -slope[1], 1.0).normalized();
+
+            normal = it.shadingFrame().transformDirection(normal);
+            color = (normal + Vector3(1.0)) * 0.5;
+            break;
+        }
 
         case RenderVariable::DPDU:{
             SurfaceDifferentials d =

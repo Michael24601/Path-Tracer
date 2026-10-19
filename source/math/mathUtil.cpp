@@ -5,6 +5,7 @@
 #include "math/vector2.hpp"
 #include "math/vector2i.hpp"
 #include "math/vector3.hpp"
+#include "math/matrix2.hpp"
 #include "math/constants.hpp"
 #include "intersection/surfacePoint.hpp"
 
@@ -272,6 +273,39 @@ namespace pathtracer{
             }
 
             return Vector2(theta, phi);
+        }
+
+    }
+
+
+    namespace Gaussian {
+
+        Vector2 transform(const Vector2& uv, const Vector2& mu, const Matrix2& sigma) {
+
+            real r = sqrtReal(-2.0 * std::log(uv.x()));
+            real theta = 2.0 * PI * uv.y();
+
+            real z0 = r * std::cos(theta);
+            real z1 = r * std::sin(theta);
+
+            real a = sqrtReal(sigma(0, 0));
+            real b = sigma(1, 0) / a;
+            real c = sqrtReal(sigma(1, 1) - b * b);
+
+            return Vector2(
+                mu.x() + a * z0,
+                mu.y() + b * z0 + c * z1
+            );
+        }
+
+        real pdf(const Vector2& point, const Vector2& mu, const Matrix2& sigma) {
+            Vector2 diff = point - mu;
+            Matrix2 invSigma = sigma.inverse();
+
+            real exponent = diff.dot(invSigma * diff);
+            real det = sigma.determinant();
+
+            return std::exp(-0.5 * exponent) / (2.0 * PI * sqrtReal(det));
         }
 
     }

@@ -18,15 +18,17 @@ namespace pathtracer{
         Image* image;
 
         // For color textures, we need to turn srgb to linear
-        Vector3 srgbToLinear(const Vector3& color);
+        static Vector3 srgbToLinear(const Vector3& color);
 
+        // Maps normal from [0, 1] to [-1, 1] and normalizes
+        static Vector3 mapToNormal(const Vector3& color);
 
     public:
 
         // Optionally, for color textures, they can be linearized
         Texture(const std::vector<std::vector<Vector3>>& data, 
             BorderMode borderMode, FilterMode filterMode, 
-            bool linearize = false);
+            bool linearize = false, bool isNormalMap = false);
 
         
         ~Texture(){

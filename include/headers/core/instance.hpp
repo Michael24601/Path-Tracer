@@ -18,6 +18,7 @@ namespace pathtracer{
     class SurfacePoint;
     class AxisAlignedBox;
     class Vector2;
+    class LeanMap;
 
     class Instance{
 
@@ -26,6 +27,7 @@ namespace pathtracer{
         const Shape* m_shape;
         const Texture* m_alpha;
         const Texture* m_normal;
+        const LeanMap* m_leanMap;
         const Bsdf* m_bsdf;
         const Emission* m_emission;
         Transform m_transform;
@@ -75,6 +77,9 @@ namespace pathtracer{
 
 
         const Texture* const normalTexture() const;
+
+
+        const LeanMap* const leanMap() const;
 
 
         const Transform& transform() const;

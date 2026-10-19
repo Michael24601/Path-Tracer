@@ -5,6 +5,7 @@
     
 namespace pathtracer{
 
+
     Vector3 Texture::srgbToLinear(const Vector3& color) {
 
         Vector3 result = color;
@@ -22,8 +23,15 @@ namespace pathtracer{
     }
 
 
+    Vector3 Texture::mapToNormal(const Vector3& color){
+        Vector3 normal = color * 2.0f - Vector3(1.0f);
+        return normal.normalized();
+    }
+
+
     Texture::Texture(const std::vector<std::vector<Vector3>>& data, 
-        BorderMode borderMode, FilterMode filterMode, bool linearize) {
+        BorderMode borderMode, FilterMode filterMode, bool linearize,
+        bool isNormalMap) {
 
         std::vector<std::vector<std::vector<real>>> rawData(data.size());
         
@@ -34,8 +42,11 @@ namespace pathtracer{
 
                 Vector3 color = data[i][j];
 
+                if(isNormalMap){
+                    color = mapToNormal(color);
+                }
                 // Colors must be linearized
-                if(linearize){
+                else if(linearize){
                     color = srgbToLinear(color);
                 }
 

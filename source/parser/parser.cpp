@@ -43,6 +43,7 @@
 #include "texture/texture.hpp"
 #include "texture/color.hpp"
 #include "parser/objLoader.hpp"
+#include "texture/leanMap.hpp"
 #include <nlohmann/json.hpp>
 
 
@@ -78,7 +79,8 @@ namespace pathtracer{
 
 
     // Expects json of a texture
-    Texture* parseTexture(const json& texture, bool linearize = false) {
+    Texture* parseTexture(const json& texture, bool linearize = false,
+        bool isNormalMap = false) {
 
         const json& value = texture["parameters"];
 
@@ -113,7 +115,8 @@ namespace pathtracer{
                 exit(1);
             }
 
-            return new Texture(ImageIo::loadImage(filename), bm, fm, linearize);
+            return new Texture(ImageIo::loadImage(filename), bm, fm, 
+                linearize, isNormalMap);
         }
         else if(texture["type"] == "color"){
             Vector3 color = parseVector3(value["color"]);
@@ -301,16 +304,14 @@ namespace pathtracer{
                 if(inst.contains("emission")){
                     if(inst["emission"]["type"] == "lambertian"){
                         emission = new LambertianEmission(
-                            parseVector3(
-                                inst["emission"]["parameters"]["power"]));
+                            parseVector3(inst["emission"]["parameters"]["power"]));
                     }
                 }
 
                 Transform transform = Transform::IDENTITY;
 
                 if(inst["parameters"].contains("transform")){
-                    transform =
-                        parseTransform(inst["parameters"]["transform"]);
+                    transform = parseTransform(inst["parameters"]["transform"]);
                 }
 
 
@@ -322,21 +323,21 @@ namespace pathtracer{
                 Texture* normalMap = nullptr;
 
                 if(inst["parameters"].contains("normal-map")){
-                    normalMap =
-                        parseTexture(inst["parameters"]["normal-map"]);
+
+                    normalMap = parseTexture(inst["parameters"]["normal-map"], 
+                        false, true);
                 }
 
                 Texture* alphaMask = nullptr;
 
                 if(inst["parameters"].contains("alpha-mask")){
-                    alphaMask =
-                        parseTexture(inst["parameters"]["alpha-mask"]);
+                    alphaMask = parseTexture(inst["parameters"]["alpha-mask"]);
                 }
 
                 Instance* instance;
                 if(inst["type"] == "sphere"){
 
-                    instance = new Instance(sphere, nullptr, nullptr,
+                    instance = new Instance(sphere, alphaMask, normalMap,
                         materials[materialID], emission, transform);
                         
                 }
@@ -479,59 +480,56 @@ namespace pathtracer{
 
             if(data["renderer"]["integrator"]["type"] == "aov-integrator"){
 
-                std::string var =
-                    data["renderer"]["integrator"]["parameters"]
-                        ["render-variable"];
+                std::string var = data["renderer"]["integrator"]["parameters"]
+                    ["render-variable"];
 
-                if(var == "normal"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::NORMAL);
+                if(var == "shading-normal"){
+                    integrator =new AovIntegrator(
+                        AovIntegrator::RenderVariable::SHADING_NORMAL);
+                }
+                else if(var == "geometry-normal"){
+                    integrator =new AovIntegrator(
+                        AovIntegrator::RenderVariable::GEOMETRY_NORMAL);
+                }
+                else if(var == "lean-normal"){
+                    integrator =new AovIntegrator(
+                        AovIntegrator::RenderVariable::LEAN_NORMAL);
                 }
                 else if(var == "dpdu"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::DPDU);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::DPDU);
                 }
                 else if(var == "dpdv"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::DPDV);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::DPDV);
                 }
                 else if(var == "dndu"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::DNDU);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::DNDU);
                 }
                 else if(var == "dndv"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::DNDV);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::DNDV);
                 }
                 else if(var == "s"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::S);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::S);
                 }
                 else if(var == "dsdu"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::DSDU);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::DSDU);
                 }
                 else if(var == "dsdv"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::DSDV);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::DSDV);
                 }
                 else if(var == "dtdu"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::DTDU);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::DTDU);
                 }
                 else if(var == "dtdv"){
-                    integrator =
-                        new AovIntegrator(
-                            AovIntegrator::RenderVariable::DTDV);
+                    integrator = new AovIntegrator(
+                        AovIntegrator::RenderVariable::DTDV);
                 }
             }
             else if(data["renderer"]["integrator"]["type"] == "path-tracer"){

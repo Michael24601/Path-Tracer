@@ -11,7 +11,8 @@ namespace pathtracer{
 
         enum class RenderVariable{
             ALBEDO,
-            NORMAL,
+            GEOMETRY_NORMAL,
+            SHADING_NORMAL,
             DIRECTION,
             DPDU,
             DPDV,
@@ -21,7 +22,8 @@ namespace pathtracer{
             DSDV,
             DTDU,
             DTDV,
-            S
+            S,
+            LEAN_NORMAL
         };
 
     private:
@@ -45,7 +47,9 @@ namespace pathtracer{
 
             switch (m_variable){
                 case RenderVariable::ALBEDO: name = "ALBEDO"; break;
-                case RenderVariable::NORMAL: name = "NORMAL"; break;
+                case RenderVariable::SHADING_NORMAL: name = "SHADING_NORMAL"; break;
+                case RenderVariable::GEOMETRY_NORMAL: name = "GEOMETRY_NORMAL"; break;
+                case RenderVariable::LEAN_NORMAL: name = "LEAN_NORMAL"; break;
                 case RenderVariable::DIRECTION: name = "DIRECTION"; break;
                 case RenderVariable::DPDU: name = "DPDU"; break;
                 case RenderVariable::DPDV: name = "DPDV"; break;

@@ -8,6 +8,7 @@
 #include "shapes/shape.hpp"
 #include "texture/texture.hpp"
 #include "math/constants.hpp"
+#include "logger.hpp"
 
 namespace pathtracer{
 
@@ -91,13 +92,8 @@ namespace pathtracer{
 
             if(inst->normalTexture()){
 
-                Vector3 normal =
-                    inst->normalTexture()->sample(it.uv());
-
-                // From [0,1] to [-1,1]
-                normal =
-                    normal * 2.0f -
-                    Vector3(1.0f);
+                // It's already mapped to correct range and normal
+                Vector3 normal = inst->normalTexture()->sample(it.uv());
 
                 // We need to map normal from shading frame to world coordinates
                 // We can't use normal transform since it applies translation
@@ -108,8 +104,7 @@ namespace pathtracer{
                 // compute, so we will use that.
                 // We can also use transformNormal, but it is more expensive
                 // and adds nothing in this specific case.
-                normal =
-                    it.shadingFrame().transformDirection(normal);
+                normal = it.shadingFrame().transformDirection(normal);
 
                 // Then the frame is updated
                 it.setShadingNormal(normal);

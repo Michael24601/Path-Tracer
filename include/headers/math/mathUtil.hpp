@@ -9,6 +9,7 @@ namespace pathtracer{
     class Vector3;
     class Vector2;
     class Vector2i;
+    class Matrix2;
     class SurfacePoint;
 
 
@@ -137,6 +138,18 @@ namespace pathtracer{
         // This is similar to the square to hemisphere function
         // but the u and v are not normalized.
         Vector2 transform(const Vector3& w);
+
+    }
+
+
+     namespace Gaussian {
+
+        // It transforms a random 2D sample into a Gaussian sample in 2D
+        Vector2 transform(const Vector2& uv, const Vector2& mu, const Matrix2& sigma);
+
+        // Returns pdf of the the sampled point (here point is the Gaussian
+        // point, NOT the uv).
+        real pdf(const Vector2& point, const Vector2& mu, const Matrix2& sigma);
 
     }
 

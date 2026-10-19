@@ -1,0 +1,80 @@
+
+{
+    "materials" : [
+        {
+            "id": "diffuse-white",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.725, 0.71, 0.68]
+                    }
+                }
+            }
+        }
+    ],
+
+    "instances" : [
+        {
+            "id": "ball",
+            "type": "sphere",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "normal-map": {
+                    "type": "texture",
+                    "parameters": {
+                        "file-name": "data/textures/BrushedIron02_4K_Normal.png",
+                        "border-mode": "repeat",
+                        "filter-mode": "bilinear"
+                    }
+                }
+            }
+        }
+    ],
+
+    "lights": [
+        {
+            "id": "light",
+            "type": "point",
+            "parameters": {
+                "power": [100, 100, 100],
+                "position": [0, 4, 0]
+            }
+        }
+    ],
+
+    "camera": {
+        "type": "perspective",
+        "parameters": {
+            "focal-length": 0.02165,
+            "sensor-dimension": [0.025, 0.025],
+            "look-at": {
+                "eye": [0, 0.9, 2.5],
+                "target": [0, 0.9, -100],
+                "up": [0, 1, 0]
+            }
+        }
+    },
+        
+
+    "renderer": {
+        "type": "renderer",
+        "parameters": {
+            "pixel-resolution": [512, 512],
+            "sample-count": 10
+        },
+        "integrator": {
+            "type": "aov-integrator",
+            "parameters": {
+                "max-depth": 100,
+                "render-variable": "lean-normal"
+            }
+        }
+    }
+}

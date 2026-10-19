@@ -6,6 +6,7 @@
 #include "bvh/axisAlignedBox.hpp"
 #include "math/vector2.hpp"
 #include "math/vector3.hpp"
+#include "texture/leanMap.hpp"
 #include "intersection/areaSample.hpp"
 #include "intersection/surfaceDifferentials.hpp"
 
@@ -30,7 +31,10 @@ namespace pathtracer{
         m_transform(transform), 
         m_light{nullptr}, 
         m_inScene{false},
-        m_isCausticReceiver{false}{}
+        m_isCausticReceiver{false}{
+            
+        m_leanMap = new LeanMap(m_normal);
+    }
 
 
     bool Instance::hasAlphaTexture() const {
@@ -94,6 +98,11 @@ namespace pathtracer{
 
     const Texture* const Instance::normalTexture() const {
         return m_normal;
+    }
+
+
+    const LeanMap* const Instance::leanMap() const {
+        return m_leanMap;
     }
 
 
