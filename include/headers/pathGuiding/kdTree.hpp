@@ -76,6 +76,10 @@ namespace pathtracer{
             // cube, and we split the axes alternating.
             bool inCell(const Vector3& p) const;
 
+            // Returns the index of the child containing the point
+            // (given in node local coordinates).
+            int childIndex(const Vector3& p, int depth) const;
+
             // Transform a point in the local coordinate space of
             // this node to one of its children.
             Vector3 transformToChild(const Vector3& p, int child,
@@ -102,8 +106,15 @@ namespace pathtracer{
             // but first recomputes children's since they may be stale too. 
             void recomputeSampleWeight();
 
-            // Finds dTree in elaf associated with point p
+            // Finds dTree in leaf associated with point p
             QuadTree* getDTree(const Vector3& p, int depth) const;
+
+
+            // Returns the dtree of the current node (can be called for
+            // internal node, which returns null)
+            QuadTree* getDTree() const{
+                return dTree;
+            }
 
             // Adapts a node: if it's a leaf with too many samples
             // subdivides it into 2 children with half the count. 

@@ -1,5 +1,6 @@
 
 #include "texture/color.hpp"
+#include "math/vector3.hpp"
 
 namespace pathtracer{
 
@@ -11,7 +12,8 @@ namespace pathtracer{
 
 
     Vector3 Color::sample(const Vector2& uv) const {
-        return m_data[0][0];
+        // No need to call sample here, since this is just one color
+        return getPixel(0, 0);
     }
 
 }

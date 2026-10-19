@@ -31,6 +31,11 @@ namespace pathtracer{
     }
 
 
+    int KdTree::Node::childIndex(const Vector3& p, int depth) const{
+        return p[depth % 3] >= 0.5 ? 1 : 0;
+    }
+
+
     // Prunes the descendants of a node
     void KdTree::Node::cleanSubtree(){
 
@@ -48,7 +53,7 @@ namespace pathtracer{
 
         // Since this is now a leaf, we can add a dTree to it
         // (new one).
-        dTree = new QuadTree(0);
+        dTree = new QuadTree(3);
     }
 
     
@@ -137,13 +142,8 @@ namespace pathtracer{
         }
 
         // Goes into child that actually contains the point
-
-        Vector3 newP = transformToChild(p, 0, depth);
-        int child = children[0]->inCell(newP) ? 0 : 1;
-
-        if(child == 1){
-            newP = transformToChild(p, 1, depth);
-        }
+        int child = childIndex(p, depth);
+        Vector3 newP = transformToChild(p, child, depth);
 
         children[child]->accumulate(newP, direction, weight, contribution, 
             dFilter, depth + 1);
@@ -180,13 +180,8 @@ namespace pathtracer{
             return dTree;
         }
 
-        Vector3 newP = transformToChild(p, 0, depth);
-        int child = children[0]->inCell(newP) ? 0 : 1;
-
-        if(child == 1){
-            newP = transformToChild(p, 1, depth);
-        }
-
+        int child = childIndex(p, depth);
+        Vector3 newP = transformToChild(p, child, depth);
         return children[child]->getDTree(newP, depth + 1);
     }
 
@@ -198,7 +193,7 @@ namespace pathtracer{
     void KdTree::Node::adaptNode(real threshold){
 
         if(isLeaf()){
-
+            
             if(getSampleWeight() <= threshold || threshold == 0){
                 // First we adapt the dTree (to avoid re-adapting
                 // it if leaf is split and tree is copied)
@@ -208,12 +203,13 @@ namespace pathtracer{
 
             subdivide();
         }
-        // For internal nodes, prunes children
-        else if(getSampleWeight() <= threshold){
-            // No need to prune the kdTree, unlike the quadtree
-            return;
-        }
-
+        
+        // Kd tree does not prune children if below the threshold,
+        // unlike quadtree.
+        
+        // If the internal node here is below the threshold, we know
+        // children won't be, so no need to check them. But we recurse
+        // anyway since we want to call dTree->adaptTree() on every leaf.
         children[0]->adaptNode(threshold);
         children[1]->adaptNode(threshold);
     }
@@ -255,9 +251,8 @@ namespace pathtracer{
     // Initializes a tree with just a root and 0 flux
     KdTree::KdTree(int threshold) : m_threshold{threshold},
         m_root{new Node(0)} {
-
         // Initializes it with depth 3 by default
-        m_root->setDTree(new QuadTree(0));
+        m_root->setDTree(new QuadTree(3));
     }
 
 
@@ -350,7 +345,10 @@ namespace pathtracer{
     KdTree* KdTree::copyTree(){
         KdTree* newTree = new KdTree(m_threshold);
 
-        newTree->m_root->setSampleCount(m_root->getSampleWeight());
+        // We delete default quadtree to avoid memory leak when replaced
+        delete newTree->m_root->getDTree();
+        newTree->m_root->setDTree(nullptr);
+        
         m_root->copy(newTree->m_root);
         return newTree;
     }
@@ -363,13 +361,8 @@ namespace pathtracer{
             return getSampleWeight();
         }
 
-        Vector3 newP = transformToChild(p, 0, depth);
-        int child = children[0]->inCell(newP) ? 0 : 1;
-
-        if(child == 1){
-            newP = transformToChild(p, 1, depth);
-        }
-
+        int child = childIndex(p, depth);
+        Vector3 newP = transformToChild(p, child, depth);
         return children[child]->getSampleWeight(newP, depth + 1);
     }
 
@@ -389,13 +382,8 @@ namespace pathtracer{
             );
         }
 
-        Vector3 newP = transformToChild(p, 0, depth);
-        int child = children[0]->inCell(newP) ? 0 : 1;
-        
-        if(child == 1){
-            newP = transformToChild(p, 1, depth);
-        }
-
+        int child = childIndex(p, depth);
+        Vector3 newP = transformToChild(p, child, depth);
         Vector3 res = children[child]->jitter(newP, depth + 1);
 
         // Back to local space
@@ -410,12 +398,8 @@ namespace pathtracer{
             return AxisAlignedBox(p - Vector3(0.5), p + Vector3(0.5));
         }
 
-        Vector3 newP = transformToChild(p, 0, depth);
-        int child = children[0]->inCell(newP) ? 0 : 1;
-        
-        if(child == 1){
-            newP = transformToChild(p, 1, depth);
-        }
+        int child = childIndex(p, depth);
+        Vector3 newP = transformToChild(p, child, depth);
 
         AxisAlignedBox box = children[child]->boxAt(newP, depth + 1);
 

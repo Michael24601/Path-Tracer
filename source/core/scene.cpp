@@ -46,7 +46,7 @@ namespace pathtracer{
         }
 
         // We can scale it up to avoid numerical errors
-        m_bounds.scale(1.02);
+        m_bounds.scale(1.1);
     }
 
 

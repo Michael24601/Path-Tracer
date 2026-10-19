@@ -98,7 +98,8 @@ namespace pathtracer{
 
             // Training tree is reset
             // Threshold is recomputed
-            threshold = m_c * sqrt(static_cast<float>(std::pow(2, k)));
+            threshold = m_c * sqrtReal(static_cast<real>(std::pow(2, k)))
+                * (m_firstIterationSamples / 4);
             m_trainTree->setThreshold(threshold);
             m_trainTree->adaptTree();
             m_trainTree->reset();

@@ -1,8 +1,7 @@
 
-#include "texture/textureUtil.hpp"
+#include "texture/imageUtil.hpp"
 #include <algorithm>
 #include "math/vector2.hpp"
-#include "math/vector3.hpp"
 #include "math/vector2i.hpp"
 
 namespace pathtracer{
@@ -45,8 +44,22 @@ namespace pathtracer{
 
     namespace Filter{
 
-        Vector3 nearest(const Vector2& decimal, const Vector2i& floor, 
-            const Vector2i& ceiling, const std::vector<std::vector<Vector3>>& data) {
+
+        std::vector<real> linearInterpolate(const std::vector<real>& a,
+            const std::vector<real>& b, real t) {
+
+            std::vector<real> result(a.size());
+
+            for (int i = 0; i < a.size(); i++){
+                result[i] = a[i] * (1.0f - t) + b[i] * t;
+            }
+
+            return result;
+        }
+
+
+        std::vector<real> nearest(const Vector2& decimal, const Vector2i& floor, 
+            const Vector2i& ceiling, const std::vector<std::vector<std::vector<real>>>& data) {
 
             real tx = decimal.x();
             real ty = decimal.y();
@@ -56,22 +69,23 @@ namespace pathtracer{
         }
 
 
-        Vector3 bilinear(const Vector2& decimal, const Vector2i& floor, 
-            const Vector2i& ceiling, const std::vector<std::vector<Vector3>>& data) {
+        std::vector<real> bilinear(const Vector2& decimal, const Vector2i& floor, 
+            const Vector2i& ceiling, const std::vector<std::vector<std::vector<real>>>& data) {
 
             real tx = decimal.x();
             real ty = decimal.y();
 
-            Vector3 t00 = data[floor.y()][floor.x()];
-            Vector3 t01 = data[ceiling.y()][floor.x()];
-            Vector3 t10 = data[floor.y()][ceiling.x()];
-            Vector3 t11 = data[ceiling.y()][ceiling.x()];
+            std::vector<real> t00 = data[floor.y()][floor.x()];
+            std::vector<real> t01 = data[ceiling.y()][floor.x()];
+            std::vector<real> t10 = data[floor.y()][ceiling.x()];
+            std::vector<real> t11 = data[ceiling.y()][ceiling.x()];
 
             // We interpolate horizontally
-            Vector3 t0 = t10 * tx + t00 * (1.0f - tx);
-            Vector3 t1 = t11 * tx + t01 * (1.0f - tx);
+            std::vector<real> t0 = linearInterpolate(t00, t10, tx);
+            std::vector<real> t1 = linearInterpolate(t01, t11, tx);
             // Then vertically 
-            Vector3 t = t1 * ty + t0 * (1.0f - ty);
+            std::vector<real> t = linearInterpolate(t0, t1, ty);
+
             return t;
         }
 

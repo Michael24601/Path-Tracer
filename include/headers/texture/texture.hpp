@@ -1,43 +1,21 @@
+
 #ifndef PATH_TRACER_TEXTURE_HPP
 #define PATH_TRACER_TEXTURE_HPP
 
-#include <cassert>
-#include <vector>
-#include "../math/vector3.hpp"
+#include "image.hpp"
 
 namespace pathtracer{
 
     class Vector2;
+    class Vector3;
 
+    // This represents an arbitrary 2D image with n color channels
     class Texture{
-
-    public:
-
-        enum class BorderMode {
-            CLAMP,
-            REPEAT,
-            MIRROR
-        };
-
-        enum class FilterMode {
-            NEAREST,
-            BILINEAR
-        };
 
     protected:
 
-        std::vector<std::vector<Vector3>> m_data;
-        int width, height;
-        BorderMode m_borderMode;
-        FilterMode m_filterMode;
-
-        // Takes in any uv coordinate, and maps it such that
-        // the 0 is at the center of the first pixel, and the
-        // 1 is at the center of the last pixel.
-        // That means f(0) = 0.5, and f(1) = (W-0.5)
-        // (where W is the maximum width or height).
-        Vector2 mapToImageSpace(const Vector2& uv) const;
-
+        // Texture here has 3D data, for color
+        Image* image;
 
         // For color textures, we need to turn srgb to linear
         Vector3 srgbToLinear(const Vector3& color);
@@ -51,17 +29,28 @@ namespace pathtracer{
             bool linearize = false);
 
         
-        int getWidth() const;
+        ~Texture(){
+            if(image){
+                delete image;
+            }
+        }
+
+        
+        inline int getWidth() const{
+            return image->getWidth();
+        }
 
 
-        int getHeight() const;
+        inline int getHeight() const{
+            return image->getHeight();
+        }
 
 
         // Sets texture
-        void setTexture(int i, int j, const Vector3& color);
+        void setPixel(int i, int j, const Vector3& color);
 
 
-        const Vector3& getTexture(int i, int j) const;
+        Vector3 getPixel(int i, int j) const;
         
 
         // Samples the texture according to the set modes. The given

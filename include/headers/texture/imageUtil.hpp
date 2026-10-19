@@ -3,12 +3,12 @@
 #define PATH_TRACER_TEXTURE_UTIL_HPP
 
 #include <vector>
+#include "config.hpp"
 
 namespace pathtracer{
 
     class Vector2;
     class Vector2i;
-    class Vector3;
 
 
     namespace Border{
@@ -31,18 +31,22 @@ namespace pathtracer{
 
     namespace Filter{
 
+        // Linearly interpolates two vectors
+        std::vector<real> linearInterpolate(const std::vector<real>& a,
+            const std::vector<real>& b, real t);
+
         // Filters the texture by choosing the closest pixel to our
         // uv coordinate, by checking the decimal value of the uv
         // coordinate in image space.
         // Assumes that uv, floor, and ceilling have already
         // 
-        Vector3 nearest(const Vector2& decimal, const Vector2i& floor, 
-            const Vector2i& ceiling, const std::vector<std::vector<Vector3>>& data);
+        std::vector<real> nearest(const Vector2& decimal, const Vector2i& floor, 
+            const Vector2i& ceiling, const std::vector<std::vector<std::vector<real>>>& data);
 
         // Filters the texture by doing bilinear interpolation.
         // Assumes that border handing has been done.
-        Vector3 bilinear(const Vector2& decimal, const Vector2i& floor, 
-            const Vector2i& ceiling, const std::vector<std::vector<Vector3>>& data);
+        std::vector<real> bilinear(const Vector2& decimal, const Vector2i& floor, 
+            const Vector2i& ceiling, const std::vector<std::vector<std::vector<real>>>& data);
 
     }
 

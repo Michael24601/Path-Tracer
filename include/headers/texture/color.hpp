@@ -6,6 +6,8 @@
 
 namespace pathtracer{
 
+    class Vector3;
+
     class Color: public Texture {
 
     public:

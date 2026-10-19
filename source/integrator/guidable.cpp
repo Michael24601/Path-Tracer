@@ -161,8 +161,6 @@ namespace pathtracer{
 
         if(m_trainTree){
 
-            Vector3 intensity = finalEmission;
-
             for(int i = position.size()-1; i >= 0; i--){
 
                 if(!position[i].instance()->bsdf()->isSpecular()){
@@ -177,7 +175,14 @@ namespace pathtracer{
                     // wrongly skew the result during rendering when the wo
                     // direction at the same point x is different.
                     Vector3 incoming = intensity / pdf[i];
-                    m_trainTree->accumulate(localPoint, direction, 1.0, 
+
+                    real weight = 0.5;
+                    // We weight it fully if no NEE or other contribution
+                    if(contribution[i] <= Vector3(0.0)){
+                        weight = 1.0;
+                    }
+
+                    m_trainTree->accumulate(localPoint, direction, weight, 
                         incoming.mean(), SpatialFilter::NEAREST, 
                         DirectionalFilter::BOX);
                 }
@@ -202,7 +207,7 @@ namespace pathtracer{
 
             Vector3 localPoint = toTreeLocalSpace(position.position(), scene);
 
-            m_trainTree->accumulate(localPoint, wi, 1.0, contribution.mean(), 
+            m_trainTree->accumulate(localPoint, wi, 0.5, contribution.mean(), 
                 SpatialFilter::NEAREST, DirectionalFilter::BOX);
         }
         

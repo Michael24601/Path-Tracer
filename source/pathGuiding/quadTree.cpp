@@ -236,7 +236,7 @@ namespace pathtracer{
         }
 
         // If all children have 0 flux, we randomly sample the node
-        if(cumulative < EPSILON){
+        if(cumulative <= 0.0){
             // uniform over the node
             return Random::next2D();
         }

@@ -85,17 +85,17 @@ namespace pathtracer{
         if(texture["type"] == "texture"){
 
             std::string filename = value["file-name"];
-            Texture::BorderMode bm;
-            Texture::FilterMode fm;
+            BorderMode bm;
+            FilterMode fm;
 
             if(value["border-mode"] == "repeat"){
-                bm = Texture::BorderMode::REPEAT;
+                bm = BorderMode::REPEAT;
             }
             else if(value["border-mode"] == "clamp"){
-                bm = Texture::BorderMode::CLAMP;
+                bm = BorderMode::CLAMP;
             }
             else if(value["border-mode"] == "mirror"){
-                bm = Texture::BorderMode::MIRROR;
+                bm = BorderMode::MIRROR;
             }
             else{
                 LOG_ERROR("Invalid border-mode specified for: " + filename);
@@ -103,10 +103,10 @@ namespace pathtracer{
             }
 
             if(value["filter-mode"] == "nearest"){
-                fm = Texture::FilterMode::NEAREST;
+                fm = FilterMode::NEAREST;
             }
             else if(value["filter-mode"] == "bilinear"){
-                fm = Texture::FilterMode::BILINEAR;
+                fm = FilterMode::BILINEAR;
             }
             else{
                 LOG_ERROR("Invalid filter-mode specified for: " + filename);
@@ -228,7 +228,7 @@ namespace pathtracer{
 
                         for(int h = 0; h < ior->getHeight(); h++){
                             for(int w = 0; w < ior->getWidth(); w++){
-                                ior->setTexture(h, w, ior->getTexture(h, w) + 1.0);
+                                ior->setPixel(h, w, ior->getPixel(h, w) + 1.0);
                             }
                         }
                     }

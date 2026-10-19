@@ -1,7 +1,7 @@
 
-#include "texture/texture.hpp"
+#include "texture/image.hpp"
 #include "math/mathUtil.hpp"
-#include "texture/textureUtil.hpp"
+#include "texture/imageUtil.hpp"
 #include "math/vector2.hpp"
 #include "math/vector2i.hpp"
 
@@ -9,7 +9,7 @@
 namespace pathtracer{
 
 
-    Vector2 Texture::mapToImageSpace(const Vector2& uv) const {
+    Vector2 Image::mapToImageSpace(const Vector2& uv) const {
         // Since textures often start at the top left, but uv
         // originates at the bottom left, we have to flip the
         // y axis.
@@ -19,47 +19,32 @@ namespace pathtracer{
     }
 
 
-    Vector3 Texture::srgbToLinear(const Vector3& color) {
-        Vector3 result = color;
 
-        for (int i = 0; i < 3; i++) {
-            if (result[i] <= 0.04045){
-                result[i] /= 12.92;
-            }
-            else{
-                result[i] = std::pow((result[i] + 0.055) / 1.055, 2.4);
-            }
-        }
-
-        return result;
-    }
-
-
-
-    Texture::Texture(const std::vector<std::vector<Vector3>>& data, 
-        BorderMode borderMode, FilterMode filterMode, bool linearize) :
+    Image::Image(const std::vector<std::vector<std::vector<real>>>& data, 
+        BorderMode borderMode, FilterMode filterMode) :
         m_data{data},
         m_borderMode{borderMode},
         m_filterMode{filterMode} {
 
         assert((data.size() > 0 && data[0].size() > 0)
-            && "Texture is not filled");
+            && "Image is not filled");
 
         width = data[0].size();
         height = data.size();
+        channels = data[0][0].size();
 
-        if(linearize){
-            for(int i = 0; i < height; i++){
-                for(int j = 0; j < width; j++){
-                    m_data[i][j] = srgbToLinear(m_data[i][j]);
-                }
+        // This ensures they have the same dimensions everywhere
+        for (const auto& row : data) {
+            assert(static_cast<int>(row.size()) == width && "ragged row");
+            for (const auto& pixel : row){
+                assert(static_cast<int>(pixel.size()) == channels && "channel mismatch");
             }
         }
-        
+
     }
 
 
-    Vector3 Texture::sample(const Vector2& uv) const {
+    std::vector<real> Image::sample(const Vector2& uv) const {
 
         // First we precompute these values
         Vector2 imageUv = mapToImageSpace(uv);
@@ -82,7 +67,7 @@ namespace pathtracer{
         }
 
         // Then we apply filtering
-        Vector3 color;
+        std::vector<real> color;
         if(m_filterMode == FilterMode::NEAREST){
             color = Filter::nearest(decimal, floor, ceiling, m_data);
         }
@@ -94,27 +79,19 @@ namespace pathtracer{
     }
 
 
-    int Texture::getWidth() const{
-        return width;
-    }
-
-
-    int Texture::getHeight() const{
-        return height;
-    }
-
-
     // Sets texture
-    void Texture::setTexture(int h, int w, const Vector3& color){
+    void Image::setPixel(int h, int w, const std::vector<real>& color){
 
         assert((h >= 0 && h < height) && (w >= 0 && w < width) &&
             "Dimensions don't match the texture's");
+
+        assert(color.size() == channels);
 
         m_data[h][w] = color;
     }
 
 
-    const Vector3& Texture::getTexture(int h, int w) const {
+    const std::vector<real>& Image::getPixel(int h, int w) const {
         assert((h >= 0 && h < height) && (w >= 0 && w < width) &&
             "Dimensions don't match the texture's");
 
