@@ -41,27 +41,41 @@ namespace pathtracer{
             break;
 
         case RenderVariable::MIPMAP_NORMAL:{
-            int maxL = it.instance()->normalTexture()->maxMipMapLevel();
-            Vector3 normal = it.instance()->normalTexture()->sampleMipMap(it.uv(), maxL);
-            // Must use the geometry frame here since the shading frame is
-            // already "infected" by the normal map.
-            normal = it.geometryFrame().transformDirection(normal);
+
+            Vector3 normal = it.shadingNormal();
+            
+            if(it.instance()->normalTexture()){
+                int maxL = it.instance()->normalTexture()->maxMipMapLevel();
+                normal = it.instance()->normalTexture()->sampleMipMap(it.uv(), maxL);
+
+                // Must use the geometry frame here since the shading frame is
+                // already "infected" by the normal map.
+                normal = it.geometryFrame().transformDirection(normal);
+            }
+
             color = (normal + Vector3(1.0)) * 0.5;
             break;
         }
 
         case RenderVariable::LEAN_NORMAL:{
+            
             // Uses max level lean normal sampled from gaussian.
             // First the slope is sampled, then transformed to normal.
-            int maxL = it.instance()->leanMap()->maxLevel(it.instance()->normalTexture());
-            Vector2 mu = it.instance()->leanMap()->mean(it.uv(), maxL);
-            Matrix2 sigma = it.instance()->leanMap()->covariance(it.uv(), maxL);
 
-            // This normal is in tangent/shading space
-            Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
-            Vector3 normal = Vector3(-slope[0], -slope[1], 1.0).normalized();
+            Vector3 normal = it.shadingNormal();
 
-            normal = it.geometryFrame().transformDirection(normal);
+            if(it.instance()->leanMap()){
+                int maxL = it.instance()->leanMap()->maxLevel(it.instance()->normalTexture());
+                Vector2 mu = it.instance()->leanMap()->mean(it.uv(), maxL);
+                Matrix2 sigma = it.instance()->leanMap()->covariance(it.uv(), maxL);
+
+                // This normal is in tangent/shading space
+                Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
+                normal = Vector3(-slope[0], -slope[1], 1.0).normalized();
+
+                normal = it.geometryFrame().transformDirection(normal);
+            }
+
             color = (normal + Vector3(1.0)) * 0.5;
             break;
         }

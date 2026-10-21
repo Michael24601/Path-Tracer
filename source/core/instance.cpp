@@ -10,7 +10,6 @@
 #include "intersection/areaSample.hpp"
 #include "intersection/surfaceDifferentials.hpp"
 
-
 namespace pathtracer{
 
 

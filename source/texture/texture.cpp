@@ -2,7 +2,8 @@
 #include "texture/texture.hpp"
 #include "math/vector3.hpp"
 #include "math/vector2.hpp"
-    
+
+
 namespace pathtracer{
 
 
@@ -143,7 +144,7 @@ namespace pathtracer{
 
 
     Vector3 Texture::sampleMipMap(const Vector2& uv, int level) const {
-
+        
         // If the level is wrong, or we don't store any mipmaps
         if (level <= 0 || mipmaps.empty()) {
             // Then we just return a normal sample

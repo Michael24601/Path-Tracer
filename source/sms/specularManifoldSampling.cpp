@@ -394,36 +394,36 @@ namespace pathtracer{
                 return SmsSample(seedIt, finalIt, halfVector, eta, reflection, true);
             }
 
-            // Otherwise, we need to update the position.
-            Vector3 proposedPosition = finalIt.position()
-                -(d.dpdu() * step.dx.x() + d.dpdv() * step.dx.y()) * beta;
+            Intersection nextIt;
+            bool valid = false;
 
-            Vector3 direction = (proposedPosition - x0.position());
-            real distance = direction.length();
-            direction = direction/ distance;
+            while(!valid && k < m_maxIterations){
+                Vector3 proposedPosition = finalIt.position()
+                    - (d.dpdu() * step.dx.x() + d.dpdv() * step.dx.y()) * beta;
 
-            // We then reproject
-            Ray ray(x0.position() + direction * SHADOW_EPSILON, direction);
-            Intersection nextIt = scene->intersect(ray);
+                Vector3 direction = proposedPosition - x0.position();
+                direction = direction / direction.length();
 
-            // Note: we don't check visibility, since the point
-            // is not projected yet (distance mismatch). It is enough to 
-            // check if it is the same instance.
-            if(!nextIt || nextIt.instance() != seedIt.instance()){
+                Ray ray(x0.position() + direction * SHADOW_EPSILON, direction);
+                nextIt = scene->intersect(ray);
 
-                // The step size was likely too large, so we make
-                // the step size smaller (adaptive), and try again.
-                beta *= 0.5f;
+                valid = nextIt && nextIt.instance() == seedIt.instance();
+
+                if(!valid){
+                    beta *= 0.5f;
+                }
+                else{
+                    beta = std::min(1.0, 2.0 * beta);
+                }
                 k++;
-                continue;
             }
 
-            // If successful, beta is reset
-            beta = std::min(1.0, 2.0 * beta);
-           
-            // And then we repeat
+            if(!valid){
+            // We ran out of iterations, so we just leave the outer loop
+                break;
+            }
+
             finalIt = nextIt;
-            k++;
         }
 
         // Failure

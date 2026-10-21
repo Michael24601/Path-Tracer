@@ -246,7 +246,7 @@
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
-                "use-halfvector": true,
+                "use-halfvector": false,
                 "biased": false
             }
         }

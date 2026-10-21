@@ -205,7 +205,7 @@
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/wave.png",
+                        "file-name": "data/textures/map.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -238,18 +238,18 @@
     },
         
     "renderer": {
-        "type": "path-guiding-renderer",
+        "type": "renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 50,
-            "iteration-count": 3,
-            "spatial-subdivision-c": 12000,
-            "mis-alpha": 0.5
+            "sample-count": 10
         },
         "integrator": {
-            "type": "path-tracer-nee-mis-guided",
+            "type": "aov-integrator",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 100,
+                "use-halfvector": false,
+                "biased": false,
+                "render-variable": "lean-normal"
             }
         }
     }
