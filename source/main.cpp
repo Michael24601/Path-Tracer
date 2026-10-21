@@ -33,6 +33,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    LOG_INFO("Parsing and building scene.");
 
     std::string input = std::string("data/") + argv[1];
     Renderer* renderer = Parser::parse(input);
@@ -74,7 +75,7 @@ int main(int argc, char* argv[]) {
         }
     };
 
-    renderTree(Vector3(0, 1.98, 0), "tree0");
+    renderTree(Vector3(0, 0.0, 0), "tree0");
     renderTree(Vector3(0.98, 1.98, 0.98), "tree1");
     renderTree(Vector3(0.98, 1.98, -0.98), "tree2");
     renderTree(Vector3(0.98, 0, -0.98), "tree3");

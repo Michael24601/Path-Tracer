@@ -26,9 +26,6 @@ namespace pathtracer{
         bool alphaMask(Intersection& it, Ray& localRay,
             real oldT, const Instance* instance);
 
-
-        void normalMapping(Intersection& it, const Instance* const inst);
-
         // Intersects a ray with a shape instance. If we have a
         // closer intersection, we use it.
         bool intersect(Intersection& oldIt, const Ray& ray,

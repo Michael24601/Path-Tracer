@@ -32,6 +32,8 @@ namespace pathtracer{
         Vector3 color = Vector3(0.0);
         Vector3 throughput = Vector3(1.0);
 
+        Vector3 rrWeight = Vector3(1.0);
+
         // If the last frame is specular, then no NEE was performed,
         // so we can instead count light bsdf sample contribution
         // if it was hit.
@@ -125,7 +127,7 @@ namespace pathtracer{
             // ------ This next step is normal pathtracer ------
 
             // Russian roulette
-            real p = Util::russianRoulette(throughput, i);
+            real p = Util::russianRoulette(rrWeight, i);
             if (Random::next() > p){
                 break;
             }
@@ -141,6 +143,16 @@ namespace pathtracer{
 
             if(!sample.isValid){
                 break;
+            }
+
+            if(sample.isGuided){
+                // We need to compute the bsdf weight for the sake of RR
+                Vector3 weight = it.evaluateBsdf(wo, sample.wi).weight();
+                rrWeight = rrWeight * weight * (1.0f / p);
+            }
+            else{
+                // If it is not guided, we just use it as is
+                rrWeight = rrWeight * sample.weight * (1.0f / p);
             }
 
             sample.weight = sample.weight * (1.0f / p);

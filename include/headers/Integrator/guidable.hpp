@@ -19,6 +19,9 @@ namespace pathtracer{
         Vector3 weight;
         real pdf;
         bool isValid;
+        // This is false if we use non-guided sample (like on first
+        // iteration or on speculars)
+        bool isGuided;
     };
 
 

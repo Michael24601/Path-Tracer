@@ -31,9 +31,12 @@ namespace pathtracer{
         m_transform(transform), 
         m_light{nullptr}, 
         m_inScene{false},
+        m_leanMap{nullptr},
         m_isCausticReceiver{false}{
             
-        m_leanMap = new LeanMap(m_normal);
+        if(m_normal){   
+            m_leanMap = new LeanMap(m_normal);
+        }
     }
 
 
@@ -213,6 +216,11 @@ namespace pathtracer{
         newSample.setInstance(this);
         newSample.computeShadingFrame();
 
+        // We can also do normal mapping here
+        if(m_normal != nullptr){
+            normalMap(newSample);
+        }
+
         // The total pdf is just the pdf of choosing the point
         // multilplied by the pdf of choosing the shape.
         return AreaSample(newSample, worldPdf);   
@@ -233,5 +241,43 @@ namespace pathtracer{
         return m_transform.transformDifferentials(d, localNormal, sp.shadingNormal());
     }
 
+
+
+    void Instance::normalMap(SurfacePoint& it, bool smooth) const {
+
+        if(m_normal != nullptr){
+
+            // It's already mapped to correct range and normal
+            Vector3 normal;
+            if(!smooth){
+                normal = m_normal->sample(it.uv());
+            }
+            else{
+                int maxL = m_normal->maxMipMapLevel();
+                normal = m_normal->sampleMipMap(it.uv(), maxL);
+            }
+
+            // We need to map normal from shading frame to world coordinates
+            // We can't use normal transform since it applies translation
+            // (not suitable for directions).
+            // We should in theory use transformNormal which was designed
+            // for normals, but since shadingFrame is always orthogonal,
+            // transformDirection is equivalent, while much cheaper to
+            // compute, so we will use that.
+
+            // Also note that if we have already used normal mapping,
+            // then it.shadingFrame() already uses the coarse normal map,
+            // which will break normal mapping in case we want to
+            // smooth it again. So we use the geometry frame here.
+            normal = it.geometryFrame().transformDirection(normal);
+
+            // Then the frame is updated
+            it.setShadingNormal(normal);
+
+            // Frame is recomputed
+            it.computeShadingFrame();
+        }
+    }
+        
 
 }

@@ -27,7 +27,10 @@ namespace pathtracer{
         m_tangent(tangent),
         m_uv(uv),
         m_instance{instance},
-        m_triangleIndex{-1} {}
+        m_triangleIndex{-1} {
+
+        computeGeometryFrame();
+    }
 
 
     const Vector3& SurfacePoint::position() const {
@@ -62,6 +65,11 @@ namespace pathtracer{
 
     const Transform& SurfacePoint::shadingFrame() const {
         return m_shadingFrame;
+    }
+
+
+    const Transform& SurfacePoint::geometryFrame() const {
+        return m_geometryFrame;
     }
 
 
@@ -102,6 +110,21 @@ namespace pathtracer{
 
     void SurfacePoint::setTriangleIndex(int index) {
         m_triangleIndex = index;
+    }
+
+
+    void SurfacePoint::computeGeometryFrame() {
+
+        // Reorthogonalizes the tangent
+        m_tangent = (m_tangent - m_geometryNormal *
+            m_tangent.dot(m_geometryNormal)).normalized();
+
+        // Bitangent
+        Vector3 bit = m_geometryNormal.cross(m_tangent);
+
+        Matrix3 frame = Matrix3(m_tangent, bit, m_geometryNormal);
+
+        m_geometryFrame = Transform(frame, m_position);
     }
 
 

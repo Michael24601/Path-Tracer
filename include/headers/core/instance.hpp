@@ -125,6 +125,11 @@ namespace pathtracer{
         // Returns position given uv coordinates
         Vector3 getPosition(const Vector2& uv, int triangleIndex) const;
 
+
+        // Normal maps a surfacePoint object.
+        // Smooth means we use the highest mipmap level instead.
+        void normalMap(SurfacePoint& it, bool smooth = false) const;
+
     };
 
 }

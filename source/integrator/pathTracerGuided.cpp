@@ -27,6 +27,9 @@ namespace pathtracer{
         Vector3 color = Vector3(0.0);
         Vector3 throughput = Vector3(1.0);
 
+        // Alternate throughput for RR that uses bsdf pdf
+        Vector3 rrWeight = Vector3(1.0);
+
         // Used for path guiding training
         std::vector<SurfacePoint> positions;
         std::vector<Vector3> weights;
@@ -64,7 +67,7 @@ namespace pathtracer{
             // ------ This next step is normal pathtracer ------
 
             // Russian roulette
-            real p = Util::russianRoulette(throughput, i);
+            real p = Util::russianRoulette(rrWeight, i);
             if (Random::next() > p){
                 break;
             }
@@ -80,6 +83,16 @@ namespace pathtracer{
 
             if(!sample.isValid){
                 break;
+            }
+
+            if(sample.isGuided){
+                // We need to compute the bsdf weight for the sake of RR
+                Vector3 weight = it.evaluateBsdf(wo, sample.wi).weight();
+                rrWeight = rrWeight * weight * (1.0f / p);
+            }
+            else{
+                // If it is not guided, we just use it as is
+                rrWeight = rrWeight * sample.weight * (1.0f / p);
             }
 
             // And we update the throughput (along with RR probability)

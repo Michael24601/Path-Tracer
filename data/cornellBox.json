@@ -229,7 +229,7 @@
         
 
     "renderer": {
-        "type": "photon-renderer",
+        "type": "photon-mapping-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
             "photon-count": 1000000,

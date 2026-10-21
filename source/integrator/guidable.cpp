@@ -42,6 +42,8 @@ namespace pathtracer{
         Vector3 weight;
         real pdf;
         BsdfSample sample = BsdfSample::INVALID;
+
+        bool isGuided = false;
         
         if(m_guideTree && !it.instance()->bsdf()->isSpecular() && m_alpha > 0.0){
 
@@ -68,6 +70,8 @@ namespace pathtracer{
 
             pdf = m_alpha * guidePdf + (1.0 - m_alpha) * bsdfPdf;
             weight = sample.bsdf() * sample.cosine() / pdf;
+
+            isGuided = true;
         }
         else {
             sample = it.sampleBsdf(wo);
@@ -78,10 +82,10 @@ namespace pathtracer{
 
 
         if(sample.isInvalid()){
-            return GuidedSample{Vector3(0.0), Vector3(0.0), 0.0, false};
+            return GuidedSample{Vector3(0.0), Vector3(0.0), 0.0, false, false};
         }
 
-        return GuidedSample{wi, weight, pdf, true};
+        return GuidedSample{wi, weight, pdf, true, isGuided};
     }
 
 
@@ -92,6 +96,8 @@ namespace pathtracer{
         Vector3 weight;
         real pdf;
         BsdfSample sample = BsdfSample::INVALID;
+
+        bool isGuided = false;
         
         if(m_guideTree && !it.instance()->bsdf()->isSpecular() && m_alpha > 0.0){
 
@@ -111,6 +117,8 @@ namespace pathtracer{
 
             pdf = m_alpha * guidePdf + (1.0 - m_alpha) * bsdfPdf;
             weight = sample.bsdf() * sample.cosine() / pdf;
+
+            isGuided = true;
         }
         else {
             sample = it.evaluateBsdf(wo, wi);
@@ -119,10 +127,10 @@ namespace pathtracer{
         }
 
         if(sample.isInvalid()){
-            return GuidedSample{Vector3(0.0), Vector3(0.0), 0.0, false};
+            return GuidedSample{Vector3(0.0), Vector3(0.0), 0.0, false, false};
         }
 
-        return GuidedSample{wi, weight, pdf, true};
+        return GuidedSample{wi, weight, pdf, true, isGuided};
 
     }
     
@@ -183,7 +191,7 @@ namespace pathtracer{
                     }
 
                     m_trainTree->accumulate(localPoint, direction, weight, 
-                        incoming.mean(), SpatialFilter::NEAREST, 
+                        incoming.mean(), SpatialFilter::BOX, 
                         DirectionalFilter::BOX);
                 }
 
@@ -208,7 +216,7 @@ namespace pathtracer{
             Vector3 localPoint = toTreeLocalSpace(position.position(), scene);
 
             m_trainTree->accumulate(localPoint, wi, 0.5, contribution.mean(), 
-                SpatialFilter::NEAREST, DirectionalFilter::BOX);
+                SpatialFilter::BOX, DirectionalFilter::BOX);
         }
         
     }

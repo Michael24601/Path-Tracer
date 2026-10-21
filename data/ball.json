@@ -73,7 +73,7 @@
             "type": "aov-integrator",
             "parameters": {
                 "max-depth": 100,
-                "render-variable": "lean-normal"
+                "render-variable": "mipmap-normal"
             }
         }
     }

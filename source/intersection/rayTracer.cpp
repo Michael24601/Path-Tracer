@@ -86,33 +86,6 @@ namespace pathtracer{
 
             return false;
         }
-
-
-        void normalMapping(Intersection& it, const Instance* const inst) {
-
-            if(inst->normalTexture()){
-
-                // It's already mapped to correct range and normal
-                Vector3 normal = inst->normalTexture()->sample(it.uv());
-
-                // We need to map normal from shading frame to world coordinates
-                // We can't use normal transform since it applies translation
-                // (not suitable for directions).
-                // We should in theory use transformNormal which was designed
-                // for normals, but since shadingFrame is always orthogonal,
-                // transformDirection is equivalent, while much cheaper to
-                // compute, so we will use that.
-                // We can also use transformNormal, but it is more expensive
-                // and adds nothing in this specific case.
-                normal = it.shadingFrame().transformDirection(normal);
-
-                // Then the frame is updated
-                it.setShadingNormal(normal);
-
-                // Frame is recomputed
-                it.computeShadingFrame();
-            }
-        }
         
 
         // Intersects a ray with a shape instance. If we have a
@@ -196,7 +169,9 @@ namespace pathtracer{
                     oldIt.computeShadingFrame();
 
                     // Since we found the closest hit, we can now do normal mapping
-                    normalMapping(oldIt, instance);
+                    if(instance->normalTexture()){
+                        instance->normalMap(oldIt);
+                    }
 
                     return true;
                 }

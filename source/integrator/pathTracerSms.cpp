@@ -56,7 +56,7 @@ namespace pathtracer{
             // If last hit not specular, we can also add its contribution,
             // as no double counting.
             if(it.instance()->emission()){
-                if (i == 0 || !lastInst->bsdf()->isSpecular()){
+                if (i == 0 || i == 1 || !lastInst->bsdf()->isSpecular()){
                     Vector3 emission = it.evaluateEmission(wo);
                     color = color + emission * throughput;
                 }

@@ -80,7 +80,7 @@ namespace pathtracer{
 
     // Expects json of a texture
     Texture* parseTexture(const json& texture, bool linearize = false,
-        bool isNormalMap = false) {
+        bool isNormalMap = false, bool mipMap = false) {
 
         const json& value = texture["parameters"];
 
@@ -116,7 +116,7 @@ namespace pathtracer{
             }
 
             return new Texture(ImageIo::loadImage(filename), bm, fm, 
-                linearize, isNormalMap);
+                linearize, isNormalMap, mipMap);
         }
         else if(texture["type"] == "color"){
             Vector3 color = parseVector3(value["color"]);
@@ -325,7 +325,7 @@ namespace pathtracer{
                 if(inst["parameters"].contains("normal-map")){
 
                     normalMap = parseTexture(inst["parameters"]["normal-map"], 
-                        false, true);
+                        false, true, true);
                 }
 
                 Texture* alphaMask = nullptr;
@@ -495,6 +495,10 @@ namespace pathtracer{
                     integrator =new AovIntegrator(
                         AovIntegrator::RenderVariable::LEAN_NORMAL);
                 }
+                else if(var == "mipmap-normal"){
+                    integrator =new AovIntegrator(
+                        AovIntegrator::RenderVariable::MIPMAP_NORMAL);
+                }
                 else if(var == "dpdu"){
                     integrator = new AovIntegrator(
                         AovIntegrator::RenderVariable::DPDU);
@@ -620,6 +624,10 @@ namespace pathtracer{
                 integrator = new PhotonMappingIntegrator(maxDepth, 
                     kernelRadius, type);
             }
+            else{
+                LOG_ERROR("No integrator found.");
+                exit(1);
+            }
 
 
             int messageCount = 10;
@@ -687,6 +695,11 @@ namespace pathtracer{
                     messageCount
                 );
             }
+            else{
+                LOG_ERROR("No renderer found.");
+                exit(1);
+            }
+
         }
         else{
             LOG_ERROR("No renderer in: " + filename);

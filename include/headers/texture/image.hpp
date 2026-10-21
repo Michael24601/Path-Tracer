@@ -65,6 +65,15 @@ namespace pathtracer{
         }
 
 
+        inline BorderMode borderMode() const {
+            return m_borderMode;
+        }
+
+        inline FilterMode filterMode() const {
+            return m_filterMode;
+        }
+
+
         // Sets texture
         void setPixel(int i, int j, const std::vector<real>& color);
 

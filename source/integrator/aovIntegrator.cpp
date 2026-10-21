@@ -3,12 +3,14 @@
 #include "intersection/intersection.hpp"
 #include "intersection/surfaceDifferentials.hpp"
 #include "core/instance.hpp"
+#include "texture/texture.hpp"
 #include "core/ray.hpp"
 #include "core/scene.hpp"
 #include "texture/leanMap.hpp"
 #include "core/random.hpp"
 #include "math/mathUtil.hpp"
 #include "sms/smsUtil.hpp"
+#include "logger.hpp"
 
 namespace pathtracer{
 
@@ -38,6 +40,16 @@ namespace pathtracer{
             color = (it.geometryNormal() + Vector3(1.0)) * 0.5;
             break;
 
+        case RenderVariable::MIPMAP_NORMAL:{
+            int maxL = it.instance()->normalTexture()->maxMipMapLevel();
+            Vector3 normal = it.instance()->normalTexture()->sampleMipMap(it.uv(), maxL);
+            // Must use the geometry frame here since the shading frame is
+            // already "infected" by the normal map.
+            normal = it.geometryFrame().transformDirection(normal);
+            color = (normal + Vector3(1.0)) * 0.5;
+            break;
+        }
+
         case RenderVariable::LEAN_NORMAL:{
             // Uses max level lean normal sampled from gaussian.
             // First the slope is sampled, then transformed to normal.
@@ -49,7 +61,7 @@ namespace pathtracer{
             Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
             Vector3 normal = Vector3(-slope[0], -slope[1], 1.0).normalized();
 
-            normal = it.shadingFrame().transformDirection(normal);
+            normal = it.geometryFrame().transformDirection(normal);
             color = (normal + Vector3(1.0)) * 0.5;
             break;
         }

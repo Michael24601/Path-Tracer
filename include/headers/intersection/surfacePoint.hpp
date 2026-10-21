@@ -35,16 +35,22 @@ namespace pathtracer{
         // and normals, where the normal is the z coordinate.
         Transform m_shadingFrame;
 
+        // The same but using geometry normal. Should never be modified.
+        Transform m_geometryFrame;
+
         // Optional parameter, records which triangle in a mesh was
         // intersected.
         int m_triangleIndex;
+
+
+        void computeGeometryFrame();
+
 
     public:
 
         SurfacePoint();
 
-        SurfacePoint(
-            const Vector3& position,
+        SurfacePoint(const Vector3& position,
             const Vector3& geometryNormal,
             const Vector3& shadingNormal,
             const Vector3& tangent,
@@ -64,6 +70,8 @@ namespace pathtracer{
         const Instance* instance() const;
 
         const Transform& shadingFrame() const;
+
+        const Transform& geometryFrame() const;
 
         int triangleIndex() const;
 

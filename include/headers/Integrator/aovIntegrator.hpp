@@ -23,7 +23,8 @@ namespace pathtracer{
             DTDU,
             DTDV,
             S,
-            LEAN_NORMAL
+            LEAN_NORMAL,
+            MIPMAP_NORMAL
         };
 
     private:
@@ -50,6 +51,7 @@ namespace pathtracer{
                 case RenderVariable::SHADING_NORMAL: name = "SHADING_NORMAL"; break;
                 case RenderVariable::GEOMETRY_NORMAL: name = "GEOMETRY_NORMAL"; break;
                 case RenderVariable::LEAN_NORMAL: name = "LEAN_NORMAL"; break;
+                case RenderVariable::MIPMAP_NORMAL: name = "MIPMAP_NORMAL"; break;
                 case RenderVariable::DIRECTION: name = "DIRECTION"; break;
                 case RenderVariable::DPDU: name = "DPDU"; break;
                 case RenderVariable::DPDV: name = "DPDV"; break;

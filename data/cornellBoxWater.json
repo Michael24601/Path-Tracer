@@ -240,7 +240,7 @@
         "type": "path-guiding-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 50,
+            "sample-count": 150,
             "iteration-count": 4,
             "spatial-subdivision-c": 12000,
             "mis-alpha": 0.5
