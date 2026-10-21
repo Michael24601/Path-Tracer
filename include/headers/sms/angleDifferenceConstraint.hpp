@@ -50,7 +50,7 @@ namespace pathtracer{
         // Returns the refraction/reflection direction given the other
         // direction w.
         TransformedDirection transformDirection(const Vector3& w, 
-            const Vector3& shadingNormal, bool reflection, real eta);
+            const Vector3& normal, bool reflection, real eta);
 
 
         // This is the angle difference constraint.
@@ -87,9 +87,11 @@ namespace pathtracer{
         // which in turn changes the reflected/refracted direction. 
         // This function returns the rate of change of the reflected/refracted
         // direction when u and v move.
+        // The normal here is either the shading normal or the offset
+        // shading normal when doing stage 1 manifold walk.
         TransformedDirectionDifferentials transformedDirectionDerivatives(
             const Vector3& w, const DirectionDifferentials& dw,
-            const Vector3& shadingNormal, const Vector3& dndu, 
+            const Vector3& normal, const Vector3& dndu, 
             const Vector3& dndv, bool reflection, real eta);
 
 
@@ -112,7 +114,8 @@ namespace pathtracer{
         // newton equal to nabla C inverse times C.
         NewtonOutput computeNewtonStep(const SurfacePoint& x0, 
             const LightSample& x2, const SurfacePoint& p, 
-            const SurfaceDifferentials& d, bool reflection, real eta);
+            const SurfaceDifferentials& d, bool reflection, real eta,
+            const Vector3& localOffsetNormal);
 
     }
 

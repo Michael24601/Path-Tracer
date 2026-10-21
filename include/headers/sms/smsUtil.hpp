@@ -63,6 +63,7 @@ namespace pathtracer{
         // This computes the frame differentials from the surface
         // differentials.
         // It also needs the normal, tangent, and bitangent as inputs.
+        // Note that this normal is the shading normal, NOT the offset normal.
         FrameDifferentials computeFrameDifferentials(const Vector3& normal, 
             const SurfaceDifferentials& d);
 

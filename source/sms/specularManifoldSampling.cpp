@@ -314,7 +314,7 @@ namespace pathtracer{
         // Otherwise we use the newton solver
         SmsSample result = newtonSolver(causticPoint, it, lightPoint, bsdf,
             localOffsetNormal, scene);
-            
+
         return result;
     }
 
@@ -379,7 +379,7 @@ namespace pathtracer{
             }
             else{
                 step = AngleDifferenceConstraint::computeNewtonStep(x0, x2, 
-                    finalIt, d, reflection, eta);
+                    finalIt, d, reflection, eta, localOffsetNormal);
             }
 
             // If newton fails we can stop

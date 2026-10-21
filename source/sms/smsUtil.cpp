@@ -49,6 +49,9 @@ namespace pathtracer{
         FrameDifferentials computeFrameDifferentials(const Vector3& normal, 
             const SurfaceDifferentials& d) {
 
+            // NOTE: the normal used here is the shading normal, not the
+            // offset normal.
+
             Vector3 dpdu = d.dpdu();
             Vector3 dndu = d.dndu();
             Vector3 dndv = d.dndv();
@@ -62,15 +65,11 @@ namespace pathtracer{
             Vector3 q = dpdu - normal * normal.dot(dpdu);
             real invLength = 1.0 / q.length();
 
-            Vector3 dq_du =
-                d2pdu2
-                - dndu * normal.dot(dpdu)
+            Vector3 dq_du = d2pdu2 - dndu * normal.dot(dpdu)
                 - normal * dndu.dot(dpdu)
                 - normal * normal.dot(d2pdu2);
 
-            Vector3 dq_dv =
-                d2pdudv
-                - dndv * normal.dot(dpdu)
+            Vector3 dq_dv = d2pdudv - dndv * normal.dot(dpdu)
                 - normal * dndv.dot(dpdu)
                 - normal * normal.dot(d2pdudv);
 

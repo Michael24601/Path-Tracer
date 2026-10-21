@@ -22,10 +22,10 @@ namespace pathtracer{
 
         // This is the S^t / S^r from the paper.
         TransformedDirection transformDirection(const Vector3& w,
-            const Vector3& shadingNormal, bool reflection, real eta) {
+            const Vector3& normal, bool reflection, real eta) {
 
             // This flip is necessary to ensure consistency
-            Vector3 n = shadingNormal;
+            Vector3 n = normal;
             if (n.dot(w) < 0) {
                 n = -n;
             }
@@ -115,20 +115,20 @@ namespace pathtracer{
 
         TransformedDirectionDifferentials transformedDirectionDerivatives(
             const Vector3& w, const DirectionDifferentials& dw,
-            const Vector3& shadingNormal, const Vector3& dndu, 
+            const Vector3& normal, const Vector3& dndu, 
             const Vector3& dndv, bool reflection, real eta) {
 
-            real dotWN = w.dot(shadingNormal);
+            real dotWN = w.dot(normal);
 
             if (reflection) {
 
-                real dotWnDu = dw.dwdu.dot(shadingNormal) + w.dot(dndu);
-                real dotWnDv = dw.dwdv.dot(shadingNormal) + w.dot(dndv);
+                real dotWnDu = dw.dwdu.dot(normal) + w.dot(dndu);
+                real dotWnDv = dw.dwdv.dot(normal) + w.dot(dndv);
 
-                Vector3 dSdu = (shadingNormal * dotWnDu + dndu * dotWN)
+                Vector3 dSdu = (normal * dotWnDu + dndu * dotWN)
                     * 2.0 - dw.dwdu;
 
-                Vector3 dSdv = (shadingNormal * dotWnDv + dndv * dotWN)
+                Vector3 dSdv = (normal * dotWnDv + dndv * dotWN)
                     * 2.0 - dw.dwdv;
 
                 return {dSdu, dSdv, true};
@@ -143,16 +143,16 @@ namespace pathtracer{
             }
 
             real cosThetaT = std::sqrt(1.0 - sin2ThetaT);
-            real dDotWNdu = dw.dwdu.dot(shadingNormal) + w.dot(dndu);
-            real dDotWNdv = dw.dwdv.dot(shadingNormal) + w.dot(dndv);
+            real dDotWNdu = dw.dwdu.dot(normal) + w.dot(dndu);
+            real dDotWNdv = dw.dwdv.dot(normal) + w.dot(dndv);
             real dCosThetaTdu = dotWN * dDotWNdu / (eta * eta * cosThetaT);
             real dCosThetaTdv = dotWN * dDotWNdv / (eta * eta * cosThetaT);
 
-            Vector3 dSdu = (dw.dwdu - shadingNormal * dDotWNdu - dndu * dotWN)
-                / (-eta) - dndu * cosThetaT - shadingNormal * dCosThetaTdu;
+            Vector3 dSdu = (dw.dwdu - normal * dDotWNdu - dndu * dotWN)
+                / (-eta) - dndu * cosThetaT - normal * dCosThetaTdu;
 
-            Vector3 dSdv = (dw.dwdv - shadingNormal * dDotWNdv - dndv * dotWN)
-                / (-eta) - dndv * cosThetaT - shadingNormal * dCosThetaTdv;
+            Vector3 dSdv = (dw.dwdv - normal * dDotWNdv - dndv * dotWN)
+                / (-eta) - dndv * cosThetaT - normal * dCosThetaTdv;
 
             return TransformedDirectionDifferentials{dSdu, dSdv, true};
         }
@@ -245,7 +245,8 @@ namespace pathtracer{
 
         NewtonOutput computeNewtonStep(const SurfacePoint& x0, 
             const LightSample& x2, const SurfacePoint& p, 
-            const SurfaceDifferentials& d, bool reflection, real eta){
+            const SurfaceDifferentials& d, bool reflection, real eta, 
+            const Vector3& localOffsetNormal){
 
 
             Vector3 wo = (x0.position() - p.position()).normalized();
@@ -261,15 +262,40 @@ namespace pathtracer{
             DirectionDifferentials dwo = computeWoDifferential(x0, p, d);
             DirectionDifferentials dwi = computeWiDifferential(p, x2, d);
 
-            // This code needs to be updated when offset is added
+            // The normal is either the shading normal, or the offset
+            // shading normal (in global space). By default,
+            // the offset is 0, 0, 1, so by default we just use the
+            // shading normal.
+
+            // Note, here we need to use the s, t, and n frame, not the
+            // shading frame which uses tangent instead of s.
+            Vector3 s = d.s();
+            Vector3 t = d.t(p.shadingNormal());
             Vector3 n = p.shadingNormal();
-            Vector3 dndu = d.dndu();
-            Vector3 dndv = d.dndv();
+
+            Vector3 normal = s * localOffsetNormal.x()
+                + t * localOffsetNormal.y()
+                + n * localOffsetNormal.z();
+
+            // We do the same for dndu using the du and dv derivatives of the
+            // frame. Notice the frame differential is computed from the
+            // shading normal not the offset.
+
+            FrameDifferentials f = SmsUtil::computeFrameDifferentials(p.shadingNormal(), d);
+
+            Vector3 dndu = f.dsdu * localOffsetNormal.x()
+                + f.dtdu * localOffsetNormal.y()
+                + d.dndu() * localOffsetNormal.z();
+
+            Vector3 dndv = f.dsdv * localOffsetNormal.x()
+                + f.dtdv * localOffsetNormal.y()
+                + d.dndv() * localOffsetNormal.z();
+
 
             Matrix2 dC_dX;
             Vector2 C(0.0);
 
-            bool found = computeAngleDiffConstraint(wo, dwo, wi, dwi, n, 
+            bool found = computeAngleDiffConstraint(wo, dwo, wi, dwi, normal, 
                 dndu, dndv, eta, reflection, dC_dX, C);
 
             // If we cant refract/reflect with wo, we try it with wi instead.
@@ -279,7 +305,7 @@ namespace pathtracer{
                 // It is now the opposite
                 eta = 1.0 / eta;
 
-                found = computeAngleDiffConstraint(wi, dwi, wo, dwo, n, 
+                found = computeAngleDiffConstraint(wi, dwi, wo, dwo, normal, 
                     dndu, dndv, eta, reflection, dC_dX, C);
             }
 
