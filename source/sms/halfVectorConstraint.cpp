@@ -19,7 +19,8 @@ namespace pathtracer{
 
 
         Vector2 specularConstraint(const SurfacePoint& p, 
-            const Vector3& halfVector, const SurfaceDifferentials& d) {
+            const Vector3& halfVector, const SurfaceDifferentials& d,
+            const Vector3& localOffsetNormal) {
 
             // The constraint is T(xi)^T h(x1, x1x0, x2x0), where h
             // depends on whether it is refracting or reflecting.
@@ -29,9 +30,14 @@ namespace pathtracer{
 
             // Tangents
             Vector3 t0 = d.s();
+            // Notice this needs to use the shading normal, NOT the
+            // possibly perturbed normal.
             Vector3 t1 = d.t(p.shadingNormal());
 
-            return Vector2(t0.dot(h), t1.dot(h));
+            // We subtract the local offset normal here (by default
+            // the local normal is 0, 0, 1 so this does nothing).
+            return Vector2(t0.dot(h) - localOffsetNormal.x(), 
+                t1.dot(h) - localOffsetNormal.y());
         }
 
 
@@ -102,7 +108,7 @@ namespace pathtracer{
         NewtonOutput computeNewtonStep(const SurfacePoint& x0, 
             const LightSample& x2, const SurfacePoint& p, 
             const Vector3& halfVector, const SurfaceDifferentials& d, 
-            bool reflection, real eta) {
+            bool reflection, real eta, const Vector3& localOffsetNormal) {
                 
             Vector3 s = d.s();
             Vector3 t = d.t(p.shadingNormal());
@@ -122,7 +128,7 @@ namespace pathtracer{
                 f.dtdv.dot(h) + t.dot(hd.dhdv)
             );
 
-            Vector2 C = specularConstraint(p, halfVector, d);
+            Vector2 C = specularConstraint(p, halfVector, d, localOffsetNormal);
 
             real determinant = dC_dX.determinant();
 

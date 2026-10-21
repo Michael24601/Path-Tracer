@@ -237,18 +237,17 @@
         
     
     "renderer": {
-        "type": "path-guiding-renderer",
+        "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 150,
-            "iteration-count": 4,
-            "spatial-subdivision-c": 12000,
-            "mis-alpha": 0.5
+            "sample-count": 10
         },
         "integrator": {
-            "type": "path-tracer-nee-mis-guided",
+            "type": "path-tracer-nee-sms",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 100,
+                "use-halfvector": true,
+                "biased": false
             }
         }
     }

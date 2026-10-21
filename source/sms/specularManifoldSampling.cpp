@@ -307,15 +307,22 @@ namespace pathtracer{
             return SmsSample(sample, sample, Vector3(0.0), 1.0, true, false);
         }
 
+        // In tangent space, by default, we don't want to offset the normal.
+        // This when transformed to world space is just the shading normal.
+        Vector3 localOffsetNormal(0, 0, 1);
+
         // Otherwise we use the newton solver
-        SmsSample result = newtonSolver(causticPoint, it, lightPoint, bsdf, scene);
+        SmsSample result = newtonSolver(causticPoint, it, lightPoint, bsdf,
+            localOffsetNormal, scene);
+            
         return result;
     }
 
 
     SmsSample SpecularManifoldSampling::newtonSolver(const SurfacePoint& x0, 
         const SurfacePoint& seedIt, const LightSample& x2, 
-        const SpecularManifoldBsdf* bsdf, const Scene* scene) {
+        const SpecularManifoldBsdf* bsdf, const Vector3& localOffsetNormal,
+        const Scene* scene) {
 
         // We use the newton solver to converge to a point on the
         // instance that satisfies the chosen specular constraint
@@ -368,7 +375,7 @@ namespace pathtracer{
             NewtonOutput step; 
             if(m_useHalfVector){
                 step = HalfVectorConstraint::computeNewtonStep(x0, x2, finalIt, 
-                    halfVector, d, reflection, eta);
+                    halfVector, d, reflection, eta, localOffsetNormal);
             }
             else{
                 step = AngleDifferenceConstraint::computeNewtonStep(x0, x2, 

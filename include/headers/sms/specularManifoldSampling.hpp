@@ -107,7 +107,8 @@ namespace pathtracer{
 
         SmsSample newtonSolver(const SurfacePoint& causticPoint, 
             const SurfacePoint& seedIt, const LightSample& lightPoint, 
-            const SpecularManifoldBsdf* bsdf, const Scene* scene);
+            const SpecularManifoldBsdf* bsdf, const Vector3& localOffsetNormal,
+            const Scene* scene);
 
 
         // Returns the ougoing contribution from x0 after it samples

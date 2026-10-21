@@ -58,9 +58,7 @@ namespace pathtracer{
             // since it was sampled by NEE.
             // So we only consider first hit.
             if(it.instance()->emission()){
-                // We also allow hits at i==1 to allow lights inside
-                // specular objects to be rendered.
-                if(i== 0 || i == 1){
+                if(i== 0){
                     Vector3 emission = it.evaluateEmission(wo);
                     color = color + emission * throughput;
                 }
