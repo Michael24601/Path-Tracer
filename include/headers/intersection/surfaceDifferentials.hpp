@@ -40,6 +40,13 @@ namespace pathtracer{
         const Vector3& d2pdudv() const;
         const Vector3& d2pdv2() const;
 
+        void setDpdu(const Vector3& dpdu);
+        void setDpdv(const Vector3& dpdv);
+        void setDndu(const Vector3& dndu);
+        void setDndv(const Vector3& dndv);
+        void setS(const Vector3& s);
+
+
         const Vector3& s() const;
 
         // The other tangent

@@ -74,10 +74,6 @@ namespace pathtracer{
         }
 
 
-        // Sets texture
-        void setPixel(int i, int j, const std::vector<real>& color);
-
-
         const std::vector<real>& getPixel(int i, int j) const;
         
 

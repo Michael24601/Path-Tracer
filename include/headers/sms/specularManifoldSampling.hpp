@@ -53,6 +53,8 @@ namespace pathtracer{
         // Uses biased sms
         bool m_biased;
 
+        bool m_twoStage;
+
     public:
 
         std::atomic<int> m_converged{0};
@@ -61,11 +63,14 @@ namespace pathtracer{
         std::atomic<int> m_sameNotFound{0};
         std::atomic<int> m_notVis{0};
 
+        std::atomic<int> m_con{0};
+        std::atomic<int> m_not{0};
+
 
         SpecularManifoldSampling(const Scene* scene, bool useHalfVector, 
-            bool biased, int maxIterations = 50, int maxTrials = 500, 
-            int maxBiasedTrials = 5, real epsilon = 1e-5, 
-            real threshold = 1e-6);
+            bool biased, bool twoStage, int maxIterations = 20, 
+            int maxTrials = 500, int maxBiasedTrials = 5, 
+            real epsilon = 1e-5, real threshold = 1e-4);
 
 
         // Returns the outgoing radiance from x0, after connecting
@@ -108,7 +113,7 @@ namespace pathtracer{
         SmsSample newtonSolver(const SurfacePoint& causticPoint, 
             const SurfacePoint& seedIt, const LightSample& lightPoint, 
             const SpecularManifoldBsdf* bsdf, const Vector3& localOffsetNormal,
-            const Scene* scene);
+            const Scene* scene, bool smooth);
 
 
         // Returns the ougoing contribution from x0 after it samples
@@ -128,7 +133,8 @@ namespace pathtracer{
 
             info += "SMS ";
             info += std::string(m_useHalfVector ? "HV " : "AD ");
-            info += std::string(m_biased ? "BIASED" : "UNBIASED");
+            info += std::string(m_biased ? "BIASED " : "UNBIASED ");
+            info += std::string(m_twoStage ? "TWO_STAGE" : "ONE_STAGE");
 
             return info;
         }

@@ -20,22 +20,26 @@
 #include "core/sceneUtil.hpp"
 #include "sms/halfVectorConstraint.hpp"
 #include "sms/angleDifferenceConstraint.hpp"
+#include "texture/leanMap.hpp"
+#include "core/random.hpp"
 #include "logger.hpp"
-#include <iostream>
+#include "math/mathUtil.hpp"
+
 
 namespace pathtracer{
 
 
     SpecularManifoldSampling::SpecularManifoldSampling(const Scene* scene, 
-        bool useHalfVector, bool biased, int maxIterations, int maxTrials, 
-        int maxBiasedTrials, real epsilon, real threshold) :
+        bool useHalfVector, bool biased, bool twoStage, int maxIterations, 
+        int maxTrials, int maxBiasedTrials, real epsilon, real threshold) :
         m_epsilon{epsilon},
         m_maxIterations{maxIterations},
         m_maxTrials{maxTrials},
         m_maxBiasedTrials{maxBiasedTrials},
         m_threshold{threshold},
         m_useHalfVector{useHalfVector},
-        m_biased{biased} {
+        m_biased{biased},
+        m_twoStage{twoStage} {
 
         for(int i = 0; i < scene->instanceCount(); i++){
 
@@ -241,7 +245,8 @@ namespace pathtracer{
             }
 
             // Duplicates are not needed
-            if(duplicate){ s++;
+            if(duplicate){ 
+                s++;
                 continue;
             }
 
@@ -259,13 +264,9 @@ namespace pathtracer{
             value = value + weight;
         }
 
-        //LOG_INFO(std::to_string(nc) + " " + std::to_string(nv) + " " + std::to_string(s))
-        //LOG_INFO(std::to_string(solutions.size()));
-
         return value;
 
     }
-
 
 
     SmsSample SpecularManifoldSampling::samplePath(
@@ -300,6 +301,7 @@ namespace pathtracer{
         real distance = dir.length();
         dir = dir / distance;
 
+        // Here we just test visibility
         Ray ray(causticPoint.position() + dir * SHADOW_EPSILON, dir);
         Intersection it = scene->intersect(ray);
 
@@ -309,11 +311,62 @@ namespace pathtracer{
 
         // In tangent space, by default, we don't want to offset the normal.
         // This when transformed to world space is just the shading normal.
+        // But for two stage manifold walk, we use an offset.
         Vector3 localOffsetNormal(0, 0, 1);
+        SurfacePoint seedIt = it;
+        
+        // Need to make sure there is a normal texture
+        if(m_twoStage && it.instance()->normalTexture()){
+            // First we create a new instance with smooth normal map
+            Intersection newIt = it;
+            newIt.instance()->normalMap(newIt, true);
 
-        // Otherwise we use the newton solver
-        SmsSample result = newtonSolver(causticPoint, it, lightPoint, bsdf,
-            localOffsetNormal, scene);
+            // We also sample a random local offset from LEAN map
+            int maxL = it.instance()->leanMap()->maxLevel(it.instance()->normalTexture());
+            Vector2 mu = it.instance()->leanMap()->mean(it.uv(), maxL);
+            Matrix2 sigma = it.instance()->leanMap()->covariance(it.uv(), maxL);
+
+            Vector2 muOffset(-localOffsetNormal.x() / localOffsetNormal.z(),
+                            -localOffsetNormal.y() / localOffsetNormal.z());
+            mu = (mu + muOffset) * 0.5;
+            Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
+
+            // In the normal-map basis (tangent, bitangent, n)
+            Vector3 leanNormal = Vector3(-slope[0], -slope[1], 1.0).normalized();
+
+            Vector3 n = newIt.shadingNormal();
+            SurfaceDifferentials d0 = newIt.instance()->computeDifferentials(newIt, true);
+            Vector3 s = d0.s();
+            Vector3 t = d0.t(n);
+
+            // Transformed to n, s, t frame
+            leanNormal = it.geometryFrame().transformNormal(leanNormal);
+            Matrix3 transform(s, t, n);
+            leanNormal = transform.inverse() * leanNormal;
+
+            SmsSample result = newtonSolver(causticPoint, newIt, lightPoint, bsdf,
+                leanNormal, scene, true);
+
+            // If not converged, we just return a false sample
+            if(!result.isConverged()){
+                m_not++;
+                return result;
+            }
+            m_con++;
+
+            // We reset the normal
+            localOffsetNormal = Vector3(0, 0, 1);
+
+            // And we use a new seed
+            seedIt = result.finalPoint();
+            // Which we also normal map again to get back the original map
+            it.instance()->normalMap(seedIt, false); 
+        }
+
+        // We then do a newton solver, either with initial seed or new seed
+        // in two stage manifold walk.
+        SmsSample result = newtonSolver(causticPoint, seedIt, lightPoint, bsdf,
+            localOffsetNormal, scene, false);
 
         return result;
     }
@@ -322,7 +375,7 @@ namespace pathtracer{
     SmsSample SpecularManifoldSampling::newtonSolver(const SurfacePoint& x0, 
         const SurfacePoint& seedIt, const LightSample& x2, 
         const SpecularManifoldBsdf* bsdf, const Vector3& localOffsetNormal,
-        const Scene* scene) {
+        const Scene* scene, bool smooth) {
 
         // We use the newton solver to converge to a point on the
         // instance that satisfies the chosen specular constraint
@@ -361,7 +414,7 @@ namespace pathtracer{
             reflection = SmsUtil::isReflection(wo, finalIt, wi);
             Vector3 localWo = finalIt.shadingFrame().inverseTransformDirection(wo);
             eta = bsdf->eta(localWo, finalIt.uv());
-            SurfaceDifferentials d = finalIt.instance()->computeDifferentials(finalIt);
+            SurfaceDifferentials d = finalIt.instance()->computeDifferentials(finalIt, smooth);
 
             // Notice that half vector is updated regardless of which
             // constraint we use as we need it for the geometric term anyway.
@@ -421,6 +474,12 @@ namespace pathtracer{
             if(!valid){
             // We ran out of iterations, so we just leave the outer loop
                 break;
+            }
+
+            // If this is stage 1 manifold walk, we can smooth the
+            // intersection we get.
+            if(smooth && nextIt.instance()->normalTexture()){
+                nextIt.instance()->normalMap(nextIt, true);
             }
 
             finalIt = nextIt;

@@ -6,6 +6,7 @@
 #include "texture/texture.hpp"
 #include "texture/leanMap.hpp"
 #include "logger.hpp"
+#include "math/constants.hpp"
 #include <cassert>
 
 namespace pathtracer{
@@ -27,8 +28,9 @@ namespace pathtracer{
 
                 // First we compute the slopes
                 Vector3 n = normalMap->getPixel(i, j);
-                real x = -n.x() / n.z();
-                real y = -n.y() / n.z();
+                real z = std::max(n.z(), EPSILON);
+                real x = -n.x() / z;
+                real y = -n.y() / z;
 
                 moments[0] += x;
                 moments[1] += y;
@@ -50,16 +52,13 @@ namespace pathtracer{
 
     int LeanMap::maxLevel(const Texture* normalMap){
 
-        // Each level doubles the number of pixels merged
-
-        // First we pick the larger of the two dimensions
+        // Each level halves the size, rounding up, so non-power-of-two
+        // textures still reach a 1x1 level.
         int size = std::max(normalMap->getWidth(), normalMap->getHeight());
 
         int level = 0;
         while (size > 1) {
-            // We then divide the size by 2, and increment the level
-            // each time until it is 1, using bit operators.
-            size >>= 1;
+            size = (size + 1) >> 1;
             level++;
         }
 

@@ -224,19 +224,6 @@ namespace pathtracer{
                     Texture* ior = parseTexture(
                         data["materials"][i]["parameters"]["ior"]);
 
-                        
-                    // Since ior values are roughly between 1 and 2,
-                    // we can map them here (since png can't hold them).
-                    if(data["materials"][i]["parameters"]["ior"]["parameters"]["type"] == "texture"){
-
-                        for(int h = 0; h < ior->getHeight(); h++){
-                            for(int w = 0; w < ior->getWidth(); w++){
-                                ior->setPixel(h, w, ior->getPixel(h, w) + 1.0);
-                            }
-                        }
-                    }
-
-
                     Texture* reflectance = parseTexture(
                         data["materials"][i]["parameters"]["reflectance"]);
 
@@ -484,7 +471,7 @@ namespace pathtracer{
                     ["render-variable"];
 
                 if(var == "shading-normal"){
-                    integrator =new AovIntegrator(
+                    integrator = new AovIntegrator(
                         AovIntegrator::RenderVariable::SHADING_NORMAL);
                 }
                 else if(var == "geometry-normal"){
@@ -589,8 +576,12 @@ namespace pathtracer{
                 bool biased =
                     data["renderer"]["integrator"]["parameters"]["biased"];
 
+                bool twoStage =
+                    data["renderer"]["integrator"]["parameters"]["two-stage"];
+
+                
                 integrator =
-                    new PathTracerSms(maxDepth, useHalfVector, biased, scene);
+                    new PathTracerSms(maxDepth, useHalfVector, biased, twoStage, scene);
             }
             else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-sms"){
 
@@ -603,8 +594,11 @@ namespace pathtracer{
                 bool biased =
                     data["renderer"]["integrator"]["parameters"]["biased"];
 
+                bool twoStage =
+                    data["renderer"]["integrator"]["parameters"]["two-stage"];
+
                 integrator =
-                    new PathTracerNeeSms(maxDepth, useHalfVector, biased, scene);
+                    new PathTracerNeeSms(maxDepth, useHalfVector, biased, twoStage, scene);
             }
             else if(data["renderer"]["integrator"]["type"] == "photon-mapping-integrator"){
 

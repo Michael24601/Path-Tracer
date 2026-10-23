@@ -148,9 +148,11 @@ namespace pathtracer{
             transform(it.position()),
             transformNormal(it.geometryNormal()),
             transformNormal(it.shadingNormal()),
+            transformDirection(it.geometryTangent()),
             transformDirection(it.tangent()),
             it.uv(),
-            it.instance());
+            it.instance()
+        );
 
         // Not in constructor must be set explicitely
         res.setTriangleIndex(it.triangleIndex());

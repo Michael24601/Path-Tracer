@@ -9,6 +9,7 @@
 #include "texture/leanMap.hpp"
 #include "intersection/areaSample.hpp"
 #include "intersection/surfaceDifferentials.hpp"
+#include "logger.hpp"
 
 namespace pathtracer{
 
@@ -184,7 +185,9 @@ namespace pathtracer{
         // We can also set the instance at this point, in the area
         // sample, which is nullptr up tp this point.
         areaSample.setInstance(this);
+
         areaSample.computeShadingFrame();
+        areaSample.computeGeometryFrame();
 
         return areaSample;
     }
@@ -212,8 +215,10 @@ namespace pathtracer{
 
         // We then transform the whole sample
         SurfacePoint newSample = m_transform.transformSurfacePoint(sample);
+
         newSample.setInstance(this);
         newSample.computeShadingFrame();
+        newSample.computeGeometryFrame();
 
         // We can also do normal mapping here
         if(m_normal != nullptr){
@@ -226,18 +231,44 @@ namespace pathtracer{
     }
 
 
-    SurfaceDifferentials Instance::computeDifferentials(
-        const SurfacePoint& sp) const{
+    SurfaceDifferentials Instance::computeDifferentials(const SurfacePoint& sp,
+        bool smooth) const{
 
         // First we will transform the position and normal to local
         // coordinates.
-        Vector3 localPoint = m_transform.inverseTransform(sp.position());
+        Vector3 localPoint  = m_transform.inverseTransform(sp.position());
         Vector3 localNormal = m_transform.inverseTransformNormal(sp.shadingNormal());
 
-        SurfaceDifferentials d = m_shape->computeDifferentials(localPoint, 
+        SurfaceDifferentials d = m_shape->computeDifferentials(localPoint,
             localNormal, sp.uv(), sp.triangleIndex());
 
-        return m_transform.transformDifferentials(d, localNormal, sp.shadingNormal());
+        d = m_transform.transformDifferentials(d, localNormal, sp.shadingNormal());
+
+        if(m_normal != nullptr){
+            if(smooth){
+                // Stage 1 uses the coarsest mip, which is (nearly) constant
+                // over the surface, so the normal does not vary.
+                d.setDndu(Vector3(0.0));
+                d.setDndv(Vector3(0.0));
+            }
+            else{
+                // Central differences of the mapped normal w.r.t. uv.
+                const real du = 1.0 / m_normal->getWidth();
+                const real dv = 1.0 / m_normal->getHeight();
+                const Vector2 uv = sp.uv();
+
+                auto mappedNormal = [&](const Vector2& q){
+                    return sp.geometryFrame()
+                        .transformDirection(m_normal->sample(q)).normalized();
+                };
+
+                d.setDndu((mappedNormal(uv + Vector2(du, 0))
+                        - mappedNormal(uv - Vector2(du, 0))) / (2 * du));
+                d.setDndv((mappedNormal(uv + Vector2(0, dv))
+                        - mappedNormal(uv - Vector2(0, dv))) / (2 * dv));
+            }
+        }
+        return d;
     }
 
 
@@ -269,6 +300,8 @@ namespace pathtracer{
             // which will break normal mapping in case we want to
             // smooth it again. So we use the geometry frame here.
             normal = it.geometryFrame().transformDirection(normal);
+
+            // LOG_INFO(normal.toString() + " " + it.geometryNormal().toString());
 
             // Then the frame is updated
             it.setShadingNormal(normal);

@@ -19,8 +19,8 @@ namespace pathtracer{
 
 
     PathTracerSms::PathTracerSms(int maxDepth, bool useHalfVector, bool biased, 
-        const Scene* scene) : m_maxDepth{maxDepth} {
-        sms = new SpecularManifoldSampling(scene, useHalfVector, biased);
+        bool twoStage, const Scene* scene) : m_maxDepth{maxDepth} {
+        sms = new SpecularManifoldSampling(scene, useHalfVector, biased, twoStage);
     }
 
 

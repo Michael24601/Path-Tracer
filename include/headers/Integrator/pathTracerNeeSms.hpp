@@ -21,7 +21,7 @@ namespace pathtracer{
 
         // The boolean determines which constraint is used for SMS
         PathTracerNeeSms(int maxDepth, bool useHalfVector, bool biased, 
-            const Scene* scene);
+            bool twoStage, const Scene* scene);
 
         ~PathTracerNeeSms();
 

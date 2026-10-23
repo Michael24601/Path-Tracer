@@ -55,10 +55,6 @@ namespace pathtracer{
         }
 
 
-        // Sets texture
-        void setPixel(int i, int j, const Vector3& color);
-
-
         Vector3 getPixel(int i, int j) const;
         
 

@@ -29,7 +29,7 @@
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/BrushedIron02_4K_Normal.png",
+                        "file-name": "data/textures/wavy.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -73,7 +73,7 @@
             "type": "aov-integrator",
             "parameters": {
                 "max-depth": 100,
-                "render-variable": "mipmap-normal"
+                "render-variable": "lean-normal"
             }
         }
     }

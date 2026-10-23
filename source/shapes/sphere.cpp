@@ -41,7 +41,7 @@ namespace pathtracer{
         
         // The instance is null since this class doesn't know 
         // which isntance of itself it is. 
-        SurfacePoint sp(point, normal, normal, tangent, uv, nullptr);
+        SurfacePoint sp(point, normal, normal, tangent, tangent, uv, nullptr);
 
         return sp;
     }

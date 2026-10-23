@@ -11,14 +11,15 @@ namespace pathtracer{
 
     Intersection::Intersection() : m_t{REAL_INFINITY},
         SurfacePoint(Vector3(0.0), Vector3(0.0), Vector3(0.0),
-        Vector3(0.0), Vector2(0.0), nullptr) {}
+        Vector3(0.0), Vector3(0.0), Vector2(0.0), nullptr) {}
 
 
     Intersection::Intersection(real t, const Vector3& position,
         const Vector3& geometryNormal, const Vector3& shadingNormal,
+        const Vector3& geometryTangent,
         const Vector3& tangent, const Vector2& uv, const Instance* instance) :
         m_t{t}, SurfacePoint(position, geometryNormal, shadingNormal,
-            tangent, uv, instance) {}
+            geometryTangent, tangent, uv, instance) {}
 
 
     Intersection::Intersection(

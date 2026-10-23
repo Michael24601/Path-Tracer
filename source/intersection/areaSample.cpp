@@ -7,12 +7,13 @@ namespace pathtracer{
         const Vector3& position,
         const Vector3& geometryNormal,
         const Vector3& shadingNormal,
+        const Vector3& geometryTangent,
         const Vector3& tangent,
         const Vector2& uv,
         const Instance* instance,
         real pdf) : 
         m_pdf(pdf), SurfacePoint(position, geometryNormal, shadingNormal, 
-        tangent, uv, instance) {}
+        geometryTangent, tangent, uv, instance) {}
 
 
     AreaSample::AreaSample(const SurfacePoint& sp, real pdf) : m_pdf(pdf),

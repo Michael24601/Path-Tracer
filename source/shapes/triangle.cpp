@@ -38,6 +38,9 @@ namespace pathtracer{
         Vector3 tangent = (v1 - v0).normalized();
         tangent = (tangent - shadingNormal * shadingNormal.dot(tangent)).normalized();
 
+        Vector3 geoTangent = (v1 - v0).normalized();
+        geoTangent = (geoTangent - geometryNormal * geometryNormal.dot(geoTangent)).normalized();
+
         // The uv (texture) coordinates can be specified, otherwise
         // we use the barycentric coordinates of the intersection
         // as a fallback.
@@ -46,7 +49,7 @@ namespace pathtracer{
             : barycentric;
 
         SurfacePoint sp(point, geometryNormal, shadingNormal,
-            tangent, uv, nullptr);
+            geoTangent, tangent, uv, nullptr);
 
         return sp;
     }

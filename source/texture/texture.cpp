@@ -3,7 +3,6 @@
 #include "math/vector3.hpp"
 #include "math/vector2.hpp"
 
-
 namespace pathtracer{
 
 
@@ -31,6 +30,12 @@ namespace pathtracer{
 
 
     void Texture::generateMipmaps(bool isNormalMap) {
+
+        // Freeing old levels to avoid leaks
+        for (Image* level : mipmaps) {
+            delete level;
+        }
+
         mipmaps.clear();
 
         Image* current = image;
@@ -54,30 +59,20 @@ namespace pathtracer{
                             int sourceW = 2 * w + dw;
 
                             if (sourceH >= current->getHeight() ||
-                                sourceW >= current->getWidth()){
+                                sourceW >= current->getWidth()) {
                                 continue;
                             }
 
                             std::vector<real> v = current->getPixel(sourceH, sourceW);
-                            Vector3 pixel(v[0], v[1], v[2]);
 
-                            // We need to decode the values
-                            if (isNormalMap){
-                                pixel = pixel * 2.0f - Vector3(1.0f);
-                            }
-
-                            average = average + pixel;
+                            // Level 0 already holds decoded normals so
+                            // no need to redecode them.
+                            average = average + Vector3(v[0], v[1], v[2]);
                             count++;
                         }
                     }
 
                     average = average / static_cast<real>(count);
-
-                    // We re-incode after averaging
-                    if (isNormalMap){
-                        average = average.normalized() * 0.5f + Vector3(0.5f);
-                    }
-
                     data[h][w] = {average[0], average[1], average[2]};
                 }
             }
@@ -87,7 +82,6 @@ namespace pathtracer{
             current = next;
         }
     }
-
 
     Texture::Texture(const std::vector<std::vector<Vector3>>& data, 
         BorderMode borderMode, FilterMode filterMode, bool linearize,
@@ -124,12 +118,6 @@ namespace pathtracer{
     }
 
 
-    void Texture::setPixel(int i, int j, const Vector3& color){
-        std::vector<real> pixel{color[0], color[1], color[2]};
-        image->setPixel(i, j, pixel);
-    }
-
-
     Vector3 Texture::getPixel(int i, int j) const{
         std::vector<real> p = image->getPixel(i, j);
         return Vector3(p[0], p[1], p[2]);
@@ -154,7 +142,7 @@ namespace pathtracer{
         level = std::min(level, static_cast<int>(mipmaps.size()));
 
         std::vector<real> p = mipmaps[level - 1]->sample(uv);
-        return Vector3(p[0], p[1], p[2]);
+        return Vector3(p[0], p[1], p[2]).normalized();
     }
 
 }

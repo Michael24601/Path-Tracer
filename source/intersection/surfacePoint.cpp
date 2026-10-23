@@ -12,6 +12,7 @@ namespace pathtracer{
         m_position(Vector3::ORIGIN),
         m_geometryNormal(Vector3::ORIGIN),
         m_shadingNormal(Vector3::ORIGIN),
+        m_geometryTangent(Vector3::ORIGIN),
         m_tangent(Vector3::ORIGIN),
         m_uv(Vector2::ORIGIN),
         m_instance(nullptr),
@@ -20,17 +21,16 @@ namespace pathtracer{
 
     SurfacePoint::SurfacePoint(const Vector3& position,
         const Vector3& geometryNormal, const Vector3& shadingNormal,
-        const Vector3& tangent, const Vector2& uv, const Instance* instance) :
+        const Vector3& geometryTangent, const Vector3& tangent, 
+        const Vector2& uv, const Instance* instance) :
         m_position(position),
         m_geometryNormal(geometryNormal),
         m_shadingNormal(shadingNormal),
+        m_geometryTangent(geometryTangent),
         m_tangent(tangent),
         m_uv(uv),
         m_instance{instance},
-        m_triangleIndex{-1} {
-
-        computeGeometryFrame();
-    }
+        m_triangleIndex{-1} {}
 
 
     const Vector3& SurfacePoint::position() const {
@@ -45,6 +45,11 @@ namespace pathtracer{
 
     const Vector3& SurfacePoint::shadingNormal() const {
         return m_shadingNormal;
+    }
+
+
+    const Vector3& SurfacePoint::geometryTangent() const {
+        return m_geometryTangent;
     }
 
 
@@ -116,13 +121,13 @@ namespace pathtracer{
     void SurfacePoint::computeGeometryFrame() {
 
         // Reorthogonalizes the tangent
-        m_tangent = (m_tangent - m_geometryNormal *
-            m_tangent.dot(m_geometryNormal)).normalized();
+        m_geometryTangent = (m_geometryTangent - m_geometryNormal *
+            m_geometryTangent.dot(m_geometryNormal)).normalized();
 
         // Bitangent
-        Vector3 bit = m_geometryNormal.cross(m_tangent);
+        Vector3 bit = m_geometryNormal.cross(m_geometryTangent);
 
-        Matrix3 frame = Matrix3(m_tangent, bit, m_geometryNormal);
+        Matrix3 frame = Matrix3(m_geometryTangent, bit, m_geometryNormal);
 
         m_geometryFrame = Transform(frame, m_position);
     }
@@ -131,8 +136,9 @@ namespace pathtracer{
     void SurfacePoint::computeShadingFrame() {
 
         // Reorthogonalizes the tangent
-        m_tangent = (m_tangent - m_shadingNormal *
-            m_tangent.dot(m_shadingNormal)).normalized();
+        // We use the geometry tangent to start since it does not change
+        m_tangent = (m_geometryTangent - m_shadingNormal *
+            m_geometryTangent.dot(m_shadingNormal)).normalized();
 
         // Bitangent
         Vector3 bit = m_shadingNormal.cross(m_tangent);
@@ -208,8 +214,7 @@ namespace pathtracer{
 
     // Here, we just evaluate the emission at this point.
     // Returns the emission in world coordinates
-    Vector3 SurfacePoint::evaluateEmission(
-        const Vector3& wo) const {
+    Vector3 SurfacePoint::evaluateEmission(const Vector3& wo) const {
 
         if(!m_instance || !m_instance->emission()){
             return Vector3::ORIGIN;
@@ -219,8 +224,20 @@ namespace pathtracer{
 
         // The emission result is the same in world and shading
         // frame coordinates.
-        return m_instance->emission()->evaluate(
-            localWo, m_uv);
+        return m_instance->emission()->evaluate(localWo, m_uv);
+    }
+
+
+    std::string SurfacePoint::toString() const{
+        return "SurfacePoint(\n"
+            "  position: " + m_position.toString() + ",\n"
+            "  uv: " + m_uv.toString() + ",\n"
+            "  geometryNormal: " + m_geometryNormal.toString() + ",\n"
+            "  shadingNormal: " + m_shadingNormal.toString() + ",\n"
+            "  geometryTangent: " + m_geometryTangent.toString() + ",\n"
+            "  tangent: " + m_tangent.toString() + ",\n"
+            "  triangleIndex: " + std::to_string(m_triangleIndex) + "\n"
+            ")";
     }
 
 }

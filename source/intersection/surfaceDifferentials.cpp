@@ -62,6 +62,26 @@ namespace pathtracer{
         return m_s;
     }
 
+        void SurfaceDifferentials::setDpdu(const Vector3& dpdu){
+        m_dpdu = dpdu;
+    }
+
+    void SurfaceDifferentials::setDpdv(const Vector3& dpdv){
+        m_dpdv = dpdv;
+    }
+
+    void SurfaceDifferentials::setDndu(const Vector3& dndu){
+        m_dndu = dndu;
+    }
+
+    void SurfaceDifferentials::setDndv(const Vector3& dndv){
+        m_dndv = dndv;
+    }
+
+    void SurfaceDifferentials::setS(const Vector3& s){
+        m_s = s;
+    }
+
 
     // The other tangent
     Vector3 SurfaceDifferentials::t(const Vector3& normal) const {

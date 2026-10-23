@@ -5,6 +5,7 @@
 #include "math/vector3.hpp"
 #include "math/vector2.hpp"
 #include "core/transform.hpp"
+#include <string>
 
 namespace pathtracer{
 
@@ -21,6 +22,10 @@ namespace pathtracer{
         Vector3 m_position;
 
         Vector3 m_geometryNormal;
+
+        // Because tangent can be modified by normal mapping, this tangent
+        // stays immutable.
+        Vector3 m_geometryTangent;
 
         Vector3 m_shadingNormal;
 
@@ -42,10 +47,6 @@ namespace pathtracer{
         // intersected.
         int m_triangleIndex;
 
-
-        void computeGeometryFrame();
-
-
     public:
 
         SurfacePoint();
@@ -53,6 +54,7 @@ namespace pathtracer{
         SurfacePoint(const Vector3& position,
             const Vector3& geometryNormal,
             const Vector3& shadingNormal,
+            const Vector3& geometryTangent,
             const Vector3& tangent,
             const Vector2& uv,
             const Instance* instance);
@@ -62,6 +64,8 @@ namespace pathtracer{
         const Vector3& geometryNormal() const;
 
         const Vector3& shadingNormal() const;
+
+        const Vector3& geometryTangent() const;
 
         const Vector3& tangent() const;
 
@@ -89,6 +93,8 @@ namespace pathtracer{
 
         void setTriangleIndex(int index);
 
+        void computeGeometryFrame();
+
         void computeShadingFrame();
 
         // Samples the BSDF of the instance at this point.
@@ -107,6 +113,9 @@ namespace pathtracer{
         // Here, we just evaluate the emission at this point.
         // Returns the emission in world coordinates
         Vector3 evaluateEmission(const Vector3& wo) const;
+
+
+        std::string toString() const;
     };
 
 }

@@ -79,18 +79,6 @@ namespace pathtracer{
     }
 
 
-    // Sets texture
-    void Image::setPixel(int h, int w, const std::vector<real>& color){
-
-        assert((h >= 0 && h < height) && (w >= 0 && w < width) &&
-            "Dimensions don't match the texture's");
-
-        assert(color.size() == channels);
-
-        m_data[h][w] = color;
-    }
-
-
     const std::vector<real>& Image::getPixel(int h, int w) const {
         assert((h >= 0 && h < height) && (w >= 0 && w < width) &&
             "Dimensions don't match the texture's");

@@ -30,14 +30,9 @@ namespace pathtracer{
             // Difference keeps track of the offset applied
             real difference{0.0};
 
-            while(
-                it &&
-                it.t() < currentOldT &&
-                it.t() > SHADOW_EPSILON &&
-                pass) {
+            while(it && it.t() < currentOldT && it.t() > SHADOW_EPSILON && pass) {
 
-                real alpha =
-                    instance->alphaTexture()->sample(it.uv()).x();
+                real alpha = instance->alphaTexture()->sample(it.uv()).x();
 
                 real random = Random::next();
 
@@ -50,10 +45,8 @@ namespace pathtracer{
                 }
 
                 // We update oldT since origin of ray is changing
-                difference =
-                    difference +
-                    (localRay.origin() - it.position()).length() +
-                    SHADOW_EPSILON;
+                difference = difference + (localRay.origin() 
+                    - it.position()).length() + SHADOW_EPSILON;
 
                 // If oldT is infinite, no need to even bother offsetting it
                 if(oldT < REAL_INFINITY){
@@ -62,24 +55,15 @@ namespace pathtracer{
 
                 // Then we reintersect the same shape if we pass
                 // We define a new (local) ray to do that.
-                localRay.setOrigin(
-                    it.position() +
-                    localRay.direction() * SHADOW_EPSILON);
+                localRay.setOrigin(it.position() 
+                    + localRay.direction() * SHADOW_EPSILON);
 
-                it =
-                    instance->shape()->intersect(
-                        localRay,
-                        currentOldT);
+                it = instance->shape()->intersect(localRay, currentOldT);
             }
 
             // When we are out, if we have a valid intersection, we
             // update t to reflect the original origin of the ray.
-            if(
-                !pass &&
-                it &&
-                it.t() < currentOldT &&
-                it.t() > SHADOW_EPSILON) {
-
+            if(!pass && it && it.t() < currentOldT && it.t() > SHADOW_EPSILON) {
                 it.setT(it.t() + difference);
                 return true;
             }
@@ -90,24 +74,21 @@ namespace pathtracer{
 
         // Intersects a ray with a shape instance. If we have a
         // closer intersection, we use it.
-        bool intersect( Intersection& oldIt, const Ray& ray,
+        bool intersect(Intersection& oldIt, const Ray& ray,
             const Instance* const instance) {
 
             // First we transform the ray to local coordinates
             // (But we don't normalize direction yet since we need
             // the scaling factor)
-            Transform inv =
-                instance->transform().inverse();
+            Transform inv = instance->transform().inverse();
 
-            Ray localRay =
-                inv.transformKeepScale(ray);
+            Ray localRay = inv.transformKeepScale(ray);
 
             // Then we transform the intersection t (distance)
             // into local coordinates using the scale.
             // Scale is the transformed direction length assuming that
             // the direction was actually normalized to begin with.
-            real scale =
-                localRay.direction().length();
+            real scale = localRay.direction().length();
 
             real oldT;
 
@@ -120,30 +101,18 @@ namespace pathtracer{
             }
 
             // Now we can normalize the ray direction
-            localRay.setDirection(
-                localRay.direction() / scale);
+            localRay.setDirection(localRay.direction() / scale);
 
             // Then we intersect the shape
-            Intersection it =
-                instance->shape()->intersect(
-                    localRay,
-                    oldT);
+            Intersection it = instance->shape()->intersect(localRay, oldT);
 
             // If we have an intersection and it actually is closer
             // (could or could not have been checked inside).
-            if(
-                it &&
-                it.t() > SHADOW_EPSILON &&
-                it.t() < oldT) {
+            if(it && it.t() > SHADOW_EPSILON && it.t() < oldT) {
 
                 // Before we process the intersection, we do
                 // alpha masking.
-                bool hit =
-                    alphaMask(
-                        it,
-                        localRay,
-                        oldT,
-                        instance);
+                bool hit = alphaMask(it, localRay, oldT, instance);
 
                 if(hit){
 
@@ -153,20 +122,15 @@ namespace pathtracer{
                     // older one.
                     it.setInstance(instance);
 
-                    SurfacePoint newIt =
-                        instance->transform()
-                            .transformSurfacePoint(it);
+                    SurfacePoint newIt = instance->transform().transformSurfacePoint(it);
 
-                    real newT =
-                        it.t() / scale;
+                    real newT = it.t() / scale;
 
-                    oldIt =
-                        Intersection(
-                            newT,
-                            newIt);
+                    oldIt = Intersection(newT, newIt);
 
                     // We also compute the shading frame now
                     oldIt.computeShadingFrame();
+                    oldIt.computeGeometryFrame();
 
                     // Since we found the closest hit, we can now do normal mapping
                     if(instance->normalTexture()){
@@ -175,7 +139,7 @@ namespace pathtracer{
 
                     return true;
                 }
-            }
+            }   
 
             return false;
         }

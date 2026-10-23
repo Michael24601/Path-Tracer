@@ -119,7 +119,8 @@ namespace pathtracer{
 
         // Computes the differential info on the surface of the shape
         // (gets surface point in global coordinates)
-        SurfaceDifferentials computeDifferentials(const SurfacePoint&) const;
+        SurfaceDifferentials computeDifferentials(const SurfacePoint&, 
+            bool smooth = false) const;
 
 
         // Returns position given uv coordinates

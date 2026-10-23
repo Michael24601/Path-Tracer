@@ -22,7 +22,8 @@ namespace pathtracer{
 
         Intersection(real t, const Vector3& position,
             const Vector3& geometryNormal, const Vector3& shadingNormal,
-            const Vector3& tangent, const Vector2& uv, const Instance* instance);
+            const Vector3& geometryTangent, const Vector3& tangent, 
+            const Vector2& uv, const Instance* instance);
 
         Intersection(real t, const SurfacePoint& sp);
 

@@ -3,7 +3,7 @@
 #include "logger.hpp"
 #include "image/imageIo.hpp"
 #include "renderer/renderer.hpp"
-#include "integrator/pathTracerSms.hpp"
+#include "integrator/pathTracerNeeSms.hpp"
 #include "sms/specularManifoldSampling.hpp"
 #include "core/scene.hpp"
 #include <iostream>

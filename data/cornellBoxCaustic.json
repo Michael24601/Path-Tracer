@@ -57,7 +57,7 @@
                 "ior": {
                     "type": "color",
                     "parameters": {
-                        "color": [1.6, 1.6, 1.6]
+                        "color": [1.4, 1.4, 1.4]
                     }
                 },
                 "reflectance": {
@@ -205,7 +205,7 @@
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/map.png",
+                        "file-name": "data/textures/wavy.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -236,20 +236,20 @@
             }
         }
     },
-        
+
     "renderer": {
-        "type": "renderer",
+        "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
             "sample-count": 10
         },
         "integrator": {
-            "type": "aov-integrator",
+            "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
                 "use-halfvector": false,
                 "biased": false,
-                "render-variable": "lean-normal"
+                "two-stage": true
             }
         }
     }
