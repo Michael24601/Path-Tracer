@@ -156,6 +156,7 @@ namespace pathtracer{
 
         // Not in constructor must be set explicitely
         res.setTriangleIndex(it.triangleIndex());
+        res.setBaseNormal(transformNormal(it.baseNormal()));
             
         return res;
     }
@@ -165,11 +166,13 @@ namespace pathtracer{
         const SurfaceDifferentials& d, const Vector3& localNormal,
         const Vector3& worldNormal) const {
 
-        Vector3 q = m_transform.inverse().transposed() * localNormal;
+        Matrix3 t = m_transform.inverse().transposed();
+
+        Vector3 q = t * localNormal;
         real length = q.length();
 
-        Vector3 dndu = m_transform.inverse().transposed() * d.dndu();
-        Vector3 dndv = m_transform.inverse().transposed() * d.dndv();
+        Vector3 dndu = t * d.dndu();
+        Vector3 dndv = t * d.dndv();
 
         // We need to take into account normal normalization
         dndu = (dndu - worldNormal * worldNormal.dot(dndu)) / length;

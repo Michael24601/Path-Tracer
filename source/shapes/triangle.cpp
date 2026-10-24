@@ -249,10 +249,10 @@ namespace pathtracer{
             pdf);
     }
 
-
+    
     SurfaceDifferentials Triangle::computeDifferentials(
         const Vector3& position,
-        const Vector3& shadingNormal,
+        const Vector3& shadingNormal,   // ignored: may be the normal-mapped normal
         const Vector2& uv,
         int triangleIndex) const {
 
@@ -265,14 +265,11 @@ namespace pathtracer{
             duv1 = uv1 - uv0;
             duv2 = uv2 - uv0;
         } else {
-            // Barycentric fallback
             duv1 = Vector2(1, 0);
             duv2 = Vector2(0, 1);
         }
 
-        real det =
-            duv1.x() * duv2.y() -
-            duv1.y() * duv2.x();
+        real det = duv1.x() * duv2.y() - duv1.y() * duv2.x();
 
         Vector3 dpdu, dpdv;
 
@@ -281,92 +278,54 @@ namespace pathtracer{
             dpdv = e2;
         } else {
             real invDet = 1.0 / det;
-
-            dpdu =
-                (e1 * duv2.y() -
-                e2 * duv1.y()) * invDet;
-
-            dpdv =
-                (e2 * duv1.x() -
-                e1 * duv2.x()) * invDet;
+            dpdu = (e1 * duv2.y() - e2 * duv1.y()) * invDet;
+            dpdv = (e2 * duv1.x() - e1 * duv2.x()) * invDet;
         }
+
+        // Base normal: interpolated vertex normal if present, else geometry normal
+        Vector3 baseNormal = e1.cross(e2).normalized();
 
         Vector3 dndu(0.0);
         Vector3 dndv(0.0);
 
         if (m_shadingNormals && std::abs(det) >= EPSILON) {
 
-            // Derivative of the unnormalized interpolated normal.
             Vector3 dn1 = n1 - n0;
             Vector3 dn2 = n2 - n0;
 
             real invDet = 1.0 / det;
 
-            Vector3 dnduLinear =
-                (dn1 * duv2.y() -
-                dn2 * duv1.y()) * invDet;
+            Vector3 dnduLinear = (dn1 * duv2.y() - dn2 * duv1.y()) * invDet;
+            Vector3 dndvLinear = (dn2 * duv1.x() - dn1 * duv2.x()) * invDet;
 
-            Vector3 dndvLinear =
-                (dn2 * duv1.x() -
-                dn1 * duv2.x()) * invDet;
-
-            // Recover barycentric coordinates from the texture UV.
-            real b1;
-            real b2;
+            real b1, b2;
 
             if (m_uvCoordinates) {
-
                 Vector2 relative = uv - uv0;
-
-                b1 =
-                    (relative.x() * duv2.y() -
-                    relative.y() * duv2.x()) * invDet;
-
-                b2 =
-                    (duv1.x() * relative.y() -
-                    duv1.y() * relative.x()) * invDet;
-
+                b1 = (relative.x() * duv2.y() - relative.y() * duv2.x()) * invDet;
+                b2 = (duv1.x() * relative.y() - duv1.y() * relative.x()) * invDet;
             } else {
-
-                // In the barycentric fallback, uv directly stores
-                // (b1, b2).
                 b1 = uv.x();
                 b2 = uv.y();
             }
 
             real b0 = 1.0 - b1 - b2;
 
-            // Unnormalized interpolated shading normal.
-            Vector3 interpolatedNormal =
-                n0 * b0 +
-                n1 * b1 +
-                n2 * b2;
-
+            Vector3 interpolatedNormal = n0 * b0 + n1 * b1 + n2 * b2;
             real normalLength = interpolatedNormal.length();
 
             if (normalLength > EPSILON) {
+                Vector3 n = interpolatedNormal / normalLength;
+                baseNormal = n;
 
-                // Derivative of a normalized vector:
-                //
-                // dn = (dN - n(n . dN)) / |N|
-                //
-                dndu =
-                    (dnduLinear -
-                    shadingNormal *
-                    shadingNormal.dot(dnduLinear))
-                    / normalLength;
-
-                dndv =
-                    (dndvLinear -
-                    shadingNormal *
-                    shadingNormal.dot(dndvLinear))
-                    / normalLength;
+                // dn = (dN - n (n . dN)) / |N|
+                dndu = (dnduLinear - n * n.dot(dnduLinear)) / normalLength;
+                dndv = (dndvLinear - n * n.dot(dndvLinear)) / normalLength;
             }
         }
 
-        Vector3 s = (dpdu - shadingNormal * (shadingNormal.dot(dpdu))).normalized();
+        Vector3 s = (dpdu - baseNormal * baseNormal.dot(dpdu)).normalized();
 
-        // The second derivatives of p are all 0
         return SurfaceDifferentials(dpdu, dpdv, dndu, dndv,
             Vector3(0.0), Vector3(0.0), Vector3(0.0), s);
     }

@@ -9,6 +9,7 @@
 #include "texture/leanMap.hpp"
 #include "intersection/areaSample.hpp"
 #include "intersection/surfaceDifferentials.hpp"
+#include "sms/smsUtil.hpp"
 #include "logger.hpp"
 
 namespace pathtracer{
@@ -237,37 +238,67 @@ namespace pathtracer{
         // First we will transform the position and normal to local
         // coordinates.
         Vector3 localPoint  = m_transform.inverseTransform(sp.position());
-        Vector3 localNormal = m_transform.inverseTransformNormal(sp.shadingNormal());
+        Vector3 localNormal = m_transform.inverseTransformNormal(sp.baseNormal());
 
         SurfaceDifferentials d = m_shape->computeDifferentials(localPoint,
             localNormal, sp.uv(), sp.triangleIndex());
 
-        d = m_transform.transformDifferentials(d, localNormal, sp.shadingNormal());
+        d = m_transform.transformDifferentials(d, localNormal, sp.baseNormal());
 
         if(m_normal != nullptr){
+
+            const Vector3 n = sp.shadingNormal();
+            const Vector2 uv = sp.uv();
+
+            // Map normal value and its change per uv, in the map's own
+            // coordinates (not yet transformed)
+            Vector3 nm, dndu, dndv;
+
+            auto surfacePointAt = [&](const Vector2& uv) -> SurfacePoint {
+                int ind = sp.triangleIndex();
+                Vector3 p = m_shape->getPosition(uv, ind);
+                return evaluateAreaSample({p, ind});
+            };
+
+            auto mappedNormal = [&](const Vector2& uv) -> Vector3 {
+                SurfacePoint p = surfacePointAt(uv);
+
+                Vector3 nm;
+                if(smooth){
+                    nm = m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel());
+                }
+                else{
+                    nm = m_normal->sample(uv);
+                }
+
+                return p.geometryFrame().transformDirection(nm).normalized();
+            };
+
             if(smooth){
-                // Stage 1 uses the coarsest mip, which is (nearly) constant
-                // over the surface, so the normal does not vary.
-                d.setDndu(Vector3(0.0));
-                d.setDndv(Vector3(0.0));
+                dndu = Vector3(0.0);
+                dndv = Vector3(0.0);
             }
             else{
-                // Central differences of the mapped normal w.r.t. uv.
                 const real du = 1.0 / m_normal->getWidth();
                 const real dv = 1.0 / m_normal->getHeight();
-                const Vector2 uv = sp.uv();
 
-                auto mappedNormal = [&](const Vector2& q){
-                    return sp.geometryFrame()
-                        .transformDirection(m_normal->sample(q)).normalized();
-                };
+                dndu = (mappedNormal(uv + Vector2(du, 0))
+                    - mappedNormal(uv - Vector2(du, 0))) / (2 * du);
 
-                d.setDndu((mappedNormal(uv + Vector2(du, 0))
-                        - mappedNormal(uv - Vector2(du, 0))) / (2 * du));
-                d.setDndv((mappedNormal(uv + Vector2(0, dv))
-                        - mappedNormal(uv - Vector2(0, dv))) / (2 * dv));
+                dndv = (mappedNormal(uv + Vector2(0, dv))
+                    - mappedNormal(uv - Vector2(0, dv))) / (2 * dv);
             }
+
+            d.setDndu(dndu);
+            d.setDndv(dndv);
+
+            Vector3 mappedN = mappedNormal(sp.uv());
+
+            // s must be perpendicular to the mapped normal
+            d.setS((d.dpdu() - mappedN * mappedN.dot(d.dpdu())).normalized());
+
         }
+
         return d;
     }
 

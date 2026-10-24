@@ -154,24 +154,19 @@ namespace pathtracer{
         // since we may be using normal maps.
 
         // n == p on a unit sphere centered at the origin
-        const Vector3& normal = shadingNormal;
+        const Vector3& normal = position.normalized();
 
-        Vector3 dpdu =
-            Vector3(-normal.y(), normal.x(), 0.0) * (2 * PI);
+        Vector3 dpdu = Vector3(-normal.y(), normal.x(), 0.0) * (2 * PI);
 
-        real sinTheta =
-            std::sqrt(
-                normal.x() * normal.x() +
-                normal.y() * normal.y());
+        real sinTheta = std::sqrt(normal.x() * normal.x() 
+            + normal.y() * normal.y());
 
         Vector3 dpdv;
 
         if(sinTheta > 0){
-            dpdv =
-                Vector3(
-                    normal.z() * normal.x() / sinTheta,
-                    normal.z() * normal.y() / sinTheta,
-                    -sinTheta) * PI;
+            dpdv = Vector3(normal.z() * normal.x() / sinTheta,
+                normal.z() * normal.y() / sinTheta,
+                -sinTheta) * PI;
         }
         else{
             dpdv = Vector3(0, 0, 0);
@@ -179,15 +174,10 @@ namespace pathtracer{
         
         // Second derivatives 
 
-        Vector3 d2pdu2 =
-            Vector3(-normal.x(), -normal.y(), 0.0) *
-            (4 * PI * PI);
+        Vector3 d2pdu2 = Vector3(-normal.x(), -normal.y(), 0.0) * (4 * PI * PI);
 
-        Vector3 d2pdudv =
-            Vector3(
-                -normal.z() * normal.y() / sinTheta,
-                normal.z() * normal.x() / sinTheta,
-                0.0) * (2 * PI * PI);
+        Vector3 d2pdudv =Vector3(-normal.z() * normal.y() / sinTheta,
+            normal.z() * normal.x() / sinTheta, 0.0) * (2 * PI * PI);
 
         Vector3 d2pdv2 = -normal * (PI * PI);
 

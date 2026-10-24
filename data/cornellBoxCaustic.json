@@ -57,7 +57,7 @@
                 "ior": {
                     "type": "color",
                     "parameters": {
-                        "color": [1.4, 1.4, 1.4]
+                        "color": [1.5, 1.5, 1.5]
                     }
                 },
                 "reflectance": {
@@ -205,7 +205,7 @@
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/wavy.png",
+                        "file-name": "data/textures/wave2.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }

@@ -14,6 +14,7 @@ namespace pathtracer{
         m_shadingNormal(Vector3::ORIGIN),
         m_geometryTangent(Vector3::ORIGIN),
         m_tangent(Vector3::ORIGIN),
+        m_baseNormal{Vector3::ORIGIN},
         m_uv(Vector2::ORIGIN),
         m_instance(nullptr),
         m_triangleIndex{-1} {}
@@ -27,6 +28,7 @@ namespace pathtracer{
         m_geometryNormal(geometryNormal),
         m_shadingNormal(shadingNormal),
         m_geometryTangent(geometryTangent),
+        m_baseNormal(shadingNormal),
         m_tangent(tangent),
         m_uv(uv),
         m_instance{instance},
@@ -50,6 +52,10 @@ namespace pathtracer{
 
     const Vector3& SurfacePoint::geometryTangent() const {
         return m_geometryTangent;
+    }
+
+    const Vector3& SurfacePoint::baseNormal() const {
+        return m_baseNormal;
     }
 
 
@@ -95,6 +101,11 @@ namespace pathtracer{
 
     void SurfacePoint::setShadingNormal(const Vector3& normal) {
         m_shadingNormal = normal;
+    }
+
+
+    void SurfacePoint::setBaseNormal(const Vector3& normal) {
+        m_baseNormal = normal;
     }
 
 
@@ -193,11 +204,9 @@ namespace pathtracer{
         }
 
         // We transform the directions wo and wi to local coordinates
-        Vector3 localWo =
-            m_shadingFrame.inverseTransformDirection(wo);
+        Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
 
-        Vector3 localWi =
-            m_shadingFrame.inverseTransformDirection(wi);
+        Vector3 localWi = m_shadingFrame.inverseTransformDirection(wi);
 
         // No need to transform anything else
         BsdfSample sample = m_instance->bsdf()->evaluate(localWo, localWi, 

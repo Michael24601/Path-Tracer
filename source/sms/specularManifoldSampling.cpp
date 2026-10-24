@@ -496,7 +496,8 @@ namespace pathtracer{
         const SmsSample& sample, const SpecularManifoldBsdf* bsdf, 
         const Vector3& wo, const Scene* scene) {
 
-        Vector3 wi = (sample.finalPoint().position() - causticPoint.position()).normalized();
+        Vector3 wi = (sample.finalPoint().position() 
+            - causticPoint.position()).normalized();
 
         // First we compute bsdf at x0.
         BsdfSample s0 = causticPoint.evaluateBsdf(wo, wi);

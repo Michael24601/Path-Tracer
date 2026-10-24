@@ -240,14 +240,15 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 10
+            "sample-count": 5
         },
         "integrator": {
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
                 "use-halfvector": false,
-                "biased": false
+                "biased": false,
+                "two-stage": false
             }
         }
     }

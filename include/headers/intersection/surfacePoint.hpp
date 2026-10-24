@@ -31,6 +31,9 @@ namespace pathtracer{
 
         Vector3 m_tangent;
 
+        // The shading normal, never normal mapped
+        Vector3 m_baseNormal;
+
         // Texture coordinates
         Vector2 m_uv;
 
@@ -63,6 +66,8 @@ namespace pathtracer{
 
         const Vector3& geometryNormal() const;
 
+        const Vector3& baseNormal() const;
+
         const Vector3& shadingNormal() const;
 
         const Vector3& geometryTangent() const;
@@ -84,6 +89,8 @@ namespace pathtracer{
         void setGeometryNormal(const Vector3& normal);
 
         void setShadingNormal(const Vector3& normal);
+    
+        void setBaseNormal(const Vector3& normal);
 
         void setTangent(const Vector3& tangent);
 

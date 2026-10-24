@@ -81,6 +81,11 @@ int main(int argc, char* argv[]) {
     renderTree(Vector3(0.98, 0, -0.98), "tree3");
     renderTree(Vector3(0.98, 0, 0.98), "tree4");
 
+    PathTracerNeeSms* p = dynamic_cast<PathTracerNeeSms*>(renderer->m_integrator);
+    if(p){
+        LOG_INFO(std::to_string(p->sms->m_con) + " " + std::to_string(p->sms->m_not));
+    }
+
 
     std::string outputName;
 
