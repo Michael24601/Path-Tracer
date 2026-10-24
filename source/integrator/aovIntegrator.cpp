@@ -50,7 +50,7 @@ namespace pathtracer{
 
                 // Must use the geometry frame here since the shading frame is
                 // already "infected" by the normal map.
-                normal = it.geometryFrame().transformDirection(normal);
+                normal = it.baseFrame().transformDirection(normal);
             }
 
             color = (normal + Vector3(1.0)) * 0.5;
@@ -73,7 +73,7 @@ namespace pathtracer{
                 Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
                 normal = Vector3(-slope[0], -slope[1], 1.0).normalized();
 
-                normal = it.geometryFrame().transformDirection(normal);
+                normal = it.baseFrame().transformDirection(normal);
             }
 
             color = (normal + Vector3(1.0)) * 0.5;
@@ -81,75 +81,60 @@ namespace pathtracer{
         }
 
         case RenderVariable::DPDU:{
-            SurfaceDifferentials d =
-                it.instance()->computeDifferentials(it);
+            SurfaceDifferentials d = it.differentials();
             color = (d.dpdu() + Vector3(1.0)) * 0.5;
             break;
         }
 
         case RenderVariable::DPDV:{
-            SurfaceDifferentials d =
-                it.instance()->computeDifferentials(it);
+            SurfaceDifferentials d = it.differentials();
             color = (d.dpdv() + Vector3(1.0)) * 0.5;
             break;
         }
 
         case RenderVariable::DNDU:{
-            SurfaceDifferentials d =
-                it.instance()->computeDifferentials(it);
+            SurfaceDifferentials d = it.instance()->computeDifferentials(it, false);
             real value = d.dndu().length();
             color = Vector3(value / 1000.0);
             break;
         }
 
         case RenderVariable::DNDV:{
-            SurfaceDifferentials d =
-                it.instance()->computeDifferentials(it);
+            SurfaceDifferentials d = it.instance()->computeDifferentials(it, false);
             real v = d.dndv().length();
-            color = Vector3(v);
+            color = Vector3(v / 1000.0);
             break;
         }
 
         case RenderVariable::S:{
-            SurfaceDifferentials d =
-                it.instance()->computeDifferentials(it);
-            real v = d.dndv().length();
-            color = (d.s() + Vector3(1.0)) * 0.5;
+            color = (it.s() + Vector3(1.0)) * 0.5;
             break;
         }
 
         case RenderVariable::DSDU:{
-            SurfaceDifferentials sd =
-                it.instance()->computeDifferentials(it);
-            auto d = SmsUtil::computeFrameDifferentials(
-                it.shadingNormal(), sd);
+            SurfaceDifferentials sd = it.instance()->computeDifferentials(it);
+            auto d = SmsUtil::computeFrameDifferentials(it.shadingNormal(), it.s(), sd);
             color = (d.dsdu + Vector3(1.0)) * 0.5;
             break;
         }
 
         case RenderVariable::DSDV:{
-            SurfaceDifferentials sd =
-                it.instance()->computeDifferentials(it);
-            auto d = SmsUtil::computeFrameDifferentials(
-                it.shadingNormal(), sd);
+            SurfaceDifferentials sd = it.instance()->computeDifferentials(it);
+            auto d = SmsUtil::computeFrameDifferentials(it.shadingNormal(), it.s(), sd);
             color = (d.dsdv + Vector3(1.0)) * 0.5;
             break;
         }
 
         case RenderVariable::DTDU:{
-            SurfaceDifferentials sd =
-                it.instance()->computeDifferentials(it);
-            auto d = SmsUtil::computeFrameDifferentials(
-                it.shadingNormal(), sd);
+            SurfaceDifferentials sd = it.instance()->computeDifferentials(it);
+            auto d = SmsUtil::computeFrameDifferentials(it.shadingNormal(), it.s(), sd);
             color = (d.dtdu + Vector3(1.0)) * 0.5;
             break;
         }
 
         case RenderVariable::DTDV:{
-            SurfaceDifferentials sd =
-                it.instance()->computeDifferentials(it);
-            auto d = SmsUtil::computeFrameDifferentials(
-                it.shadingNormal(), sd);
+            SurfaceDifferentials sd = it.instance()->computeDifferentials(it);
+            auto d = SmsUtil::computeFrameDifferentials(it.shadingNormal(), it.s(), sd);
             color = (d.dtdv + Vector3(1.0)) * 0.5;
             break;
         }

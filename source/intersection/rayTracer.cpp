@@ -130,7 +130,7 @@ namespace pathtracer{
 
                     // We also compute the shading frame now
                     oldIt.computeShadingFrame();
-                    oldIt.computeGeometryFrame();
+                    oldIt.computeBaseFrame();
 
                     // Since we found the closest hit, we can now do normal mapping
                     if(instance->normalTexture()){

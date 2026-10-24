@@ -65,7 +65,7 @@ namespace pathtracer{
         // It also needs the normal, tangent, and bitangent as inputs.
         // Note that this normal is the shading normal, NOT the offset normal.
         FrameDifferentials computeFrameDifferentials(const Vector3& normal, 
-            const SurfaceDifferentials& d);
+            const Vector3& s, const SurfaceDifferentials& d);
 
 
         // Returns the contribution from the light, including the pdf,

@@ -327,25 +327,18 @@ namespace pathtracer{
             Matrix2 sigma = it.instance()->leanMap()->covariance(it.uv(), maxL);
 
             Vector2 muOffset(-localOffsetNormal.x() / localOffsetNormal.z(),
-                            -localOffsetNormal.y() / localOffsetNormal.z());
+                -localOffsetNormal.y() / localOffsetNormal.z());
             mu = (mu + muOffset) * 0.5;
             Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
 
-            // In the normal-map basis (tangent, bitangent, n)
+            // leanNormal lives in teh base frame, so we transform it to
+            // the smooth shading frame of newIt.
             Vector3 leanNormal = Vector3(-slope[0], -slope[1], 1.0).normalized();
-
-            Vector3 n = newIt.shadingNormal();
-            SurfaceDifferentials d0 = newIt.instance()->computeDifferentials(newIt, true);
-            Vector3 s = d0.s();
-            Vector3 t = d0.t(n);
-
-            // Transformed to n, s, t frame
-            leanNormal = it.geometryFrame().transformNormal(leanNormal);
-            Matrix3 transform(s, t, n);
-            leanNormal = transform.inverse() * leanNormal;
+            Vector3 leanWorld = it.baseFrame().transformDirection(leanNormal);
+            Vector3 offset = newIt.shadingFrame().inverseTransformDirection(leanWorld);
 
             SmsSample result = newtonSolver(causticPoint, newIt, lightPoint, bsdf,
-                leanNormal, scene, true);
+                offset, scene, true);
 
             // If not converged, we just return a false sample
             if(!result.isConverged()){
@@ -354,14 +347,14 @@ namespace pathtracer{
             }
             m_con++;
 
-            // We reset the normal
-            localOffsetNormal = Vector3(0, 0, 1);
-
             // And we use a new seed
             seedIt = result.finalPoint();
             // Which we also normal map again to get back the original map
             it.instance()->normalMap(seedIt, false); 
         }
+
+        // We reset the normal
+        localOffsetNormal = Vector3(0, 0, 1);
 
         // We then do a newton solver, either with initial seed or new seed
         // in two stage manifold walk.

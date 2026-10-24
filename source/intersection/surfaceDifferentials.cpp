@@ -11,16 +11,15 @@ namespace pathtracer{
         m_dndv(Vector3::ORIGIN),
         m_d2pdu2(Vector3::ORIGIN),
         m_d2pdudv(Vector3::ORIGIN),
-        m_d2pdv2(Vector3::ORIGIN),
-        m_s(Vector3::ORIGIN) {}
+        m_d2pdv2(Vector3::ORIGIN) {}
 
 
     SurfaceDifferentials::SurfaceDifferentials(const Vector3& dpdu,
         const Vector3& dpdv, const Vector3& dndu,
         const Vector3& dndv, const Vector3& d2pdu2,
-        const Vector3& d2pdudv, const Vector3& d2pdv2, const Vector3& s) :
+        const Vector3& d2pdudv, const Vector3& d2pdv2) :
         m_dpdu(dpdu), m_dpdv(dpdv), m_dndu(dndu), m_dndv(dndv),
-        m_d2pdu2(d2pdu2), m_d2pdudv(d2pdudv), m_d2pdv2(d2pdv2), m_s(s) {}
+        m_d2pdu2(d2pdu2), m_d2pdudv(d2pdudv), m_d2pdv2(d2pdv2) {}
 
 
     const Vector3& SurfaceDifferentials::dpdu() const {
@@ -55,37 +54,6 @@ namespace pathtracer{
 
     const Vector3& SurfaceDifferentials::d2pdv2() const {
         return m_d2pdv2;
-    }
-
-
-    const Vector3& SurfaceDifferentials::s() const {
-        return m_s;
-    }
-
-        void SurfaceDifferentials::setDpdu(const Vector3& dpdu){
-        m_dpdu = dpdu;
-    }
-
-    void SurfaceDifferentials::setDpdv(const Vector3& dpdv){
-        m_dpdv = dpdv;
-    }
-
-    void SurfaceDifferentials::setDndu(const Vector3& dndu){
-        m_dndu = dndu;
-    }
-
-    void SurfaceDifferentials::setDndv(const Vector3& dndv){
-        m_dndv = dndv;
-    }
-
-    void SurfaceDifferentials::setS(const Vector3& s){
-        m_s = s;
-    }
-
-
-    // The other tangent
-    Vector3 SurfaceDifferentials::t(const Vector3& normal) const {
-        return normal.cross(m_s);
     }
 
     

@@ -70,8 +70,7 @@ namespace pathtracer{
         return SurfaceDifferentials(
             tangent, bitangent,
             Vector3(0.0), Vector3(0.0),
-            Vector3(0.0), Vector3(0.0), Vector3(0.0),
-            tangent
+            Vector3(0.0), Vector3(0.0), Vector3(0.0)
         );
     }
 

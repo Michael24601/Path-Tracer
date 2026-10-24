@@ -31,6 +31,7 @@ namespace pathtracer{
         SurfacePoint generateSurfacePoint(const Ray& ray, real t,
             const Vector2& barycentric) const;
 
+
     public:
 
         Triangle(const Vector3& v0, const Vector3& v1, const Vector3& v2);
@@ -68,12 +69,11 @@ namespace pathtracer{
         AreaSample evaluateAreaSample(const SurfaceSample& point) const override;
 
 
-        SurfaceDifferentials computeDifferentials(const Vector3& position,
-            const Vector3& shadingNormal, const Vector2& uv,
-            int triangleIndex) const override;
-
-
         Vector3 getPosition(const Vector2& uv, int triangleIndex) const override;
+
+        
+        SurfaceDifferentials computeDifferentials(const Vector3& position, 
+            const Vector2& uv) const;
     };
 
 }

@@ -1,5 +1,6 @@
 
 #include "intersection/areaSample.hpp"
+#include "intersection/surfaceDifferentials.hpp"
 
 namespace pathtracer{
 
@@ -7,13 +8,12 @@ namespace pathtracer{
         const Vector3& position,
         const Vector3& geometryNormal,
         const Vector3& shadingNormal,
-        const Vector3& geometryTangent,
-        const Vector3& tangent,
-        const Vector2& uv,
+        const Vector2& uv,        
+        const SurfaceDifferentials& differentials,
         const Instance* instance,
         real pdf) : 
         m_pdf(pdf), SurfacePoint(position, geometryNormal, shadingNormal, 
-        geometryTangent, tangent, uv, instance) {}
+        uv, differentials, instance) {}
 
 
     AreaSample::AreaSample(const SurfacePoint& sp, real pdf) : m_pdf(pdf),

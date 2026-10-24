@@ -45,11 +45,13 @@ namespace pathtracer{
         return (m_box.minCorner() + m_box.maxCorner()) / 2.0f;;
     }
 
+
     // Intersects the shape with a ray
     Intersection Mesh::intersect(const Ray& ray, real oldT) const {
         Intersection it = m_bvh->intersect(oldT, triangles, ray);
         return it;
     }
+
 
     AreaSample Mesh::sampleSurfaceArea() const {
         // In order to sample a point on the mesh, we choose
@@ -69,8 +71,7 @@ namespace pathtracer{
     AreaSample Mesh::evaluateAreaSample(const SurfaceSample& point) const {
         int index = point.triangleIndex;
 
-        AreaSample sample =
-            triangles[index].evaluateAreaSample(point);
+        AreaSample sample = triangles[index].evaluateAreaSample(point);
 
         real selectionPdf = UniformTriangle::pdf(triangles, index);
 
@@ -82,11 +83,9 @@ namespace pathtracer{
 
 
     SurfaceDifferentials Mesh::computeDifferentials(const Vector3& position, 
-        const Vector3& shadingNormal, const Vector2& uv, 
-        int triangleIndex) const {
+        const Vector2& uv, int triangleIndex) const {
 
-        return triangles[triangleIndex].computeDifferentials(
-            position, shadingNormal, uv, triangleIndex);
+        return triangles[triangleIndex].computeDifferentials(position, uv);
     }
 
 

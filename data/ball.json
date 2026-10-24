@@ -29,7 +29,7 @@
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/wavy.png",
+                        "file-name": "data/textures/wave3.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -73,7 +73,7 @@
             "type": "aov-integrator",
             "parameters": {
                 "max-depth": 100,
-                "render-variable": "lean-normal"
+                "render-variable": "dndv"
             }
         }
     }

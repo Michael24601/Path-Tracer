@@ -269,8 +269,8 @@ namespace pathtracer{
 
             // Note, here we need to use the s, t, and n frame, not the
             // shading frame which uses tangent instead of s.
-            Vector3 s = d.s();
-            Vector3 t = d.t(p.shadingNormal());
+            Vector3 s = p.s();
+            Vector3 t = p.t();
             Vector3 n = p.shadingNormal();
 
             Vector3 normal = s * localOffsetNormal.x()
@@ -281,7 +281,7 @@ namespace pathtracer{
             // frame. Notice the frame differential is computed from the
             // shading normal not the offset.
 
-            FrameDifferentials f = SmsUtil::computeFrameDifferentials(p.shadingNormal(), d);
+            FrameDifferentials f = SmsUtil::computeFrameDifferentials(p.shadingNormal(), s, d);
 
             Vector3 dndu = f.dsdu * localOffsetNormal.x()
                 + f.dtdu * localOffsetNormal.y()

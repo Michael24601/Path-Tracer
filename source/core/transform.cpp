@@ -144,19 +144,20 @@ namespace pathtracer{
     SurfacePoint Transform::transformSurfacePoint(const SurfacePoint& it) 
         const{
 
+        Vector3 newNormal = transformNormal(it.baseNormal());
+
         SurfacePoint res(
             transform(it.position()),
             transformNormal(it.geometryNormal()),
             transformNormal(it.shadingNormal()),
-            transformDirection(it.geometryTangent()),
-            transformDirection(it.tangent()),
             it.uv(),
+            transformDifferentials(it.differentials(), it.baseNormal(), newNormal),
             it.instance()
         );
 
         // Not in constructor must be set explicitely
         res.setTriangleIndex(it.triangleIndex());
-        res.setBaseNormal(transformNormal(it.baseNormal()));
+        res.setBaseNormal(newNormal);
             
         return res;
     }
@@ -185,12 +186,9 @@ namespace pathtracer{
         Vector3 d2pdudv = transformDirectionKeepScale(d.d2pdudv());
         Vector3 d2pdv2 = transformDirectionKeepScale(d.d2pdv2());
 
-        // Instead of transforming s, it is easier to just recompute it
-        Vector3 s = (dpdu - worldNormal * worldNormal.dot(dpdu)).normalized();
 
         return SurfaceDifferentials(
-            dpdu, dpdv, dndu, dndv,
-            d2pdu2, d2pdudv, d2pdv2, s
+            dpdu, dpdv, dndu, dndv, d2pdu2, d2pdudv, d2pdv2
         );
         
     }

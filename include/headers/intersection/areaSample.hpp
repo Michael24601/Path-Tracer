@@ -6,6 +6,8 @@
 
 namespace pathtracer{
 
+    class SurfaceDifferentials;
+
     // This class represents a sample taken by randomly choosing
     // a point on the surface of a shape according to some probability
     // distribution, instead of using solid angles.
@@ -22,9 +24,8 @@ namespace pathtracer{
         AreaSample(const Vector3& position,
             const Vector3& geometryNormal,
             const Vector3& shadingNormal,
-            const Vector3& geometryTangent,
-            const Vector3& tangent,
             const Vector2& uv,
+            const SurfaceDifferentials& differentials,
             const Instance* instance,
             real pdf
         );

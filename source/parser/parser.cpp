@@ -105,6 +105,14 @@ namespace pathtracer{
             }
 
             if(value["filter-mode"] == "nearest"){
+
+                if(isNormalMap){
+                    std::string message = "Normal maps should not use nearest filtering "
+                        "as differentiating the normal map to get DNDU and DNDV "
+                        "requires a step size smaller than a pixel for most resolutions.";
+                    LOG_WARNING(message);
+                }
+
                 fm = FilterMode::NEAREST;
             }
             else if(value["filter-mode"] == "bilinear"){
@@ -114,6 +122,7 @@ namespace pathtracer{
                 LOG_ERROR("Invalid filter-mode specified for: " + filename);
                 exit(1);
             }
+
 
             return new Texture(ImageIo::loadImage(filename), bm, fm, 
                 linearize, isNormalMap, mipMap);

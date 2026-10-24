@@ -6,6 +6,8 @@
 
 namespace pathtracer{
 
+    class SurfaceDifferentials;
+
     // Represents a surface point we got by intersecting with a ray
     class Intersection: public SurfacePoint{
 
@@ -22,8 +24,8 @@ namespace pathtracer{
 
         Intersection(real t, const Vector3& position,
             const Vector3& geometryNormal, const Vector3& shadingNormal,
-            const Vector3& geometryTangent, const Vector3& tangent, 
-            const Vector2& uv, const Instance* instance);
+            const Vector2& uv, const SurfaceDifferentials& differentials, 
+            const Instance* instance);
 
         Intersection(real t, const SurfacePoint& sp);
 

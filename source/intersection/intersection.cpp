@@ -1,5 +1,6 @@
 
 #include "intersection/intersection.hpp"
+#include "intersection/surfaceDifferentials.hpp"
 #include "math/constants.hpp"
 #include <limits>
 
@@ -11,21 +12,19 @@ namespace pathtracer{
 
     Intersection::Intersection() : m_t{REAL_INFINITY},
         SurfacePoint(Vector3(0.0), Vector3(0.0), Vector3(0.0),
-        Vector3(0.0), Vector3(0.0), Vector2(0.0), nullptr) {}
+        Vector2(0.0), SurfaceDifferentials(), nullptr) {}
 
 
     Intersection::Intersection(real t, const Vector3& position,
-        const Vector3& geometryNormal, const Vector3& shadingNormal,
-        const Vector3& geometryTangent,
-        const Vector3& tangent, const Vector2& uv, const Instance* instance) :
+        const Vector3& geometryNormal, const Vector3& shadingNormal, 
+        const Vector2& uv, const SurfaceDifferentials& differentials, 
+        const Instance* instance) :
         m_t{t}, SurfacePoint(position, geometryNormal, shadingNormal,
-            geometryTangent, tangent, uv, instance) {}
+            uv, differentials, instance) {}
 
 
-    Intersection::Intersection(
-        real t, const SurfacePoint& sp) :
-        m_t{t},
-        SurfacePoint(sp) {}
+    Intersection::Intersection(real t, const SurfacePoint& sp) : 
+        m_t{t}, SurfacePoint(sp) {}
 
 
     const real Intersection::t() const {

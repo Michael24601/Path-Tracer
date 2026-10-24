@@ -34,13 +34,6 @@ namespace pathtracer{
                 n0, n1, n2, barycentric).normalized()
             : geometryNormal;
 
-        // Tangent calculation
-        Vector3 tangent = (v1 - v0).normalized();
-        tangent = (tangent - shadingNormal * shadingNormal.dot(tangent)).normalized();
-
-        Vector3 geoTangent = (v1 - v0).normalized();
-        geoTangent = (geoTangent - geometryNormal * geometryNormal.dot(geoTangent)).normalized();
-
         // The uv (texture) coordinates can be specified, otherwise
         // we use the barycentric coordinates of the intersection
         // as a fallback.
@@ -48,8 +41,9 @@ namespace pathtracer{
             ? Barycentric::interpolate(uv0, uv1, uv2, barycentric)
             : barycentric;
 
-        SurfacePoint sp(point, geometryNormal, shadingNormal,
-            geoTangent, tangent, uv, nullptr);
+        SurfaceDifferentials d = computeDifferentials(point, uv);
+;
+        SurfacePoint sp(point, geometryNormal, shadingNormal, uv, d, nullptr);
 
         return sp;
     }
@@ -231,11 +225,9 @@ namespace pathtracer{
 
         real denominator = d00 * d11 - d01 * d01;
 
-        real b0 =
-            (d11 * d20 - d01 * d21) / denominator;
+        real b0 = (d11 * d20 - d01 * d21) / denominator;
 
-        real b1 =
-            (d00 * d21 - d01 * d20) / denominator;
+        real b1 = (d00 * d21 - d01 * d20) / denominator;
 
         Vector2 barycentric(b0, b1);
 
@@ -243,18 +235,14 @@ namespace pathtracer{
 
         return AreaSample(
             generateSurfacePoint(
-                Ray(point.point, Vector3(0, 0, 1)),
-                0,
-                barycentric),
-            pdf);
+                Ray(point.point, Vector3(0, 0, 1)), 0, barycentric
+            ), pdf
+        );
     }
 
     
-    SurfaceDifferentials Triangle::computeDifferentials(
-        const Vector3& position,
-        const Vector3& shadingNormal,   // ignored: may be the normal-mapped normal
-        const Vector2& uv,
-        int triangleIndex) const {
+    SurfaceDifferentials Triangle::computeDifferentials(const Vector3& position, 
+        const Vector2& uv) const{
 
         Vector3 e1 = v1 - v0;
         Vector3 e2 = v2 - v0;
@@ -327,7 +315,7 @@ namespace pathtracer{
         Vector3 s = (dpdu - baseNormal * baseNormal.dot(dpdu)).normalized();
 
         return SurfaceDifferentials(dpdu, dpdv, dndu, dndv,
-            Vector3(0.0), Vector3(0.0), Vector3(0.0), s);
+            Vector3(0.0), Vector3(0.0), Vector3(0.0));
     }
 
 

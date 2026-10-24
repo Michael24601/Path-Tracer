@@ -12,8 +12,6 @@ namespace pathtracer{
         m_position(Vector3::ORIGIN),
         m_geometryNormal(Vector3::ORIGIN),
         m_shadingNormal(Vector3::ORIGIN),
-        m_geometryTangent(Vector3::ORIGIN),
-        m_tangent(Vector3::ORIGIN),
         m_baseNormal{Vector3::ORIGIN},
         m_uv(Vector2::ORIGIN),
         m_instance(nullptr),
@@ -22,14 +20,13 @@ namespace pathtracer{
 
     SurfacePoint::SurfacePoint(const Vector3& position,
         const Vector3& geometryNormal, const Vector3& shadingNormal,
-        const Vector3& geometryTangent, const Vector3& tangent, 
-        const Vector2& uv, const Instance* instance) :
+        const Vector2& uv, const SurfaceDifferentials& differentials, 
+        const Instance* instance) :
         m_position(position),
         m_geometryNormal(geometryNormal),
         m_shadingNormal(shadingNormal),
-        m_geometryTangent(geometryTangent),
         m_baseNormal(shadingNormal),
-        m_tangent(tangent),
+        m_differentials(differentials),
         m_uv(uv),
         m_instance{instance},
         m_triangleIndex{-1} {}
@@ -50,17 +47,18 @@ namespace pathtracer{
     }
 
 
-    const Vector3& SurfacePoint::geometryTangent() const {
-        return m_geometryTangent;
-    }
-
     const Vector3& SurfacePoint::baseNormal() const {
         return m_baseNormal;
     }
 
 
-    const Vector3& SurfacePoint::tangent() const {
-        return m_tangent;
+    Vector3 SurfacePoint::s() const{
+        return m_shadingFrame.transform().column(0);
+    }
+
+    
+    Vector3 SurfacePoint::t() const{
+        return m_shadingFrame.transform().column(1);
     }
 
 
@@ -79,8 +77,13 @@ namespace pathtracer{
     }
 
 
-    const Transform& SurfacePoint::geometryFrame() const {
-        return m_geometryFrame;
+    const Transform& SurfacePoint::baseFrame() const {
+        return m_baseFrame;
+    }
+
+
+    const SurfaceDifferentials& SurfacePoint::differentials() const{
+        return m_differentials;
     }
 
 
@@ -109,11 +112,6 @@ namespace pathtracer{
     }
 
 
-    void SurfacePoint::setTangent(const Vector3& tangent) {
-        m_tangent = tangent;
-    }
-
-    
     void SurfacePoint::setUV(const Vector2& uv) {
         m_uv = uv;
     }
@@ -129,32 +127,31 @@ namespace pathtracer{
     }
 
 
-    void SurfacePoint::computeGeometryFrame() {
+    void SurfacePoint::computeBaseFrame() {
 
-        // Reorthogonalizes the tangent
-        m_geometryTangent = (m_geometryTangent - m_geometryNormal *
-            m_geometryTangent.dot(m_geometryNormal)).normalized();
+        // Computes tangent from dpdu
+        Vector3 s = (m_differentials.dpdu() - m_baseNormal 
+            * m_baseNormal.dot(m_differentials.dpdu())).normalized();
 
         // Bitangent
-        Vector3 bit = m_geometryNormal.cross(m_geometryTangent);
+        Vector3 bit = m_baseNormal.cross(s);
 
-        Matrix3 frame = Matrix3(m_geometryTangent, bit, m_geometryNormal);
+        Matrix3 frame = Matrix3(s, bit, m_baseNormal);
 
-        m_geometryFrame = Transform(frame, m_position);
+        m_baseFrame = Transform(frame, m_position);
     }
 
 
     void SurfacePoint::computeShadingFrame() {
 
-        // Reorthogonalizes the tangent
-        // We use the geometry tangent to start since it does not change
-        m_tangent = (m_geometryTangent - m_shadingNormal *
-            m_geometryTangent.dot(m_shadingNormal)).normalized();
+        // Computes tangent from dpdu
+        Vector3 s = (m_differentials.dpdu() - m_shadingNormal 
+            * m_shadingNormal.dot(m_differentials.dpdu())).normalized();
 
         // Bitangent
-        Vector3 bit = m_shadingNormal.cross(m_tangent);
+        Vector3 bit = m_shadingNormal.cross(s);
 
-        Matrix3 frame = Matrix3(m_tangent, bit, m_shadingNormal);
+        Matrix3 frame = Matrix3(s, bit, m_shadingNormal);
 
         m_shadingFrame = Transform(frame, m_position);
     }
@@ -236,17 +233,5 @@ namespace pathtracer{
         return m_instance->emission()->evaluate(localWo, m_uv);
     }
 
-
-    std::string SurfacePoint::toString() const{
-        return "SurfacePoint(\n"
-            "  position: " + m_position.toString() + ",\n"
-            "  uv: " + m_uv.toString() + ",\n"
-            "  geometryNormal: " + m_geometryNormal.toString() + ",\n"
-            "  shadingNormal: " + m_shadingNormal.toString() + ",\n"
-            "  geometryTangent: " + m_geometryTangent.toString() + ",\n"
-            "  tangent: " + m_tangent.toString() + ",\n"
-            "  triangleIndex: " + std::to_string(m_triangleIndex) + "\n"
-            ")";
-    }
 
 }

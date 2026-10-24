@@ -47,7 +47,7 @@ namespace pathtracer{
 
 
         FrameDifferentials computeFrameDifferentials(const Vector3& normal, 
-            const SurfaceDifferentials& d) {
+            const Vector3& s, const SurfaceDifferentials& d) {
 
             // NOTE: the normal used here is the shading normal, not the
             // offset normal.
@@ -59,8 +59,6 @@ namespace pathtracer{
             // These are only relevant for curved surfaces
             Vector3 d2pdu2  = d.d2pdu2();
             Vector3 d2pdudv = d.d2pdudv();
-
-            Vector3 s = d.s();
 
             Vector3 q = dpdu - normal * normal.dot(dpdu);
             real invLength = 1.0 / q.length();

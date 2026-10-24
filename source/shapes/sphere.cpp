@@ -29,30 +29,24 @@ namespace pathtracer{
 
         Vector2 uv(phi * 0.5 * INV_PI, theta * INV_PI);
 
-        // Tangent calculation
-        Vector3 tangent(-normal.y(), normal.x(), 0.0);
-
-        if(tangent.lengthSquared() > 0){
-            tangent = tangent.normalized();
-        }
-        else{
-            tangent = Vector3(1, 0, 0);
-        }
+        SurfaceDifferentials d = computeDifferentials(point, uv);
         
         // The instance is null since this class doesn't know 
         // which isntance of itself it is. 
-        SurfacePoint sp(point, normal, normal, tangent, tangent, uv, nullptr);
+        SurfacePoint sp(point, normal, normal, uv, d, nullptr);
 
         return sp;
     }
 
-    Sphere::Sphere() {
-    }
+
+    Sphere::Sphere() {}
+
 
     real Sphere::getSurfaceArea() const {
         // For a sphere with radius 1
         return 4 * PI;
     }
+
 
     AxisAlignedBox Sphere::getBoundingBox() const {
         // The local sphere will range between -1 and 1
@@ -62,10 +56,12 @@ namespace pathtracer{
             Vector3(1.0));
     }
 
+
     Vector3 Sphere::getCentroid() const {
         // In local coordinates, the centroid is the origin.
         return Vector3::ORIGIN;
     }
+
 
     // Intersects the shape with a ray
     Intersection Sphere::intersect(const Ray& ray, real oldT) const {
@@ -121,6 +117,7 @@ namespace pathtracer{
         return intersection;
     }
 
+
     AreaSample Sphere::sampleSurfaceArea() const {
 
         // We will sample the sphere surface area by mapping
@@ -137,6 +134,7 @@ namespace pathtracer{
         return sample;
     }
 
+
     AreaSample Sphere::evaluateAreaSample(const SurfaceSample& point) const {
 
         real pdf = SquareToSphereUniform::pdf(point.point);
@@ -146,12 +144,9 @@ namespace pathtracer{
         return sample;
     }
 
-    SurfaceDifferentials Sphere::computeDifferentials(const Vector3& position, 
-        const Vector3& shadingNormal, const Vector2& uv, 
-        int triangleIndex) const {
 
-        // Note that we use the provided normal and don't rederive it
-        // since we may be using normal maps.
+    SurfaceDifferentials Sphere::computeDifferentials(const Vector3& position,
+        const Vector2& uv) const {
 
         // n == p on a unit sphere centered at the origin
         const Vector3& normal = position.normalized();
@@ -185,8 +180,9 @@ namespace pathtracer{
 
         // n == p, so the normal derivatives equal the position derivatives
         return SurfaceDifferentials(dpdu, dpdv,
-            dpdu, dpdv, d2pdu2, d2pdudv, d2pdv2, s);
+            dpdu, dpdv, d2pdu2, d2pdudv, d2pdv2);
     }
+
 
     Vector3 Sphere::getPosition(const Vector2& uv, int triangleIndex) const {
 

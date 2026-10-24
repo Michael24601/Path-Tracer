@@ -107,8 +107,7 @@ namespace pathtracer{
 
         // First we get the area sample for s
         SurfaceSample sample(s.position(), s.triangleIndex());
-        AreaSample lightSample =
-            m_instance->evaluateAreaSample(sample);
+        AreaSample lightSample = m_instance->evaluateAreaSample(sample);
 
         return m_instance->computeDifferentials(lightSample);
     }

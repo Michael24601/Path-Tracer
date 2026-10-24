@@ -19,8 +19,7 @@ namespace pathtracer{
 
 
         Vector2 specularConstraint(const SurfacePoint& p, 
-            const Vector3& halfVector, const SurfaceDifferentials& d,
-            const Vector3& localOffsetNormal) {
+            const Vector3& halfVector, const Vector3& localOffsetNormal) {
 
             // The constraint is T(xi)^T h(x1, x1x0, x2x0), where h
             // depends on whether it is refracting or reflecting.
@@ -29,10 +28,10 @@ namespace pathtracer{
             Vector3 h = halfVector.normalized();
 
             // Tangents
-            Vector3 t0 = d.s();
+            Vector3 t0 = p.s();
             // Notice this needs to use the shading normal, NOT the
             // possibly perturbed normal.
-            Vector3 t1 = d.t(p.shadingNormal());
+            Vector3 t1 = p.t();
 
             // We subtract the local offset normal here (by default
             // the local normal is 0, 0, 1 so this does nothing).
@@ -110,12 +109,12 @@ namespace pathtracer{
             const Vector3& halfVector, const SurfaceDifferentials& d, 
             bool reflection, real eta, const Vector3& localOffsetNormal) {
                 
-            Vector3 s = d.s();
-            Vector3 t = d.t(p.shadingNormal());
+            Vector3 s = p.s();
+            Vector3 t = p.t();
             Vector3 h = halfVector.normalized();
 
             FrameDifferentials f = SmsUtil::computeFrameDifferentials(
-                p.shadingNormal(), d);
+                p.shadingNormal(), s, d);
 
             HalfVectorDifferentials hd =
                 computeHalfVectorDifferentials(x0, x2, p, halfVector, d, 
@@ -128,7 +127,7 @@ namespace pathtracer{
                 f.dtdv.dot(h) + t.dot(hd.dhdv)
             );
 
-            Vector2 C = specularConstraint(p, halfVector, d, localOffsetNormal);
+            Vector2 C = specularConstraint(p, halfVector, localOffsetNormal);
 
             real determinant = dC_dX.determinant();
 

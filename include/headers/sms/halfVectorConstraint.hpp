@@ -32,8 +32,7 @@ namespace pathtracer{
         // Again, wi points towards the light.
         // The bsdf is sent to avoid having to dynamically downcast it.
         Vector2 specularConstraint(const SurfacePoint& p, 
-            const Vector3& halfVector, const SurfaceDifferentials& d,
-            const Vector3& localOffsetNormal);
+            const Vector3& halfVector, const Vector3& localOffsetNormal);
 
 
         HalfVectorDifferentials computeHalfVectorDifferentials(

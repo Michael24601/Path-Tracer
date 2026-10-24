@@ -5,6 +5,7 @@
 #include "math/vector3.hpp"
 #include "math/vector2.hpp"
 #include "core/transform.hpp"
+#include "surfaceDifferentials.hpp"
 #include <string>
 
 namespace pathtracer{
@@ -23,13 +24,7 @@ namespace pathtracer{
 
         Vector3 m_geometryNormal;
 
-        // Because tangent can be modified by normal mapping, this tangent
-        // stays immutable.
-        Vector3 m_geometryTangent;
-
         Vector3 m_shadingNormal;
-
-        Vector3 m_tangent;
 
         // The shading normal, never normal mapped
         Vector3 m_baseNormal;
@@ -37,14 +32,22 @@ namespace pathtracer{
         // Texture coordinates
         Vector2 m_uv;
 
+        // The differentials dpdu, dpdv, dndu... at this point.
+        // Computed at the shape level and transformed to world coordinates.
+        // With respect to base normal. 
+        // These values DO NOT change when normal mapping, as they are
+        // based on the base normal.
+        SurfaceDifferentials m_differentials;
+
         const Instance* m_instance;
 
         // The shading frame that consists of the bitangent, tangent
         // and normals, where the normal is the z coordinate.
         Transform m_shadingFrame;
 
-        // The same but using geometry normal. Should never be modified.
-        Transform m_geometryFrame;
+        // The same but using the base shading normal without normal
+        // mapping.
+        Transform m_baseFrame;
 
         // Optional parameter, records which triangle in a mesh was
         // intersected.
@@ -54,13 +57,9 @@ namespace pathtracer{
 
         SurfacePoint();
 
-        SurfacePoint(const Vector3& position,
-            const Vector3& geometryNormal,
-            const Vector3& shadingNormal,
-            const Vector3& geometryTangent,
-            const Vector3& tangent,
-            const Vector2& uv,
-            const Instance* instance);
+        SurfacePoint(const Vector3& position, const Vector3& geometryNormal, 
+            const Vector3& shadingNormal, const Vector2& uv,
+            const SurfaceDifferentials& differentials, const Instance* instance);
 
         const Vector3& position() const;
 
@@ -70,9 +69,11 @@ namespace pathtracer{
 
         const Vector3& shadingNormal() const;
 
-        const Vector3& geometryTangent() const;
+        // This is the tangent, returned from the shading frame
+        Vector3 s() const;
 
-        const Vector3& tangent() const;
+        // This is the bitangent, returned from the shading frame
+        Vector3 t() const;
 
         const Vector2& uv() const;
 
@@ -80,7 +81,9 @@ namespace pathtracer{
 
         const Transform& shadingFrame() const;
 
-        const Transform& geometryFrame() const;
+        const Transform& baseFrame() const;
+
+        const SurfaceDifferentials& differentials() const;
 
         int triangleIndex() const;
 
@@ -92,15 +95,13 @@ namespace pathtracer{
     
         void setBaseNormal(const Vector3& normal);
 
-        void setTangent(const Vector3& tangent);
-
         void setUV(const Vector2& uv);
 
         void setInstance(const Instance* instance);
 
         void setTriangleIndex(int index);
 
-        void computeGeometryFrame();
+        void computeBaseFrame();
 
         void computeShadingFrame();
 
@@ -122,7 +123,6 @@ namespace pathtracer{
         Vector3 evaluateEmission(const Vector3& wo) const;
 
 
-        std::string toString() const;
     };
 
 }

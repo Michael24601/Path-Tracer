@@ -188,7 +188,12 @@ namespace pathtracer{
         areaSample.setInstance(this);
 
         areaSample.computeShadingFrame();
-        areaSample.computeGeometryFrame();
+        areaSample.computeBaseFrame();
+
+        // We can also do normal mapping here
+        if(m_normal != nullptr){
+            normalMap(newSample);
+        }
 
         return areaSample;
     }
@@ -219,7 +224,7 @@ namespace pathtracer{
 
         newSample.setInstance(this);
         newSample.computeShadingFrame();
-        newSample.computeGeometryFrame();
+        newSample.computeBaseFrame();
 
         // We can also do normal mapping here
         if(m_normal != nullptr){
@@ -232,74 +237,96 @@ namespace pathtracer{
     }
 
 
-    SurfaceDifferentials Instance::computeDifferentials(const SurfacePoint& sp,
-        bool smooth) const{
+    SurfaceDifferentials Instance::computeDifferentials(
+        const SurfacePoint& sp, bool smooth) const {
 
-        // First we will transform the position and normal to local
-        // coordinates.
-        Vector3 localPoint  = m_transform.inverseTransform(sp.position());
-        Vector3 localNormal = m_transform.inverseTransformNormal(sp.baseNormal());
+        const SurfaceDifferentials& d = sp.differentials();
 
-        SurfaceDifferentials d = m_shape->computeDifferentials(localPoint,
-            localNormal, sp.uv(), sp.triangleIndex());
-
-        d = m_transform.transformDifferentials(d, localNormal, sp.baseNormal());
-
-        if(m_normal != nullptr){
-
-            const Vector3 n = sp.shadingNormal();
-            const Vector2 uv = sp.uv();
-
-            // Map normal value and its change per uv, in the map's own
-            // coordinates (not yet transformed)
-            Vector3 nm, dndu, dndv;
-
-            auto surfacePointAt = [&](const Vector2& uv) -> SurfacePoint {
-                int ind = sp.triangleIndex();
-                Vector3 p = m_shape->getPosition(uv, ind);
-                return evaluateAreaSample({p, ind});
-            };
-
-            auto mappedNormal = [&](const Vector2& uv) -> Vector3 {
-                SurfacePoint p = surfacePointAt(uv);
-
-                Vector3 nm;
-                if(smooth){
-                    nm = m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel());
-                }
-                else{
-                    nm = m_normal->sample(uv);
-                }
-
-                return p.geometryFrame().transformDirection(nm).normalized();
-            };
-
-            if(smooth){
-                dndu = Vector3(0.0);
-                dndv = Vector3(0.0);
-            }
-            else{
-                const real du = 1.0 / m_normal->getWidth();
-                const real dv = 1.0 / m_normal->getHeight();
-
-                dndu = (mappedNormal(uv + Vector2(du, 0))
-                    - mappedNormal(uv - Vector2(du, 0))) / (2 * du);
-
-                dndv = (mappedNormal(uv + Vector2(0, dv))
-                    - mappedNormal(uv - Vector2(0, dv))) / (2 * dv);
-            }
-
-            d.setDndu(dndu);
-            d.setDndv(dndv);
-
-            Vector3 mappedN = mappedNormal(sp.uv());
-
-            // s must be perpendicular to the mapped normal
-            d.setS((d.dpdu() - mappedN * mappedN.dot(d.dpdu())).normalized());
-
+        if (m_normal == nullptr) {
+            return d;
         }
 
-        return d;
+        const Vector3 n = sp.baseNormal();
+        const Vector3 s = sp.baseFrame().transform().column(0);
+        const Vector3 t = sp.baseFrame().transform().column(1);
+
+        FrameDifferentials fd =
+            SmsUtil::computeFrameDifferentials(n, s, d);
+
+        const Vector2 uv = sp.uv();
+
+        Vector3 nm = smooth
+            ? m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel())
+            : m_normal->sample(uv);
+
+        Vector3 nm_du(0.0);
+        Vector3 nm_dv(0.0);
+
+        // If it is smooth, then there is no normal map derivative,
+        // but the frame derivative is still there.
+        if (!smooth) {
+            const real du = 1.0 / (m_normal->getWidth() * 32);
+            const real dv = 1.0 / (m_normal->getHeight() * 32);
+
+            nm_du = (m_normal->sample(uv + Vector2(du, 0.0))
+                - m_normal->sample(uv - Vector2(du, 0.0))) / (2.0 * du);
+
+            nm_dv = (m_normal->sample(uv + Vector2(0.0, dv))
+                - m_normal->sample(uv - Vector2(0.0, dv))) / (2.0 * dv);
+        }
+
+        Vector3 dndu = fd.dsdu * nm.x() + fd.dtdu * nm.y() + d.dndu() * nm.z()
+            + s * nm_du.x() + t * nm_du.y() + n * nm_du.z();
+
+        Vector3 dndv = fd.dsdv * nm.x() + fd.dtdv * nm.y() + d.dndv() * nm.z()
+            + s * nm_dv.x() + t * nm_dv.y() + n * nm_dv.z();
+
+        return SurfaceDifferentials(
+            d.dpdu(), d.dpdv(),
+            dndu, dndv,
+            d.d2pdu2(), d.d2pdudv(), d.d2pdv2()
+        );
+
+
+        // ALTERNATE
+
+        // const int index = sp.triangleIndex();
+
+        // // World-space shading normal at an arbitrary uv on the same triangle.
+        // auto getNormal = [&](const Vector2& uv) -> Vector3 {
+        //     const Vector3 nm = smooth
+        //         ? m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel())
+        //         : m_normal->sample(uv);
+
+        //     const Vector3 pos =
+        //         m_transform.transform(m_shape->getPosition(uv, index));
+
+        //     const SurfacePoint p = evaluateAreaSample({pos, index});
+        //     const Transform& frame = p.baseFrame();
+
+        //     return frame.transformNormal(nm);
+        // };
+
+        // const Vector2 uv = sp.uv();
+
+        // // Texel-sized step when the map varies; small fixed step when only
+        // // the frame varies.
+        // const real du = smooth ? real(1e-3) : real(1.0) / m_normal->getWidth();
+        // const real dv = smooth ? real(1e-3) : real(1.0) / m_normal->getHeight();
+
+        // const Vector3 dndu =
+        //     (getNormal(uv + Vector2(du, 0.0)) - getNormal(uv - Vector2(du, 0.0)))
+        //     / (2.0 * du);
+
+        // const Vector3 dndv =
+        //     (getNormal(uv + Vector2(0.0, dv)) - getNormal(uv - Vector2(0.0, dv)))
+        //     / (2.0 * dv);
+
+        // return SurfaceDifferentials(
+        //     d.dpdu(), d.dpdv(),
+        //     dndu, dndv,
+        //     d.d2pdu2(), d.d2pdudv(), d.d2pdv2()
+        // );
     }
 
 
@@ -329,14 +356,11 @@ namespace pathtracer{
             // Also note that if we have already used normal mapping,
             // then it.shadingFrame() already uses the coarse normal map,
             // which will break normal mapping in case we want to
-            // smooth it again. So we use the geometry frame here.
-            normal = it.geometryFrame().transformDirection(normal);
-
-            // LOG_INFO(normal.toString() + " " + it.geometryNormal().toString());
+            // smooth it again. So we use the base frame here.
+            normal = it.baseFrame().transformNormal(normal);
 
             // Then the frame is updated
             it.setShadingNormal(normal);
-
             // Frame is recomputed
             it.computeShadingFrame();
         }
