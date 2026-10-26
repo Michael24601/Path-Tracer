@@ -1,10 +1,12 @@
+
 #include "bsdf/mirrorBsdf.hpp"
 #include "math/mathUtil.hpp"
 #include "bsdf/bsdfSample.hpp"
+#include "texture/texture.hpp"
 
 namespace pathtracer{
 
-    MirrorBsdf::MirrorBsdf(real reflectance) : 
+    MirrorBsdf::MirrorBsdf(Texture* reflectance) : 
         m_reflectance(reflectance){}
 
 
@@ -29,8 +31,10 @@ namespace pathtracer{
 
         real cosine = ShadingSpace::cosineTheta(direction);
 
-        Vector3 bsdf = m_reflectance / cosine;
-        Vector3 weight = m_reflectance;
+        Vector3 reflectance = m_reflectance->sample(uv);
+
+        Vector3 bsdf = reflectance / cosine;
+        Vector3 weight = reflectance;
 
         return BsdfSample(bsdf, direction, cosine, pdf, weight, true);
     }
@@ -45,31 +49,19 @@ namespace pathtracer{
     }
 
 
-    bool MirrorBsdf::isSpecular() const{
-        return true;
-    }
-
-
     Vector3 MirrorBsdf::evaluateReflection(const Vector3& wo,
-        const Vector2& uv) const {
+        const Vector3& wi, const Vector2& uv) const {
 
-        Vector3 wi = ShadingSpace::reflect(wo);
-        real cosine = ShadingSpace::cosineTheta(wi);
-        Vector3 bsdf = m_reflectance / cosine;
-
-        return bsdf;
+        Vector3 weight = m_reflectance->sample(uv);
+        return weight;
     }
 
 
     Vector3 MirrorBsdf::evaluateRefraction(const Vector3& wo, 
-        const Vector2& uv) const {
+        const Vector3& wi, const Vector2& uv) const {
 
         return Vector3(0.0);
     }
 
-
-    real MirrorBsdf::eta(const Vector3& wo, const Vector2& uv) const {
-        return 1.0;
-    }
 
 }

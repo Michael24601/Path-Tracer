@@ -249,7 +249,7 @@
                 "max-depth": 100,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": false
+                "two-stage": true
             }
         }
     }

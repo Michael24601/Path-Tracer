@@ -38,18 +38,20 @@ namespace pathtracer{
             const Vector2 &uv,  bool adjoint = false) const override;
 
 
-        bool isSpecular() const override;
+        bool isSpecular() const override{
+            return true;
+        }
 
 
         // This evaluates the bsdf for reflecting (no wi is sent since
         // only one works). Same logic as the sample function.
         // Assumes reflection was actually chosen.
-        Vector3 evaluateReflection(const Vector3& wo, const Vector2& uv) 
-            const override;
+        Vector3 evaluateReflection(const Vector3& wo, const Vector3& wi,
+            const Vector2& uv) const override;
 
 
-        Vector3 evaluateRefraction(const Vector3& wo, const Vector2& uv) 
-            const override;
+        Vector3 evaluateRefraction(const Vector3& wo, const Vector3& wi,
+            const Vector2& uv) const override;
 
 
         real eta(const Vector3& wo, const Vector2& uv) const override;
@@ -67,6 +69,12 @@ namespace pathtracer{
             // microfacets. Pdf is 1.0 since it's always the same.
             return ManifoldNormal{ Vector3(0.0, 0.0, 1.0), 1.0 };
         }
+
+
+        bool supportsReflection(const Vector2& uv) const override;
+
+        
+        bool supportsRefraction(const Vector2& uv) const override;
 
     };
 

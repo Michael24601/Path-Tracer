@@ -68,9 +68,9 @@ namespace pathtracer{
 
 
         SpecularManifoldSampling(const Scene* scene, bool useHalfVector, 
-            bool biased, bool twoStage, int maxIterations = 20, 
+            bool biased, bool twoStage, int maxIterations = 30, 
             int maxTrials = 1000, int maxBiasedTrials = 5, 
-            real epsilon = 1e-5, real threshold = 1e-6);
+            real epsilon = 1e-6, real threshold = 1e-6);
 
 
         // Returns the outgoing radiance from x0, after connecting

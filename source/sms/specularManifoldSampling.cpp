@@ -46,6 +46,7 @@ namespace pathtracer{
             const SpecularManifoldBsdf* bsdf =
                 dynamic_cast<const SpecularManifoldBsdf*>(scene->instance(i)->bsdf());
 
+            // Saves only surfaces that inherit specular manifold class
             if(bsdf){
                 m_specularInstances.push_back(scene->instance(i));
                 m_bsdfs.push_back(bsdf);
@@ -144,11 +145,12 @@ namespace pathtracer{
             SmsSample newSample = samplePath(causticPoint,
                 specular, bsdf, lightPoint, scene);
 
-            Vector3 newDir = (newSample.finalPoint().position()
-                - causticPoint.position()).normalized();
-            real angularDist = newDir.dot(dir);
+            Vector3 delta = newSample.finalPoint().position()
+                - sample.finalPoint().position();
 
-            if(newSample.isConverged() && std::abs(angularDist - 1) < m_threshold){
+            if (newSample.isConverged() &&
+                delta.lengthSquared() < m_threshold * m_threshold) {
+
                 found = true;
                 m_sameFound++;
                 break;
@@ -198,16 +200,14 @@ namespace pathtracer{
         std::vector<Vector3> solutions;
         solutions.reserve(m_maxBiasedTrials);
 
-        int nc = 0;
-        int nv = 0;
-        int s = 0;
+        real threshold = m_threshold * m_threshold;
 
         for(int i = 0; i < m_maxBiasedTrials; i++){
 
             SmsSample sample = samplePath(causticPoint, specular, bsdf,
                 lightPoint, scene);
 
-            if(!sample.isConverged()){ nc++;
+            if(!sample.isConverged()){ 
                 continue;
             }
 
@@ -223,35 +223,29 @@ namespace pathtracer{
                     lightPoint.position());
             }
 
-            if(!visible){ nv++;
-                m_notVis++;
+            if(!visible){ 
                 continue;
             }
-
-            // Direction from x0 to x1.
-            Vector3 dir = (sample.finalPoint().position()
-                - causticPoint.position()).normalized();
 
             // We check if this has already been discovered before
             bool duplicate = false;
 
             for(const Vector3& solution : solutions){
-                real angularDist = dir.dot(solution);
+                real delta = (sample.finalPoint().position() - solution).lengthSquared();
 
-                if(std::abs(angularDist - 1.0) < m_threshold){
+                if(delta < threshold){
                     duplicate = true;
                     break;
                 }
             }
 
             // Duplicates are not needed
-            if(duplicate){ 
-                s++;
+            if(duplicate){
                 continue;
             }
 
             // New unique solution is added otherwise
-            solutions.push_back(dir);
+            solutions.push_back(sample.finalPoint().position());
 
             Vector3 weight = evaluatePathContribution(causticPoint,
                 lightPoint, sample, bsdf, wo, scene);
@@ -306,7 +300,7 @@ namespace pathtracer{
         Intersection it = scene->intersect(ray);
 
         if(!it || it.t() < distance - 2 * SHADOW_EPSILON || it.instance() != specular){
-            return SmsSample(sample, sample, Vector3(0.0), 1.0, true, false);
+            return SmsSample(sample, Vector3(0.0), 1.0, true, false);
         }
 
         // In tangent space, by default, we don't want to offset the normal.
@@ -331,14 +325,12 @@ namespace pathtracer{
             mu = (mu + muOffset) * 0.5;
             Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
 
-            // leanNormal lives in teh base frame, so we transform it to
+            // leanNormal lives in the base frame, so we transform it to
             // the smooth shading frame of newIt.
             Vector3 leanNormal = Vector3(-slope[0], -slope[1], 1.0).normalized();
-            Vector3 leanWorld = it.baseFrame().transformDirection(leanNormal);
-            Vector3 offset = newIt.shadingFrame().inverseTransformDirection(leanWorld);
 
             SmsSample result = newtonSolver(causticPoint, newIt, lightPoint, bsdf,
-                offset, scene, true);
+                leanNormal, scene, true);
 
             // If not converged, we just return a false sample
             if(!result.isConverged()){
@@ -436,8 +428,19 @@ namespace pathtracer{
             // If the constraint is 0.0, we return a success.
             // We reuse the newton constraint instead of recomputing it.
             if(step.C.lengthSquared() < threshold){
-                ++m_converged;
-                return SmsSample(seedIt, finalIt, halfVector, eta, reflection, true);
+
+                // We need to check that the reflection/refraction is supported
+                // This is better and less noisy than letting it zero out
+                // at the evaluation as it can contribute to pdf.
+                if((reflection && bsdf->supportsReflection(finalIt.uv()))
+                    || (!reflection && bsdf->supportsRefraction(finalIt.uv()))){
+
+                    ++m_converged;
+                    return SmsSample(finalIt, halfVector, eta, reflection, true);
+                }
+
+                // Otherwise we return false
+                return SmsSample(finalIt, halfVector, eta, reflection, false);
             }
 
             Intersection nextIt;
@@ -480,7 +483,7 @@ namespace pathtracer{
 
         // Failure
         ++m_maxIt;
-        return SmsSample(seedIt, finalIt, halfVector, eta, reflection, false);
+        return SmsSample(finalIt, halfVector, eta, reflection, false);
     }
 
 
@@ -501,19 +504,27 @@ namespace pathtracer{
         // the bsdf at the specular can't be evaluated since it is
         // a delta distribution, so we instead use specular specific 
         // functions.
+
+        Vector3 secondWo = -wi;
+        secondWo = sample.finalPoint().shadingFrame()
+            .inverseTransformDirection(secondWo);
+
+        Vector3 secondWi = (lightPoint.position() 
+            - sample.finalPoint().position()).normalized();
+        secondWi = sample.finalPoint().shadingFrame()
+            .inverseTransformDirection(secondWi);
+
         Vector3 s1Weight;
         if(sample.isReflection()){
             // This is wo from x1 to x0
-            Vector3 secondWo = -wi;
-            secondWo = sample.finalPoint().shadingFrame().inverseTransformDirection(secondWo);
             // This expects wi in local coordinates.
             // It returns the bsdf result (no cosine or pdf)
-            s1Weight = bsdf->evaluateReflection(secondWo, sample.finalPoint().uv());
+            s1Weight = bsdf->evaluateReflection(secondWo, secondWi, 
+                sample.finalPoint().uv());
         }
         else{
-            Vector3 secondWo = -wi;
-            secondWo = sample.finalPoint().shadingFrame().inverseTransformDirection(secondWo);
-            s1Weight = bsdf->evaluateRefraction(secondWo, sample.finalPoint().uv());
+            s1Weight = bsdf->evaluateRefraction(secondWo, secondWi, 
+                sample.finalPoint().uv());
         }
 
         // This already includes the light pdf (in case of area light).

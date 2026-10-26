@@ -276,7 +276,8 @@
             "parameters": {
                 "max-depth": 100,
                 "use-halfvector": false,
-                "biased": false
+                "biased": false,
+                "two-stage": false
             }
         }
     }

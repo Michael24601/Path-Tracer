@@ -69,6 +69,10 @@ namespace pathtracer{
         Vector3 sampleMipMap(const Vector2& uv, int level) const;
 
 
+        void sampleGradient(const Vector2& uv,
+            Vector3& dU, Vector3& dV) const;
+
+
         int maxMipMapLevel() const{
 
             // Each level doubles the number of pixels merged

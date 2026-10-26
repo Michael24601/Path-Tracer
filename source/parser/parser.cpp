@@ -10,6 +10,7 @@
 #include "bsdf/diffuseBsdf.hpp"
 #include "bsdf/principledBsdf.hpp"
 #include "bsdf/mirrorBsdf.hpp"
+#include "bsdf/roughConductorBsdf.hpp"
 #include "bsdf/dielectricBsdf.hpp"
 #include "camera/perspectiveCamera.hpp"
 #include "emission/lambertianEmission.hpp"
@@ -223,10 +224,19 @@ namespace pathtracer{
                 }
                 else if(data["materials"][i]["type"] == "mirror"){
 
-                    real reflectance =
-                        data["materials"][i]["parameters"]["reflectance"];
+                    Texture* reflectance = parseTexture(
+                        data["materials"][i]["parameters"]["reflectance"]);
 
                     materials[id] = new MirrorBsdf(reflectance);
+                }
+                else if(data["materials"][i]["type"] == "rough-conductor"){
+
+                    Texture* reflectance = parseTexture(
+                        data["materials"][i]["parameters"]["reflectance"]);
+                    Texture* roughness = parseTexture(
+                        data["materials"][i]["parameters"]["roughness"]);
+
+                    materials[id] = new RoughConductorBsdf(reflectance, roughness);
                 }
                 else if(data["materials"][i]["type"] == "dielectric"){
 

@@ -3,19 +3,14 @@
 
 namespace pathtracer{
 
-    SmsSample::SmsSample(const SurfacePoint& seedPoint, 
-        const SurfacePoint& finalPoint, const Vector3& halfVector, real eta, 
+    SmsSample::SmsSample(const SurfacePoint& finalPoint, 
+        const Vector3& halfVector, real eta, 
         bool isReflection, bool isConverged) :
-        m_seedPoint{seedPoint},
         m_finalPoint{finalPoint},
         m_halfVector{halfVector},
         m_eta{eta},
         m_isReflection{isReflection},
         m_isConverged{isConverged} {
-    }
-
-    const SurfacePoint& SmsSample::seedPoint() const {
-        return m_seedPoint;
     }
 
     const SurfacePoint& SmsSample::finalPoint() const {

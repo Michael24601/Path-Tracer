@@ -157,16 +157,12 @@ namespace pathtracer
     }
 
 
-    bool DielectricBsdf::isSpecular() const{
-        return true;
-    }
-
-
-    // This evaluates the bsdf for reflecting (no wi is sent since
-    // only one works). Same logic as the sample function.
-    // Assumes reflection was actually chosen.
+    // This evaluates the weight for reflecting.
     Vector3 DielectricBsdf::evaluateReflection(const Vector3& wo, 
-        const Vector2& uv) const {
+        const Vector3& wi, const Vector2& uv) const {
+
+        // No need to use wi, since assume the supplied directions
+        // are valid.
 
         real cos_wo = ShadingSpace::cosineTheta(wo);
         real n = eta(wo, uv);
@@ -183,7 +179,10 @@ namespace pathtracer
 
 
     Vector3 DielectricBsdf::evaluateRefraction(const Vector3& wo, 
-        const Vector2& uv) const {
+        const Vector3& wi, const Vector2& uv) const {
+
+        // No need to use wi, since assume the supplied directions
+        // are valid.
 
         real cos_wo = ShadingSpace::cosineTheta(wo);
         real n = eta(wo, uv);
@@ -205,6 +204,16 @@ namespace pathtracer
 
         // Relative ior depends on whether we are entering or leaving.
         return ShadingSpace::cosineTheta(wo) > 0 ? ior : 1.0f / ior;
+    }
+
+
+    bool DielectricBsdf::supportsReflection(const Vector2& uv) const {
+        return true;
+    }
+
+
+    bool DielectricBsdf::supportsRefraction(const Vector2& uv) const {
+        return m_transmittance->sample(uv) != Vector3(0.0);
     }
 
 }

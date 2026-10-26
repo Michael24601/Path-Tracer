@@ -4,6 +4,7 @@
 #include "texture/imageUtil.hpp"
 #include "math/vector2.hpp"
 #include "math/vector2i.hpp"
+#include "math/vector3.hpp"
 
 
 namespace pathtracer{
@@ -34,7 +35,7 @@ namespace pathtracer{
         channels = data[0][0].size();
 
         // This ensures they have the same dimensions everywhere
-        for (const auto& row : data) {
+        for (const auto& row: data) {
             assert(static_cast<int>(row.size()) == width && "ragged row");
             for (const auto& pixel : row){
                 assert(static_cast<int>(pixel.size()) == channels && "channel mismatch");
@@ -79,8 +80,80 @@ namespace pathtracer{
     }
 
 
+    void Image::sampleGradient(const Vector2& uv, std::vector<real>& val, 
+        std::vector<real>& du, std::vector<real>& dv) const {
+
+        const int w = getWidth();
+        const int h = getHeight();
+
+        switch (m_filterMode) {
+
+        case FilterMode::BILINEAR: {
+
+            Vector2 imageUv = mapToImageSpace(uv);
+
+            Vector2i floor = Util::floor(imageUv);
+            Vector2i ceiling = Util::ceiling(imageUv);
+            Vector2 decimal = imageUv - Vector2(floor.x(), floor.y());
+
+            if (m_borderMode == BorderMode::CLAMP) {
+                floor = Border::clamp(floor, w, h);
+                ceiling = Border::clamp(ceiling, w, h);
+            }
+            else if (m_borderMode == BorderMode::REPEAT) {
+                floor = Border::repeat(floor, w, h);
+                ceiling = Border::repeat(ceiling, w, h);
+            }
+            else if (m_borderMode == BorderMode::MIRROR) {
+                floor = Border::mirror(floor, w, h);
+                ceiling = Border::mirror(ceiling, w, h);
+            }
+
+            std::vector<real> p00 = getPixel(floor.y(), floor.x());
+            std::vector<real> p10 = getPixel(floor.y(), ceiling.x());
+            std::vector<real> p01 = getPixel(ceiling.y(), floor.x());
+            std::vector<real> p11 = getPixel(ceiling.y(), ceiling.x());
+
+            val = Filter::linearInterpolate(
+                Filter::linearInterpolate(p00, p10, decimal.x()),
+                Filter::linearInterpolate(p01, p11, decimal.x()), 
+                decimal.y()
+            );
+
+            // Convert from pixel space to uv space (chain rule,
+            // and this is a scaling operation, so derivative is a
+            // factor of thw width or height).
+            real sx = real(w - 1);
+            real sy = -real(h - 1);
+
+            du.resize(channels);
+            dv.resize(channels);
+
+            for (int c = 0; c < channels; c++) {
+                real dx = (p10[c] - p00[c]) * (1 - decimal.y())
+                    + (p11[c] - p01[c]) * decimal.y();
+                real dy = (p01[c] - p00[c]) * (1 - decimal.x())
+                    + (p11[c] - p10[c]) * decimal.x();
+
+                du[c] = dx * sx;
+                dv[c] = dy * sy;
+            }
+            return;
+        }
+        case FilterMode::NEAREST: {
+            // Not differentiable
+            // Could maybe use central differences in the future
+            val = sample(uv);
+            du.assign(channels, 0.0f);
+            dv.assign(channels, 0.0f);
+            return;
+        }
+        }
+    }
+
+
     const std::vector<real>& Image::getPixel(int h, int w) const {
-        assert((h >= 0 && h < height) && (w >= 0 && w < width) &&
+        assert((h >= 0 && h < height) && (w>= 0 && w< width) &&
             "Dimensions don't match the texture's");
 
         return m_data[h][w];

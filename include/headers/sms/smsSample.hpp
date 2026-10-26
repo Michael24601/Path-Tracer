@@ -12,7 +12,6 @@ namespace pathtracer{
 
     private:
 
-        SurfacePoint m_seedPoint;
         SurfacePoint m_finalPoint;
 
         // We also keep track of eta and half vector.
@@ -25,11 +24,9 @@ namespace pathtracer{
 
     public:
 
-        SmsSample(const SurfacePoint& seedPoint, 
-            const SurfacePoint& finalPoint,  const Vector3& halfVector, 
+        SmsSample(const SurfacePoint& finalPoint,  const Vector3& halfVector, 
             real eta, bool isReflection, bool isConverged);
 
-        const SurfacePoint& seedPoint() const;
 
         const SurfacePoint& finalPoint() const;
 

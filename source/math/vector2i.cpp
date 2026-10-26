@@ -26,6 +26,12 @@ namespace pathtracer{
         return m_data[1];
     }
 
+    
+    Vector2i Vector2i::operator+(const Vector2i& v){
+        return Vector2i(m_data[0] + v.m_data[0], m_data[1] + v.m_data[1]);
+    }
+
+
     // Access using brackets
     const int& Vector2i::operator[](int index) const {
 

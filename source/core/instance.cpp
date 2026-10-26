@@ -10,6 +10,7 @@
 #include "intersection/areaSample.hpp"
 #include "intersection/surfaceDifferentials.hpp"
 #include "sms/smsUtil.hpp"
+#include "math/constants.hpp"
 #include "logger.hpp"
 
 namespace pathtracer{
@@ -246,51 +247,94 @@ namespace pathtracer{
             return d;
         }
 
-        const Vector3 n = sp.baseNormal();
-        const Vector3 s = sp.baseFrame().transform().column(0);
-        const Vector3 t = sp.baseFrame().transform().column(1);
+        // If we have a normal map, then we need to change dndu and dndv
 
-        FrameDifferentials fd =
-            SmsUtil::computeFrameDifferentials(n, s, d);
+        Vector3 n = sp.baseNormal();
+        Vector3 s = sp.baseFrame().transform().column(0);
+        Vector3 t = sp.baseFrame().transform().column(1);
 
-        const Vector2 uv = sp.uv();
+        FrameDifferentials fd = SmsUtil::computeFrameDifferentials(n, s, d);
 
-        Vector3 nm = smooth
-            ? m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel())
-            : m_normal->sample(uv);
+        Vector2 uv = sp.uv();
 
-        Vector3 nm_du(0.0);
-        Vector3 nm_dv(0.0);
+        Vector3 normal;
+        Vector3 dndu(0.0f);
+        Vector3 dndv(0.0f);
 
-        // If it is smooth, then there is no normal map derivative,
-        // but the frame derivative is still there.
-        if (!smooth) {
-            const real du = 1.0 / (m_normal->getWidth() * 32);
-            const real dv = 1.0 / (m_normal->getHeight() * 32);
-
-            nm_du = (m_normal->sample(uv + Vector2(du, 0.0))
-                - m_normal->sample(uv - Vector2(du, 0.0))) / (2.0 * du);
-
-            nm_dv = (m_normal->sample(uv + Vector2(0.0, dv))
-                - m_normal->sample(uv - Vector2(0.0, dv))) / (2.0 * dv);
+        if (smooth) {
+            normal = m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel()).normalized();
+        }
+        else {
+            normal = m_normal->sample(uv).normalized();
+            m_normal->sampleGradient(uv, dndu, dndv);
         }
 
-        Vector3 dndu = fd.dsdu * nm.x() + fd.dtdu * nm.y() + d.dndu() * nm.z()
-            + s * nm_du.x() + t * nm_du.y() + n * nm_du.z();
+        Vector3 resU = fd.dsdu * normal.x() + fd.dtdu * normal.y() 
+            + d.dndu() * normal.z() + s * dndu.x() + t * dndu.y() + n * dndu.z();
 
-        Vector3 dndv = fd.dsdv * nm.x() + fd.dtdv * nm.y() + d.dndv() * nm.z()
-            + s * nm_dv.x() + t * nm_dv.y() + n * nm_dv.z();
+        Vector3 resV = fd.dsdv * normal.x() + fd.dtdv * normal.y() 
+            + d.dndv() * normal.z() + s * dndv.x() + t * dndv.y() + n * dndv.z();
 
         return SurfaceDifferentials(
             d.dpdu(), d.dpdv(),
-            dndu, dndv,
+            resU, resV,
             d.d2pdu2(), d.d2pdudv(), d.d2pdv2()
         );
 
 
         // ALTERNATE
 
-        // const int index = sp.triangleIndex();
+        // If we have a normal map, then we need to change dndu and dndv
+
+        // Vector3 n = sp.baseNormal();
+        // Vector3 s = sp.baseFrame().transform().column(0);
+        // Vector3 t = sp.baseFrame().transform().column(1);
+
+        // FrameDifferentials fd =
+        //     SmsUtil::computeFrameDifferentials(n, s, d);
+
+        // Vector2 uv = sp.uv();
+
+        // // Sampling with some filters may not return normal vectors,
+        // // so we can renormalize
+        // Vector3 nm = smooth
+        //     ? m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel()).normalized()
+        //     : m_normal->sample(uv).normalized();
+
+        // Vector3 dndu(0.0);
+        // Vector3 dndv(0.0);
+
+        // // If it is smooth, then there is no normal map derivative,
+        // // but the frame derivative is still there.
+        // if (!smooth) {
+        //     real du = 1.0 / (m_normal->getWidth() * 32);
+        //     real dv = 1.0 / (m_normal->getHeight() * 32);
+
+        //     dndu = (m_normal->sample(uv + Vector2(du, 0.0)).normalized()
+        //         - m_normal->sample(uv - Vector2(du, 0.0)).normalized()) 
+        //         / (2.0 * du);
+
+        //     dndv = (m_normal->sample(uv + Vector2(0.0, dv)).normalized()
+        //         - m_normal->sample(uv - Vector2(0.0, dv)).normalized()) 
+        //         / (2.0 * dv);
+        // }
+
+        // Vector3 resU = fd.dsdu * nm.x() + fd.dtdu * nm.y() + d.dndu() * nm.z()
+        //     + s * dndu.x() + t * dndu.y() + n * dndu.z();
+
+        // Vector3 resV = fd.dsdv * nm.x() + fd.dtdv * nm.y() + d.dndv() * nm.z()
+        //     + s * dndv.x() + t * dndv.y() + n * dndv.z();
+
+        // return SurfaceDifferentials(
+        //     d.dpdu(), d.dpdv(),
+        //     resU, resV,
+        //     d.d2pdu2(), d.d2pdudv(), d.d2pdv2()
+        // );
+
+
+        // ALTERNATE
+
+        // int index = sp.triangleIndex();
 
         // // World-space shading normal at an arbitrary uv on the same triangle.
         // auto getNormal = [&](const Vector2& uv) -> Vector3 {
@@ -307,18 +351,18 @@ namespace pathtracer{
         //     return frame.transformNormal(nm);
         // };
 
-        // const Vector2 uv = sp.uv();
+        // Vector2 uv = sp.uv();
 
         // // Texel-sized step when the map varies; small fixed step when only
         // // the frame varies.
-        // const real du = smooth ? real(1e-3) : real(1.0) / m_normal->getWidth();
-        // const real dv = smooth ? real(1e-3) : real(1.0) / m_normal->getHeight();
+        // real du = smooth ? real(1e-3) : real(1.0) / m_normal->getWidth() * 16;
+        // real dv = smooth ? real(1e-3) : real(1.0) / m_normal->getHeight() * 16;
 
-        // const Vector3 dndu =
+        // Vector3 dndu =
         //     (getNormal(uv + Vector2(du, 0.0)) - getNormal(uv - Vector2(du, 0.0)))
         //     / (2.0 * du);
 
-        // const Vector3 dndv =
+        // Vector3 dndv =
         //     (getNormal(uv + Vector2(0.0, dv)) - getNormal(uv - Vector2(0.0, dv)))
         //     / (2.0 * dv);
 
@@ -357,7 +401,7 @@ namespace pathtracer{
             // then it.shadingFrame() already uses the coarse normal map,
             // which will break normal mapping in case we want to
             // smooth it again. So we use the base frame here.
-            normal = it.baseFrame().transformNormal(normal);
+            normal = it.baseFrame().transformDirection(normal);
 
             // Then the frame is updated
             it.setShadingNormal(normal);

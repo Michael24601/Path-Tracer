@@ -9,6 +9,7 @@
 namespace pathtracer{
 
     class Vector2;
+    class Vector3;
 
     enum class BorderMode {
         CLAMP,
@@ -75,6 +76,12 @@ namespace pathtracer{
 
 
         const std::vector<real>& getPixel(int i, int j) const;
+
+
+        // Computes the derivative analytically using the filtering
+        // that we have (no central differences).
+        void sampleGradient(const Vector2& uv, std::vector<real>& val, 
+            std::vector<real>& du, std::vector<real>& dv) const;
         
 
         // Samples the texture according to the set modes. The given

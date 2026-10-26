@@ -27,7 +27,7 @@ namespace pathtracer{
             for(int j = 0; j < normalMap->getWidth(); j++){
 
                 // First we compute the slopes
-                Vector3 n = normalMap->getPixel(i, j);
+                Vector3 n = normalMap->getPixel(i, j).normalized();
                 real z = std::max(n.z(), EPSILON);
                 real x = -n.x() / z;
                 real y = -n.y() / z;
@@ -46,7 +46,7 @@ namespace pathtracer{
         }
 
         std::vector<std::vector<std::vector<real>>> input{{moments}};
-        m_moments[maxL] = new Image(input, BorderMode::REPEAT, FilterMode::NEAREST);
+        m_moments[maxL] = new Image(input, BorderMode::REPEAT, FilterMode::BILINEAR);
     }
 
 

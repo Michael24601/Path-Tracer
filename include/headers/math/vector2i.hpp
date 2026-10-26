@@ -22,6 +22,8 @@ namespace pathtracer{
 
         int y() const;
 
+        Vector2i operator+(const Vector2i& v);
+
         // Access using brackets
         const int& operator[](int index) const;
 

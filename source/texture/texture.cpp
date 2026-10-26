@@ -2,6 +2,7 @@
 #include "texture/texture.hpp"
 #include "math/vector3.hpp"
 #include "math/vector2.hpp"
+#include "math/constants.hpp"
 
 namespace pathtracer{
 
@@ -83,6 +84,31 @@ namespace pathtracer{
         }
     }
 
+
+    void Texture::sampleGradient(const Vector2& uv,
+        Vector3& dndu, Vector3& dndv) const {
+
+        std::vector<real> val, gu, gv;
+        image->sampleGradient(uv, val, gu, gv);
+
+        Vector3 v(val[0], val[1], val[2]);
+        Vector3 dvu(gu[0], gu[1], gu[2]);
+        Vector3 dvv(gv[0], gv[1], gv[2]);
+        real len = v.length();
+
+        if (len > EPSILON) {
+            // This code turns derivatives of v into derivatives
+            // of normalized v.
+            v = v / len;
+            dndu = (dvu - v * v.dot(dvu)) / len;
+            dndv = (dvv - v * v.dot(dvv)) / len;
+        }
+        else {
+            dndu = Vector3(0.0f);
+            dndv = Vector3(0.0f);
+        }
+    }
+
     Texture::Texture(const std::vector<std::vector<Vector3>>& data, 
         BorderMode borderMode, FilterMode filterMode, bool linearize,
         bool isNormalMap, bool storeMipMaps) {
@@ -142,7 +168,7 @@ namespace pathtracer{
         level = std::min(level, static_cast<int>(mipmaps.size()));
 
         std::vector<real> p = mipmaps[level - 1]->sample(uv);
-        return Vector3(p[0], p[1], p[2]).normalized();
+        return Vector3(p[0], p[1], p[2]);
     }
 
 }
