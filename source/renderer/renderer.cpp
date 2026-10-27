@@ -81,13 +81,13 @@ namespace pathtracer {
         long long interval = m_totalPathCount / m_messageCount;
         long long pathCount = ++m_pathCounter;
 
-        
         if(pathCount % interval == 0) {
-            LOG_TRACE(
-                std::to_string(pathCount) + "/" +
-                std::to_string(m_totalPathCount) +
-                " paths completed."
-            );
+            long long step = pathCount / interval;
+            std::string total = std::to_string(m_messageCount);
+            std::string current = std::to_string(step);
+            current.insert(0, total.size() - current.size(), ' ');
+
+            LOG_INFO("Step [" + current + "/" + total + "] completed.");
         }
         
         return color;

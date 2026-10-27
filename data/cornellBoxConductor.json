@@ -60,30 +60,18 @@
                     "parameters": {
                         "color": [0.98, 0.98, 0.98]
                     }
+                },
+                "roughness": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.002, 0.002, 0.002]
+                    }
                 }
             }
         }
     ],
 
     "instances": [
-        {
-            "id": "ceiling",
-            "type": "mesh",
-            "material": "diffuse-white",
-            "parameters": {
-                "transform": [
-                    1.0, 0.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 1.0, 0.0
-                ],
-                "vertex-data":{ 
-                    "format": "obj",
-                    "parameters":{
-                        "file-name": "data/models/specular/ceiling.obj"
-                    }
-                }
-            }
-        },
         {
             "id": "floor",
             "type": "mesh",
@@ -122,30 +110,6 @@
             }
         },
         {
-            "id": "light",
-            "type": "mesh",
-            "material": "light-bsdf",
-            "emission": {
-                "type": "lambertian",
-                "parameters": {
-                    "power": [1600.0, 1600.0, 1600.0]
-                }
-            },
-            "parameters": {
-                "transform": [
-                    0.25, 0.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 0.25, 0.0
-                ],
-                "vertex-data":{ 
-                    "format": "obj",
-                    "parameters":{
-                        "file-name": "data/models/specular/light.obj"
-                    }
-                }
-            }
-        },
-        {
             "id": "right-wall",
             "type": "mesh",
             "material": "conductor-bsdf",
@@ -170,24 +134,6 @@
                     }
                 }
             }
-        },
-        {
-            "id": "left-wall",
-            "type": "mesh",
-            "material": "diffuse-red",
-            "parameters": {
-                "transform": [
-                    1.0, 0.0, 0.0, 0.0,
-                    0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 1.0, 0.0
-                ],
-                "vertex-data":{ 
-                    "format": "obj",
-                    "parameters":{
-                        "file-name": "data/models/specular/leftWall.obj"
-                    }
-                }
-            }
         }
     ],
 
@@ -195,9 +141,10 @@
     "lights": [
         {
             "id": "ceiling-light",
-            "type": "area",
+            "type": "directional",
             "parameters": {
-                "instance": "light"
+                "direction": [1, -1.0, -0.3],
+                "power": [1, 1, 1]
             }
         }
     ],
@@ -219,7 +166,7 @@
     "renderer": {
         "type": "path-tracer-renderer",
         "parameters": {
-            "pixel-resolution": [512, 512],
+            "pixel-resolution": [2048, 2048],
             "sample-count": 5
         },
         "integrator": {
@@ -228,7 +175,7 @@
                 "max-depth": 100,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": true
+                "two-stage": false
             }
         }
     }

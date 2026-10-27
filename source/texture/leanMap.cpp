@@ -17,7 +17,7 @@ namespace pathtracer{
         m_moments.resize(maxL + 1, nullptr);
 
         // For now, I will only define the very last level
-        LOG_WARNING("Only the last level of the Lean Map defined.");
+        LOG_WARNING("Only the coarsest level of the Lean Map defined.");
 
         // The first and second raw moments of the slopes of x and y
         // E[x], E[y], E[xx], E[yy], E[xy]. These are just averages.

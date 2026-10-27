@@ -57,8 +57,10 @@ namespace pathtracer{
             );
         }
 
-        std::vector<std::vector<Vector3>> loadImage(
-            const std::string& filename) {
+        bool loadImage(
+            const std::string& filename,
+            std::vector<std::vector<Vector3>>& im
+        ) {
 
             int width, height, channels;
 
@@ -71,7 +73,7 @@ namespace pathtracer{
             );
 
             if (!data)
-                return {};
+                return false;
 
             std::vector<std::vector<Vector3>> image(
                 height,
@@ -93,7 +95,9 @@ namespace pathtracer{
 
             stbi_image_free(data);
 
-            return image;
+            im = std::move(image);
+
+            return true;
         }
 
     }

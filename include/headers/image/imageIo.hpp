@@ -14,8 +14,8 @@ namespace pathtracer{
             const std::vector<std::vector<Vector3>>& image,
             const std::string& filename);
 
-        std::vector<std::vector<Vector3>> loadImage(
-            const std::string& filename);
+        bool loadImage(const std::string& filename,
+            std::vector<std::vector<Vector3>>& im);
 
     }
 

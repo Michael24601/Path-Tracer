@@ -74,18 +74,35 @@ namespace pathtracer{
         for(int i = 0; i < m_specularInstances.size(); i++){
 
             Vector3 weight; 
+
+            // We can sample a normal if it rough, else we use the
+            // default (0, 0, 1) offset, which is no offset at all.
+            const SpecularManifoldBsdf* bsdf = m_bsdfs[i];
+
+            Vector3 localOffsetNormal(0, 0, 1);
+            real offsetPdf = 1.0;
+
+            if(bsdf->isRough()){
+                // We assume the surface has constant roughness,
+                // so we pass the center uv. It's an assumption the paper
+                // makes as well.
+                ManifoldNormal m = bsdf->sampleManifoldNormal(Vector2(0.5, 0.5));
+                localOffsetNormal = m.normal;
+                offsetPdf = m.pdf;
+            }
             
             if(m_biased){
                 weight = biasedSample(causticPoint, m_specularInstances[i], 
-                    m_bsdfs[i], lightPoint, wo, scene);
+                    m_bsdfs[i], lightPoint, wo, localOffsetNormal, scene);
             }
             else{
                 weight = unbiasedSample(causticPoint, m_specularInstances[i], 
-                    m_bsdfs[i], lightPoint, wo, scene);
+                    m_bsdfs[i], lightPoint, wo, localOffsetNormal, scene);
             }
 
-            // We divide weight by light selection probability
-            weight = weight / lightSelectionPdf;
+            // We divide weight by light selection probability, and the
+            // offset normal probability.
+            weight = weight / (lightSelectionPdf * offsetPdf);
 
             // We add up the weight from each specular
             totalColor = totalColor + weight;
@@ -101,11 +118,11 @@ namespace pathtracer{
         const SurfacePoint& causticPoint,
         const Instance* specular, const SpecularManifoldBsdf* bsdf,
         const LightSample& lightPoint, const Vector3& wo, 
-        const Scene* scene){
+        const Vector3& localOffsetNormal, const Scene* scene){
 
         // We sample one path at first
         SmsSample sample = samplePath(causticPoint, specular, bsdf, 
-            lightPoint, scene);
+            lightPoint, localOffsetNormal, scene);
 
         // If not valid, we discard this path
         if(!sample.isConverged()){
@@ -143,7 +160,7 @@ namespace pathtracer{
             counter++;
 
             SmsSample newSample = samplePath(causticPoint,
-                specular, bsdf, lightPoint, scene);
+                specular, bsdf, lightPoint, localOffsetNormal, scene);
 
             Vector3 delta = newSample.finalPoint().position()
                 - sample.finalPoint().position();
@@ -188,7 +205,7 @@ namespace pathtracer{
         const SurfacePoint& causticPoint,
         const Instance* specular, const SpecularManifoldBsdf* bsdf,
         const LightSample& lightPoint, const Vector3& wo, 
-        const Scene* scene){
+        const Vector3& localOffsetNormal, const Scene* scene){
 
         Vector3 value(0.0);
 
@@ -205,7 +222,7 @@ namespace pathtracer{
         for(int i = 0; i < m_maxBiasedTrials; i++){
 
             SmsSample sample = samplePath(causticPoint, specular, bsdf,
-                lightPoint, scene);
+                lightPoint, localOffsetNormal, scene);
 
             if(!sample.isConverged()){ 
                 continue;
@@ -266,7 +283,7 @@ namespace pathtracer{
     SmsSample SpecularManifoldSampling::samplePath(
         const SurfacePoint& causticPoint, const Instance* specular, 
         const SpecularManifoldBsdf* bsdf, const LightSample& lightPoint, 
-        const Scene* scene) {
+        const Vector3& localOffsetNormal, const Scene* scene) {
 
         // We will have to first sample a point on the specular surface
         // which we can do using areaSampling.
@@ -303,10 +320,6 @@ namespace pathtracer{
             return SmsSample(sample, Vector3(0.0), 1.0, true, false);
         }
 
-        // In tangent space, by default, we don't want to offset the normal.
-        // This when transformed to world space is just the shading normal.
-        // But for two stage manifold walk, we use an offset.
-        Vector3 localOffsetNormal(0, 0, 1);
         SurfacePoint seedIt = it;
         
         // Need to make sure there is a normal texture
@@ -325,8 +338,8 @@ namespace pathtracer{
             mu = (mu + muOffset) * 0.5;
             Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
 
-            // leanNormal lives in the base frame, so we transform it to
-            // the smooth shading frame of newIt.
+            // Lean normal lives in the base frame, and we use it as our
+            // offset normal.
             Vector3 leanNormal = Vector3(-slope[0], -slope[1], 1.0).normalized();
 
             SmsSample result = newtonSolver(causticPoint, newIt, lightPoint, bsdf,
@@ -344,9 +357,6 @@ namespace pathtracer{
             // Which we also normal map again to get back the original map
             it.instance()->normalMap(seedIt, false); 
         }
-
-        // We reset the normal
-        localOffsetNormal = Vector3(0, 0, 1);
 
         // We then do a newton solver, either with initial seed or new seed
         // in two stage manifold walk.

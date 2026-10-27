@@ -1,6 +1,6 @@
-
 #include "parser/parser.hpp"
 #include <fstream>
+#include <string>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include "core/instance.hpp"
@@ -45,13 +45,79 @@
 #include "texture/color.hpp"
 #include "parser/objLoader.hpp"
 #include "texture/leanMap.hpp"
-#include <nlohmann/json.hpp>
 
 
 namespace pathtracer{
 
 
     using json = nlohmann::json;
+
+
+    const json& require(const json& object, const std::string& key) {
+        if(!object.is_object() || !object.contains(key)){
+            LOG_ERROR("Parameter does not exist: " + key);
+            exit(1);
+        }
+        return object[key];
+    }
+
+
+    std::vector<std::vector<Vector3>> parseImage(const std::string& filename) {
+
+        std::vector<std::vector<Vector3>> image;
+
+        if(!ImageIo::loadImage(filename, image)){
+            LOG_ERROR("Could not load image: " + filename);
+            exit(1);
+        }
+
+        if(image.empty() || image[0].empty()){
+            LOG_ERROR("Image is empty: " + filename);
+            exit(1);
+        }
+
+        return image;
+    }
+
+
+    real parseReal(const json& object, const std::string& key) {
+        const json& value = require(object, key);
+        if(!value.is_number()){
+            LOG_ERROR("Parameter is not a number: " + key);
+            exit(1);
+        }
+        return value.get<real>();
+    }
+
+
+    int parseInt(const json& object, const std::string& key) {
+        const json& value = require(object, key);
+        if(!value.is_number_integer()){
+            LOG_ERROR("Parameter is not an integer: " + key);
+            exit(1);
+        }
+        return value.get<int>();
+    }
+
+
+    bool parseBool(const json& object, const std::string& key) {
+        const json& value = require(object, key);
+        if(!value.is_boolean()){
+            LOG_ERROR("Parameter is not a boolean: " + key);
+            exit(1);
+        }
+        return value.get<bool>();
+    }
+
+
+    std::string parseString(const json& object, const std::string& key) {
+        const json& value = require(object, key);
+        if(!value.is_string()){
+            LOG_ERROR("Parameter is not a string: " + key);
+            exit(1);
+        }
+        return value.get<std::string>();
+    }
 
 
     Vector3 parseVector3(const json& value) {
@@ -63,13 +129,23 @@ namespace pathtracer{
     }
 
 
+    Vector3 parseVector3(const json& object, const std::string& key) {
+        return parseVector3(require(object, key));
+    }
+
+
     Vector2 parseVector2(const json& value) {
         return Vector2(
             value[0],
             value[1]
         );
     }
-    
+
+
+    Vector2 parseVector2(const json& object, const std::string& key) {
+        return parseVector2(require(object, key));
+    }
+
 
     Vector2i parseVector2i(const json& value) {
         return Vector2i(
@@ -79,25 +155,33 @@ namespace pathtracer{
     }
 
 
-    // Expects json of a texture
+    Vector2i parseVector2i(const json& object, const std::string& key) {
+        return parseVector2i(require(object, key));
+    }
+
+
     Texture* parseTexture(const json& texture, bool linearize = false,
         bool isNormalMap = false, bool mipMap = false) {
 
-        const json& value = texture["parameters"];
+        const json& value = require(texture, "parameters");
+        std::string type = parseString(texture, "type");
 
-        if(texture["type"] == "texture"){
+        if(type == "texture"){
 
-            std::string filename = value["file-name"];
+            std::string filename = parseString(value, "file-name");
+            std::string borderMode = parseString(value, "border-mode");
+            std::string filterMode = parseString(value, "filter-mode");
+
             BorderMode bm;
             FilterMode fm;
 
-            if(value["border-mode"] == "repeat"){
+            if(borderMode == "repeat"){
                 bm = BorderMode::REPEAT;
             }
-            else if(value["border-mode"] == "clamp"){
+            else if(borderMode == "clamp"){
                 bm = BorderMode::CLAMP;
             }
-            else if(value["border-mode"] == "mirror"){
+            else if(borderMode == "mirror"){
                 bm = BorderMode::MIRROR;
             }
             else{
@@ -105,7 +189,7 @@ namespace pathtracer{
                 exit(1);
             }
 
-            if(value["filter-mode"] == "nearest"){
+            if(filterMode == "nearest"){
 
                 if(isNormalMap){
                     std::string message = "Normal maps should not use nearest filtering "
@@ -116,7 +200,7 @@ namespace pathtracer{
 
                 fm = FilterMode::NEAREST;
             }
-            else if(value["filter-mode"] == "bilinear"){
+            else if(filterMode == "bilinear"){
                 fm = FilterMode::BILINEAR;
             }
             else{
@@ -124,12 +208,11 @@ namespace pathtracer{
                 exit(1);
             }
 
-
-            return new Texture(ImageIo::loadImage(filename), bm, fm, 
+            return new Texture(parseImage(filename), bm, fm,
                 linearize, isNormalMap, mipMap);
         }
-        else if(texture["type"] == "color"){
-            Vector3 color = parseVector3(value["color"]);
+        else if(type == "color"){
+            Vector3 color = parseVector3(value, "color");
             return new Color(color);
         }
         else{
@@ -138,10 +221,8 @@ namespace pathtracer{
         }
     }
 
-    
+
     Transform parseTransform(const json& value) {
-        // We assume the transform matrix is defined row by row,
-        // But matrix is defined column by column
         return Transform(
             Matrix3(
                 Vector3(value[0], value[4], value[8]),
@@ -153,7 +234,6 @@ namespace pathtracer{
     }
 
 
-    // Parser member function
     Renderer* Parser::parse(const std::string& filename) {
 
         std::ifstream file(filename);
@@ -165,41 +245,31 @@ namespace pathtracer{
 
         json data = json::parse(file);
 
-        std::unordered_map<std::string, Bsdf*> materials;
-        std::unordered_map<std::string, Shape*> shapes;
-        std::unordered_map<std::string, Instance*> instances;
-        std::unordered_map<std::string, Light*> lights;
-        Camera* camera;
-        Integrator* integrator;
-        Renderer* renderer;
-
-        // Only one copy needed
-        Sphere* sphere = new Sphere();
-
+        
         if(data.contains("camera")){
 
-            if(data["camera"]["type"] == "perspective"){
+            const json& cameraJson = data["camera"];
 
-                Vector3 eye = parseVector3(
-                    data["camera"]["parameters"]["look-at"]["eye"]);
+            if(parseString(cameraJson, "type") == "perspective"){
 
-                Vector3 target = parseVector3(
-                    data["camera"]["parameters"]["look-at"]["target"]);
+                const json& params = require(cameraJson, "parameters");
+                const json& lookAt = require(params, "look-at");
 
-                Vector3 up = parseVector3(
-                    data["camera"]["parameters"]["look-at"]["up"]);
-
-                Vector2 dim = parseVector2(
-                    data["camera"]["parameters"]["sensor-dimension"]);
-
-                real focalLength =
-                    data["camera"]["parameters"]["focal-length"];
+                Vector3 eye = parseVector3(lookAt, "eye");
+                Vector3 target = parseVector3(lookAt, "target");
+                Vector3 up = parseVector3(lookAt, "up");
+                Vector2 dim = parseVector2(params, "sensor-dimension");
+                real focalLength = parseReal(params, "focal-length");
 
                 camera = new PerspectiveCamera(
                     dim.x(),
                     dim.y(),
                     Camera::lookAt(eye, target, up),
                     focalLength);
+            }
+            else{
+                LOG_ERROR("Camera type is not supported in: " + filename);
+                exit(1);
             }
         }
         else{
@@ -211,72 +281,65 @@ namespace pathtracer{
 
             for(int i = 0; i < data["materials"].size(); i++){
 
-                std::string id = data["materials"][i]["id"];
+                const json& material = data["materials"][i];
 
-                if(data["materials"][i]["type"] == "diffuse"){
+                std::string id = parseString(material, "id");
+                std::string type = parseString(material, "type");
+                const json& params = require(material, "parameters");
 
-                    // Since this is a color, we linearize it (if it's
-                    // an image, and not a color).
+                if(type == "diffuse"){
+
                     Texture* texture = parseTexture(
-                        data["materials"][i]["parameters"]["albedo"], true);
+                        require(params, "albedo"), true);
 
                     materials[id] = new DiffuseBsdf(texture);
                 }
-                else if(data["materials"][i]["type"] == "mirror"){
+                else if(type == "mirror"){
 
                     Texture* reflectance = parseTexture(
-                        data["materials"][i]["parameters"]["reflectance"]);
+                        require(params, "reflectance"));
 
                     materials[id] = new MirrorBsdf(reflectance);
                 }
-                else if(data["materials"][i]["type"] == "rough-conductor"){
+                else if(type == "rough-conductor"){
 
                     Texture* reflectance = parseTexture(
-                        data["materials"][i]["parameters"]["reflectance"]);
+                        require(params, "reflectance"));
                     Texture* roughness = parseTexture(
-                        data["materials"][i]["parameters"]["roughness"]);
+                        require(params, "roughness"));
 
                     materials[id] = new RoughConductorBsdf(reflectance, roughness);
                 }
-                else if(data["materials"][i]["type"] == "dielectric"){
+                else if(type == "dielectric"){
 
-                    Texture* ior = parseTexture(
-                        data["materials"][i]["parameters"]["ior"]);
-
+                    Texture* ior = parseTexture(require(params, "ior"));
                     Texture* reflectance = parseTexture(
-                        data["materials"][i]["parameters"]["reflectance"]);
-
+                        require(params, "reflectance"));
                     Texture* transmittance = parseTexture(
-                        data["materials"][i]["parameters"]["transmittance"]);
+                        require(params, "transmittance"));
 
                     materials[id] =
                         new DielectricBsdf(ior, reflectance, transmittance);
                 }
-                else if(data["materials"][i]["type"] == "principled"){
+                else if(type == "principled"){
 
-                    Texture* baseColor = nullptr;
-
-                    // Default values
                     Texture* roughness = new Color(Vector3(0.0));
                     Texture* metallic = new Color(Vector3(0.0));
                     Texture* specular = new Color(Vector3(0.0));
 
-                    baseColor = parseTexture(
-                        data["materials"][i]["parameters"]["base-color"]);
+                    Texture* baseColor = parseTexture(
+                        require(params, "base-color"));
 
-                    if(data["materials"][i]["parameters"].contains("roughness")){
-                        roughness = parseTexture(
-                            data["materials"][i]["parameters"]["roughness"]);
+                    if(params.contains("roughness")){
+                        roughness = parseTexture(params["roughness"]);
                     }
 
-                    if(data["materials"][i]["parameters"].contains("metallic")){
-                        metallic = parseTexture(
-                            data["materials"][i]["parameters"]["metallic"]);
+                    if(params.contains("metallic")){
+                        metallic = parseTexture(params["metallic"]);
                     }
 
-                    if(data["materials"][i]["parameters"].contains("specular")){
-                        specular = parseTexture(
-                            data["materials"][i]["parameters"]["specular"]);
+                    if(params.contains("specular")){
+                        specular = parseTexture(params["specular"]);
                     }
 
                     materials[id] =
@@ -293,10 +356,12 @@ namespace pathtracer{
 
             for(int i = 0; i < data["instances"].size(); i++){
 
-                json& inst = data["instances"][i];
-                std::string id = inst["id"];
+                const json& inst = data["instances"][i];
 
-                std::string materialID = inst["material"];
+                std::string id = parseString(inst, "id");
+                std::string materialID = parseString(inst, "material");
+                std::string instType = parseString(inst, "type");
+                const json& params = require(inst, "parameters");
 
                 if(materials.find(materialID) == materials.end()){
                     LOG_ERROR(
@@ -308,87 +373,80 @@ namespace pathtracer{
                 Emission* emission = nullptr;
 
                 if(inst.contains("emission")){
-                    if(inst["emission"]["type"] == "lambertian"){
+                    const json& emissionJson = inst["emission"];
+
+                    if(parseString(emissionJson, "type") == "lambertian"){
                         emission = new LambertianEmission(
-                            parseVector3(inst["emission"]["parameters"]["power"]));
+                            parseVector3(
+                                require(emissionJson, "parameters"), "power"));
                     }
                 }
 
                 Transform transform = Transform::IDENTITY;
 
-                if(inst["parameters"].contains("transform")){
-                    transform = parseTransform(inst["parameters"]["transform"]);
+                if(params.contains("transform")){
+                    transform = parseTransform(params["transform"]);
                 }
 
-
                 bool isCausticReceiver = false;
-                if(inst["parameters"].contains("is-caustic-receiver")){
-                    isCausticReceiver = inst["parameters"]["is-caustic-receiver"];
+                if(params.contains("is-caustic-receiver")){
+                    isCausticReceiver = parseBool(params, "is-caustic-receiver");
                 }
 
                 Texture* normalMap = nullptr;
 
-                if(inst["parameters"].contains("normal-map")){
-
-                    normalMap = parseTexture(inst["parameters"]["normal-map"], 
+                if(params.contains("normal-map")){
+                    normalMap = parseTexture(params["normal-map"],
                         false, true, true);
                 }
 
                 Texture* alphaMask = nullptr;
 
-                if(inst["parameters"].contains("alpha-mask")){
-                    alphaMask = parseTexture(inst["parameters"]["alpha-mask"]);
+                if(params.contains("alpha-mask")){
+                    alphaMask = parseTexture(params["alpha-mask"]);
                 }
 
                 Instance* instance;
-                if(inst["type"] == "sphere"){
+                if(instType == "sphere"){
 
                     instance = new Instance(sphere, alphaMask, normalMap,
                         materials[materialID], emission, transform);
-                        
                 }
-                else if (inst["type"] == "mesh"){
+                else if(instType == "mesh"){
 
-                    Mesh* mesh;
+                    Mesh* mesh = nullptr;
 
-                    if(inst["parameters"]["vertex-data"]["format"] == "raw-array"){
+                    const json& vertexData = require(params, "vertex-data");
+                    std::string format = parseString(vertexData, "format");
+                    const json& vertexParams = require(vertexData, "parameters");
+
+                    if(format == "raw-array"){
+
+                        const json& vertices = require(vertexParams, "vertices");
 
                         std::vector<Triangle> triangles;
+                        triangles.reserve(vertices.size());
 
-                        triangles.reserve(
-                            inst["parameters"]["vertex-data"]
-                                ["parameters"]["vertices"].size());
-
-                        // We need to loop over every triangle
-                        for(int j = 0;
-                            j < inst["parameters"]["vertex-data"]
-                                ["parameters"]["vertices"].size();
-                            j++){
-
+                        for(int j = 0; j < vertices.size(); j++){
                             triangles.emplace_back(Triangle(
-                                parseVector3(
-                                    inst["parameters"]["vertex-data"]
-                                        ["parameters"]["vertices"][j][0]),
-
-                                parseVector3(
-                                    inst["parameters"]["vertex-data"]
-                                        ["parameters"]["vertices"][j][1]),
-
-                                parseVector3(
-                                    inst["parameters"]["vertex-data"]
-                                        ["parameters"]["vertices"][j][2])
+                                parseVector3(vertices[j][0]),
+                                parseVector3(vertices[j][1]),
+                                parseVector3(vertices[j][2])
                             ));
                         }
 
                         mesh = new Mesh(triangles);
                     }
-                    else if(inst["parameters"]["vertex-data"]["format"] == "obj"){
+                    else if(format == "obj"){
 
-                        std::string filename =
-                            inst["parameters"]["vertex-data"]
-                                ["parameters"]["file-name"];
+                        std::string objFilename =
+                            parseString(vertexParams, "file-name");
 
-                        mesh = ObjLoader::loadMesh(filename);
+                        mesh = ObjLoader::loadMesh(objFilename);
+                    }
+                    else{
+                        LOG_ERROR("Invalid vertex-data format for instance: " + id);
+                        exit(1);
                     }
 
                     instance = new Instance(
@@ -413,14 +471,16 @@ namespace pathtracer{
 
             for(int i = 0; i < data["lights"].size(); i++){
 
-                std::string id = data["lights"][i]["id"];
+                const json& light = data["lights"][i];
 
-                if(data["lights"][i]["type"] == "area"){
+                std::string id = parseString(light, "id");
+                std::string type = parseString(light, "type");
+                const json& params = require(light, "parameters");
 
-                    std::string instID =
-                        data["lights"][i]["parameters"]["instance"];
+                if(type == "area"){
 
-                    // Instance should have emission
+                    std::string instID = parseString(params, "instance");
+
                     if(instances.find(instID) == instances.end()){
                         LOG_ERROR(
                             "Could not find specified emissive instance: "
@@ -429,39 +489,30 @@ namespace pathtracer{
                         exit(1);
                     }
 
-
                     if(!instances[instID]->emission()){
                         LOG_ERROR("Instance is not emissive: " + instID);
                         exit(1);
                     }
 
-                    lights[id] =
-                        new AreaLight(instances[instID]);
+                    lights[id] = new AreaLight(instances[instID]);
                 }
-                else if(data["lights"][i]["type"] == "point"){
+                else if(type == "point"){
 
-                    Vector3 power = parseVector3(
-                        data["lights"][i]["parameters"]["power"]);
-
-                    Vector3 pos = parseVector3(
-                        data["lights"][i]["parameters"]["position"]);
+                    Vector3 power = parseVector3(params, "power");
+                    Vector3 pos = parseVector3(params, "position");
 
                     lights[id] = new PointLight(pos, power);
                 }
-                else if(data["lights"][i]["type"] == "directional"){
+                else if(type == "directional"){
 
-                    Vector3 power = parseVector3(
-                        data["lights"][i]["parameters"]["power"]);
-
-                    Vector3 dir = parseVector3(
-                        data["lights"][i]["parameters"]["direction"]);
+                    Vector3 power = parseVector3(params, "power");
+                    Vector3 dir = parseVector3(params, "direction");
 
                     lights[id] = new DirectionalLight(dir, power);
                 }
             }
         }
 
-        // Vector creation
         std::vector<Instance*> instanceVector;
         instanceVector.reserve(instances.size());
 
@@ -480,29 +531,33 @@ namespace pathtracer{
 
         if(data.contains("renderer")){
 
-            Vector2i resolution =
-                parseVector2i(
-                    data["renderer"]["parameters"]["pixel-resolution"]);
+            const json& rendererJson = data["renderer"];
+            const json& rendererParams = require(rendererJson, "parameters");
+            const json& integratorJson = require(rendererJson, "integrator");
 
-            if(data["renderer"]["integrator"]["type"] == "aov-integrator"){
+            Vector2i resolution = parseVector2i(rendererParams, "pixel-resolution");
 
-                std::string var = data["renderer"]["integrator"]["parameters"]
-                    ["render-variable"];
+            std::string integratorType = parseString(integratorJson, "type");
+            const json& ip = require(integratorJson, "parameters");
+
+            if(integratorType == "aov-integrator"){
+
+                std::string var = parseString(ip, "render-variable");
 
                 if(var == "shading-normal"){
                     integrator = new AovIntegrator(
                         AovIntegrator::RenderVariable::SHADING_NORMAL);
                 }
                 else if(var == "geometry-normal"){
-                    integrator =new AovIntegrator(
+                    integrator = new AovIntegrator(
                         AovIntegrator::RenderVariable::GEOMETRY_NORMAL);
                 }
                 else if(var == "lean-normal"){
-                    integrator =new AovIntegrator(
+                    integrator = new AovIntegrator(
                         AovIntegrator::RenderVariable::LEAN_NORMAL);
                 }
                 else if(var == "mipmap-normal"){
-                    integrator =new AovIntegrator(
+                    integrator = new AovIntegrator(
                         AovIntegrator::RenderVariable::MIPMAP_NORMAL);
                 }
                 else if(var == "dpdu"){
@@ -541,100 +596,69 @@ namespace pathtracer{
                     integrator = new AovIntegrator(
                         AovIntegrator::RenderVariable::DTDV);
                 }
+                else{
+                    LOG_ERROR("Invalid render-variable: " + var);
+                    exit(1);
+                }
             }
-            else if(data["renderer"]["integrator"]["type"] == "path-tracer"){
-
-                int maxDepth =
-                    data["renderer"]["integrator"]["parameters"]["max-depth"];
-
-                integrator = new PathTracer(maxDepth);
+            else if(integratorType == "path-tracer"){
+                integrator = new PathTracer(parseInt(ip, "max-depth"));
             }
-            else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee"){
-
-                int maxDepth =
-                    data["renderer"]["integrator"]["parameters"]["max-depth"];
-
-                integrator = new PathTracerNee(maxDepth);
+            else if(integratorType == "path-tracer-nee"){
+                integrator = new PathTracerNee(parseInt(ip, "max-depth"));
             }
-            else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-mis"){
-
-                int maxDepth =
-                    data["renderer"]["integrator"]["parameters"]["max-depth"];
-
-                integrator = new PathTracerNeeMis(maxDepth);
+            else if(integratorType == "path-tracer-nee-mis"){
+                integrator = new PathTracerNeeMis(parseInt(ip, "max-depth"));
             }
-            else if(data["renderer"]["integrator"]["type"] == "path-tracer-guided"){
-
-                int maxDepth =
-                    data["renderer"]["integrator"]["parameters"]["max-depth"];
-
-                integrator = new PathTracerGuided(maxDepth);
+            else if(integratorType == "path-tracer-guided"){
+                integrator = new PathTracerGuided(parseInt(ip, "max-depth"));
             }
-            else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-guided"){
-
-                int maxDepth =
-                    data["renderer"]["integrator"]["parameters"]["max-depth"];
-
-                integrator = new PathTracerNeeGuided(maxDepth);
+            else if(integratorType == "path-tracer-nee-guided"){
+                integrator = new PathTracerNeeGuided(parseInt(ip, "max-depth"));
             }
-            else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-mis-guided"){
-
-                int maxDepth =
-                    data["renderer"]["integrator"]["parameters"]["max-depth"];
-
-                integrator = new PathTracerNeeMisGuided(maxDepth);
+            else if(integratorType == "path-tracer-nee-mis-guided"){
+                integrator = new PathTracerNeeMisGuided(parseInt(ip, "max-depth"));
             }
-            else if(data["renderer"]["integrator"]["type"] == "path-tracer-sms"){
+            else if(integratorType == "path-tracer-sms"){
 
-                int maxDepth =
-                    data["renderer"]["integrator"]["parameters"]["max-depth"];
-                
-                bool useHalfVector =
-                    data["renderer"]["integrator"]["parameters"]["use-halfvector"];
+                int maxDepth = parseInt(ip, "max-depth");
+                bool useHalfVector = parseBool(ip, "use-halfvector");
+                bool biased = parseBool(ip, "biased");
+                bool twoStage = parseBool(ip, "two-stage");
 
-                bool biased =
-                    data["renderer"]["integrator"]["parameters"]["biased"];
-
-                bool twoStage =
-                    data["renderer"]["integrator"]["parameters"]["two-stage"];
-
-                
                 integrator =
                     new PathTracerSms(maxDepth, useHalfVector, biased, twoStage, scene);
             }
-            else if(data["renderer"]["integrator"]["type"] == "path-tracer-nee-sms"){
+            else if(integratorType == "path-tracer-nee-sms"){
 
-                int maxDepth =
-                    data["renderer"]["integrator"]["parameters"]["max-depth"];
-                
-                bool useHalfVector =
-                    data["renderer"]["integrator"]["parameters"]["use-halfvector"];
-
-                bool biased =
-                    data["renderer"]["integrator"]["parameters"]["biased"];
-
-                bool twoStage =
-                    data["renderer"]["integrator"]["parameters"]["two-stage"];
+                int maxDepth = parseInt(ip, "max-depth");
+                bool useHalfVector = parseBool(ip, "use-halfvector");
+                bool biased = parseBool(ip, "biased");
+                bool twoStage = parseBool(ip, "two-stage");
 
                 integrator =
                     new PathTracerNeeSms(maxDepth, useHalfVector, biased, twoStage, scene);
             }
-            else if(data["renderer"]["integrator"]["type"] == "photon-mapping-integrator"){
+            else if(integratorType == "photon-mapping-integrator"){
 
-                int maxDepth = data["renderer"]["integrator"]["parameters"]["max-depth"];
-                real kernelRadius = data["renderer"]["integrator"]["parameters"]["kernel-radius"];
-                
+                int maxDepth = parseInt(ip, "max-depth");
+                real kernelRadius = parseReal(ip, "kernel-radius");
+
                 KernelType type;
-                std::string var = data["renderer"]["integrator"]["parameters"]
-                    ["kernel-type"];
+                std::string var = parseString(ip, "kernel-type");
+
                 if(var == "uniform"){
                     type = KernelType::UNIFORM;
                 }
-                else if (var == "epanechnikov"){
+                else if(var == "epanechnikov"){
                     type = KernelType::EPANECHNIKOV;
                 }
+                else{
+                    LOG_ERROR("Invalid kernel-type: " + var);
+                    exit(1);
+                }
 
-                integrator = new PhotonMappingIntegrator(maxDepth, 
+                integrator = new PhotonMappingIntegrator(maxDepth,
                     kernelRadius, type);
             }
             else{
@@ -642,58 +666,54 @@ namespace pathtracer{
                 exit(1);
             }
 
-
             int messageCount = 10;
-            if(data["renderer"]["parameters"].contains("message-count")){
-                messageCount = data["renderer"]["parameters"]["message-count"];
+            if(rendererParams.contains("message-count")){
+                messageCount = parseInt(rendererParams, "message-count");
             }
 
-            if(data["renderer"]["type"] == "path-tracer-renderer"){
+            std::string rendererType = parseString(rendererJson, "type");
 
-                int sampleCount =
-                    data["renderer"]["parameters"]["sample-count"];
+            if(rendererType == "path-tracer-renderer"){
+
+                int sampleCount = parseInt(rendererParams, "sample-count");
 
                 renderer = new PathTracerRenderer(
                     resolution.x(), resolution.y(),
                     camera, scene, integrator, sampleCount, messageCount
                 );
             }
-            else if(data["renderer"]["type"] == "photon-mapping-renderer"){
+            else if(rendererType == "photon-mapping-renderer"){
 
-                int maxDepth = data["renderer"]["parameters"]["max-depth"];
-                int threshold = data["renderer"]["parameters"]["threshold"];
-                int photonCount = data["renderer"]["parameters"]["photon-count"];
+                int maxDepth = parseInt(rendererParams, "max-depth");
+                int threshold = parseInt(rendererParams, "threshold");
+                int photonCount = parseInt(rendererParams, "photon-count");
 
                 renderer = new PhotonMappingRenderer(
                     resolution.x(), resolution.y(),
-                    camera, scene, integrator, photonCount, threshold, maxDepth, 
+                    camera, scene, integrator, photonCount, threshold, maxDepth,
                     messageCount
                 );
             }
-            else if(data["renderer"]["type"] == "renderer"){
+            else if(rendererType == "renderer"){
 
                 renderer = new Renderer(
-                    resolution.x(), resolution.y(), camera, scene, 
+                    resolution.x(), resolution.y(), camera, scene,
                     integrator, messageCount
                 );
             }
-            else if(data["renderer"]["type"] == "path-guiding-renderer"){
+            else if(rendererType == "path-guiding-renderer"){
 
-                int renderSamples =
-                    data["renderer"]["parameters"]["sample-count"];
+                int renderSamples = parseInt(rendererParams, "sample-count");
 
                 int firstIterationSamples = 4;
-                if(data["renderer"]["parameters"].contains("first-iteration-sample-count")){
-                    firstIterationSamples = 
-                        data["renderer"]["parameters"]["first-iteration-sample-count"];
+                if(rendererParams.contains("first-iteration-sample-count")){
+                    firstIterationSamples =
+                        parseInt(rendererParams, "first-iteration-sample-count");
                 }
 
-                int iterationCount =
-                    data["renderer"]["parameters"]["iteration-count"];
-
-                int c = data["renderer"]["parameters"]["spatial-subdivision-c"];
-
-                real alpha = data["renderer"]["parameters"]["mis-alpha"];
+                int iterationCount = parseInt(rendererParams, "iteration-count");
+                int c = parseInt(rendererParams, "spatial-subdivision-c");
+                real alpha = parseReal(rendererParams, "mis-alpha");
 
                 renderer = new PathGuidingRenderer(
                     resolution.x(),
@@ -703,8 +723,8 @@ namespace pathtracer{
                     integrator,
                     iterationCount,
                     renderSamples,
-                    c, alpha, 
-                    firstIterationSamples, 
+                    c, alpha,
+                    firstIterationSamples,
                     messageCount
                 );
             }
@@ -712,7 +732,6 @@ namespace pathtracer{
                 LOG_ERROR("No renderer found.");
                 exit(1);
             }
-
         }
         else{
             LOG_ERROR("No renderer in: " + filename);

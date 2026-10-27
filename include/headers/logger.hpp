@@ -24,6 +24,7 @@ namespace pathtracer {
 
         static std::ostream* output;
         static float MAX_TIME_INTERVAL;
+        static bool OUTPUT_TO_CONSOLE;
 
         // Keeps track of logs, ensures the same message is not spammed
         static std::unordered_map<std::string, float> lastLogged;
@@ -37,6 +38,8 @@ namespace pathtracer {
     public:
 
         static void setOutput(std::ostream& stream);
+
+        static void setConsoleOutput(bool consoleOutput);
 
         static void setMaxTimeInterval(float seconds);
 

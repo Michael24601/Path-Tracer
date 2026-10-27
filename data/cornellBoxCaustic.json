@@ -121,14 +121,14 @@
             "emission": {
                 "type": "lambertian",
                 "parameters": {
-                    "power": [170.0, 120.0, 50.0]
+                    "power": [500.0, 280.0, 120.0]
                 }
             },
             "parameters": {
                 "transform": [
-                    0.25, 0.0, 0.0, 0.0,
+                    0.12, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 0.25, 0.0
+                    0.0, 0.0, 0.12, 0.0
                 ],
                 "vertex-data":{ 
                     "format": "obj",
@@ -205,7 +205,7 @@
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/wave.png",
+                        "file-name": "data/textures/wavy_normal.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -236,12 +236,12 @@
             }
         }
     },
-
+    
     "renderer": {
         "type": "path-tracer-renderer",
         "parameters": {
-            "pixel-resolution": [512, 512],
-            "sample-count": 10
+            "pixel-resolution": [256, 256],
+            "sample-count": 5
         },
         "integrator": {
             "type": "path-tracer-nee-sms",
@@ -253,5 +253,4 @@
             }
         }
     }
-    
 }

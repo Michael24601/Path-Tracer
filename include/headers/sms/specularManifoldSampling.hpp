@@ -87,14 +87,14 @@ namespace pathtracer{
         Vector3 unbiasedSample(const SurfacePoint& causticPoint,
             const Instance* specular, const SpecularManifoldBsdf* bsdf,
             const LightSample& lightPoint, const Vector3& wo, 
-            const Scene* scene);
+            const Vector3& localOffsetNormal, const Scene* scene);
 
 
         // Same but biased (less variance).
         Vector3 biasedSample(const SurfacePoint& causticPoint,
             const Instance* specular, const SpecularManifoldBsdf* bsdf,
             const LightSample& lightPoint, const Vector3& wo, 
-            const Scene* scene);
+            const Vector3& localOffsetNormal, const Scene* scene);
 
             
         // Given a point on a light x2 (that we already 
@@ -107,7 +107,8 @@ namespace pathtracer{
         // a non converged result.
         SmsSample samplePath(const SurfacePoint& causticPoint, 
             const Instance* specular, const SpecularManifoldBsdf* bsdf, 
-            const LightSample& lightPoint, const Scene* scene);
+            const LightSample& lightPoint, const Vector3& localOffsetNormal,
+            const Scene* scene);
 
 
         SmsSample newtonSolver(const SurfacePoint& causticPoint, 

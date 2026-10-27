@@ -11,6 +11,7 @@
 #include <sstream>
 #include <filesystem>
 #include <algorithm>
+#include <windows.h>
 
 #include "integrator/guidable.hpp"
 #include "pathGuiding/kdTree.hpp"
@@ -20,13 +21,26 @@
 using namespace pathtracer;
 
 
+static void printLine() {
+    std::string line;
+    for(int i = 0; i < 130; i++) line += "─";
+
+    std::cout << "\n" << line << "\n\n";
+    std::cout.flush();
+}
+
+
 int main(int argc, char* argv[]) {
 
     
     std::ofstream logFile("file.log");
     Logger::setOutput(logFile);
     Logger::setMaxTimeInterval(-1.0);
+    Logger::setConsoleOutput(true);
 
+    SetConsoleOutputCP(CP_UTF8);
+    std::atexit(printLine);
+    printLine();
 
     if(argc != 3 && argc != 2) {
         LOG_ERROR("Invalid arguments");
@@ -81,11 +95,6 @@ int main(int argc, char* argv[]) {
     renderTree(Vector3(0.98, 0, -0.98), "tree3");
     renderTree(Vector3(0.98, 0, 0.98), "tree4");
 
-    PathTracerNeeSms* p = dynamic_cast<PathTracerNeeSms*>(renderer->m_integrator);
-    if(p){
-        LOG_INFO(std::to_string(p->sms->m_con) + " " + std::to_string(p->sms->m_not));
-    }
-
 
     std::string outputName;
 
@@ -115,12 +124,11 @@ int main(int argc, char* argv[]) {
 
     ImageIo::savePNG(image, output);
 
-    LOG_INFO("Image saved to " + output);
+    LOG_INFO("Image saved.");
 
     // Opens image when done
     std::string command = "start \"\" \"" + output + "\"";
     system(command.c_str());
-
 
     return 0;
 }

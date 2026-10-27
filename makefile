@@ -9,6 +9,8 @@ SOURCES = $(wildcard source/*.cpp) \
 OBJECTS = $(patsubst source/%.cpp,build/%.o,$(SOURCES))
 DEBUG_OBJECTS = $(patsubst source/%.cpp,build/%.debug.o,$(SOURCES))
 
+CLEAR = cmd /c cls
+
 DEPS = $(OBJECTS:.o=.d)
 DEBUG_DEPS = $(DEBUG_OBJECTS:.debug.o=.debug.d)
 
@@ -47,6 +49,7 @@ run:
 
 # Builds and runs
 build-run: all
+	$(CLEAR)
 	build/build.exe $(ARGS)
 
 # Runs using gdb for debugging

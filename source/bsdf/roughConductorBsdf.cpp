@@ -120,24 +120,22 @@ namespace pathtracer{
 
 
     ManifoldNormal RoughConductorBsdf::sampleManifoldNormal(const Vector2& uv) const {
-
         const real roughness = m_roughness->sample(uv).x();
         const real alpha = std::max(real(1e-3), sqrtReal(roughness));
 
         const Vector2 u = Random::next2D();
 
-        const real tan2Theta = alpha * alpha * u.x() / (1.0 - u.x());
-        const real cosTheta = 1.0 / sqrtReal(1.0 + tan2Theta);
-        const real sinTheta = sqrtReal(std::max(real(0.0), 1.0 - cosTheta * cosTheta));
-        const real phi = 2.0 * PI * u.y();
+        const real ux = std::min(u.x(), real(1.0) - real(1e-7));
+        const real tan2Theta = alpha * alpha * ux / (real(1.0) - ux);
+        const real cosTheta = real(1.0) / sqrtReal(real(1.0) + tan2Theta);
+        const real sinTheta = sqrtReal(std::max(real(0.0), real(1.0) - cosTheta * cosTheta));
+        const real phi = real(2.0) * PI * u.y();
 
-        const Vector3 wm(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+        const Vector3 wm(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
 
-        // pdf(wm) = D(wm) * cos(theta_m)
         const real pdf = Microfacet::evaluateGGX(alpha, wm) * cosTheta;
 
-        ManifoldNormal result{wm, pdf};
-        return result;
+        return ManifoldNormal{wm, pdf};
     }
 
 

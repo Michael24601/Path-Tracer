@@ -191,8 +191,8 @@ namespace pathtracer{
                     }
 
                     m_trainTree->accumulate(localPoint, direction, weight, 
-                        incoming.mean(), SpatialFilter::BOX, 
-                        DirectionalFilter::BOX);
+                        incoming.mean(), SpatialFilter::NEAREST, 
+                        DirectionalFilter::NEAREST);
                 }
 
 
@@ -216,7 +216,7 @@ namespace pathtracer{
             Vector3 localPoint = toTreeLocalSpace(position.position(), scene);
 
             m_trainTree->accumulate(localPoint, wi, 0.5, contribution.mean(), 
-                SpatialFilter::BOX, DirectionalFilter::BOX);
+                SpatialFilter::NEAREST, DirectionalFilter::NEAREST);
         }
         
     }
