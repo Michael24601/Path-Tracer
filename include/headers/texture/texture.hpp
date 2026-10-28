@@ -2,7 +2,7 @@
 #ifndef PATH_TRACER_TEXTURE_HPP
 #define PATH_TRACER_TEXTURE_HPP
 
-#include "image.hpp"
+#include "mipMap.hpp"
 
 namespace pathtracer{
 
@@ -14,10 +14,10 @@ namespace pathtracer{
 
     protected:
 
-        // Texture here has 3D data, for color
-        Image* image;
+        // Uses 3D images for RGB
+        MipMap mipmap;
 
-        std::vector<Image*> mipmaps;
+        bool m_isNormalMap;
 
         // For color textures, we need to turn srgb to linear
         static Vector3 srgbToLinear(const Vector3& color);
@@ -25,8 +25,13 @@ namespace pathtracer{
         // Maps normal from [0, 1] to [-1, 1] and normalizes
         static Vector3 mapToNormal(const Vector3& color);
 
+
+        Vector3 outputSample(const std::vector<real>& p) const;
+
         
-        void generateMipmaps(bool isNormalMap);
+        static Image buildImage(const std::vector<std::vector<Vector3>>& data,
+            BorderMode borderMode, FilterMode filterMode,
+            bool linearize, bool isNormalMap);
 
 
     public:
@@ -34,28 +39,20 @@ namespace pathtracer{
         // Optionally, for color textures, they can be linearized
         Texture(const std::vector<std::vector<Vector3>>& data, 
             BorderMode borderMode, FilterMode filterMode, 
-            bool linearize = false, bool isNormalMap = false,
-            bool storeMipmaps = false);
-
-        
-        ~Texture(){
-            if(image){
-                delete image;
-            }
-        }
+            bool linearize = false, bool isNormalMap = false);
 
         
         inline int getWidth() const{
-            return image->getWidth();
+            return mipmap.level(0).getWidth();
         }
 
 
         inline int getHeight() const{
-            return image->getHeight();
+            return mipmap.level(0).getHeight();
         }
 
 
-        Vector3 getPixel(int i, int j) const;
+        virtual Vector3 getPixel(int i, int j) const;
         
 
         // Samples the texture according to the set modes. The given
@@ -66,29 +63,15 @@ namespace pathtracer{
         virtual Vector3 sample(const Vector2& uv) const;
 
 
-        Vector3 sampleMipMap(const Vector2& uv, int level) const;
+        virtual Vector3 sampleMipMap(const Vector2& uv, int level) const;
 
 
-        void sampleGradient(const Vector2& uv,
+        virtual void sampleGradient(const Vector2& uv,
             Vector3& dU, Vector3& dV) const;
 
 
         int maxMipMapLevel() const{
-
-            // Each level doubles the number of pixels merged
-
-            // First we pick the larger of the two dimensions
-            int size = std::max(image->getWidth(), image->getHeight());
-
-            int level = 0;
-            while (size > 1) {
-                // We then divide the size by 2, and increment the level
-                // each time until it is 1, using bit operators.
-                size >>= 1;
-                level++;
-            }
-
-            return level;
+            return mipmap.maxLevel();
         }
 
     };

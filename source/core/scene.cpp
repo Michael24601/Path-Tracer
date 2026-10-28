@@ -1,6 +1,7 @@
 
 #include "core/scene.hpp"
 #include <cassert>
+#include <utility>
 #include "core/instance.hpp"
 #include "core/ray.hpp"
 #include "intersection/rayTracer.hpp"
@@ -19,8 +20,8 @@ namespace pathtracer{
 
         Intersection it = Intersection::NO_HIT;
 
-        for(Instance* inst: m_instances){
-            RayTracer::intersect(it, ray, inst);
+        for(auto& inst: m_instances){
+            RayTracer::intersect(it, ray, inst.get());
 
             if(it && !std::isfinite(maxDistance)){
                 return it;
@@ -34,13 +35,15 @@ namespace pathtracer{
     }
 
 
-    Scene::Scene(const std::vector<Instance*>& instances,
-        const std::vector<Light*>& lights) :
-        m_instances{instances}, 
-        m_lights{lights} {
+    Scene::Scene(AssetManager assetManager,
+        std::vector<std::unique_ptr<Instance>> instances,
+        std::vector<std::unique_ptr<Light>> lights)
+        : m_assetManager(std::move(assetManager)),
+        m_instances(std::move(instances)),
+        m_lights(std::move(lights)) {
 
         // These instances are now part of the scene, so we flag them
-        for(Instance* inst: m_instances){
+        for(auto& inst: m_instances){
             inst->setInScene(true);
             m_bounds.extend(inst->getBoundingBox());
         }
@@ -48,6 +51,9 @@ namespace pathtracer{
         // We can scale it up to avoid numerical errors
         m_bounds.scale(1.1);
     }
+
+
+    Scene::~Scene() = default;
 
 
     const AxisAlignedBox& Scene::getBoundingBox() const {
@@ -69,7 +75,7 @@ namespace pathtracer{
         assert((index >= 0 && index < m_instances.size())
             && "Index is out of bounds");
 
-        return m_instances[index];
+        return m_instances[index].get();
     }
 
 
@@ -77,7 +83,7 @@ namespace pathtracer{
         assert((index >= 0 && index < m_lights.size())
             && "Index is out of bounds");
 
-        return m_lights[index];
+        return m_lights[index].get();
     }
 
 
@@ -87,8 +93,8 @@ namespace pathtracer{
 
         Intersection it = Intersection::NO_HIT;
 
-        for(Instance* inst: m_instances){
-            RayTracer::intersect(it, ray, inst);
+        for(auto& inst: m_instances){
+            RayTracer::intersect(it, ray, inst.get());
         }
 
         return it;

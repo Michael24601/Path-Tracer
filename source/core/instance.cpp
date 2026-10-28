@@ -21,25 +21,19 @@ namespace pathtracer{
     }
 
 
-    Instance::Instance(const Shape* shape,
-        const Texture* alpha, const Texture* normal,
-        const Bsdf* bsdf, const Emission* emission, 
-        const Transform& transform) : 
+    Instance::Instance(const Shape* shape, const Texture* alpha, 
+        const Texture* normal, const MipMap* leanMap, const Bsdf* bsdf, 
+        const Emission* emission, const Transform& transform) : 
         m_shape(shape), 
         m_alpha(alpha), 
         m_normal(normal),
         m_bsdf(bsdf), 
         m_emission(emission),
         m_transform(transform), 
+        m_leanMap(leanMap),
         m_light{nullptr}, 
         m_inScene{false},
-        m_leanMap{nullptr},
-        m_isCausticReceiver{false}{
-            
-        if(m_normal){   
-            m_leanMap = new LeanMap(m_normal);
-        }
-    }
+        m_isCausticReceiver{false}{}
 
 
     bool Instance::hasAlphaTexture() const {
@@ -106,7 +100,7 @@ namespace pathtracer{
     }
 
 
-    const LeanMap* const Instance::leanMap() const {
+    const MipMap* const Instance::leanMap() const {
         return m_leanMap;
     }
 

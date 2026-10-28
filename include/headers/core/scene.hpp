@@ -2,7 +2,9 @@
 #define PATH_TRACER_SCENE_HPP
 
 #include <vector>
+#include <memory>
 #include "bvh/axisAlignedBox.hpp"
+#include "parser/assetManager.hpp"
 
 namespace pathtracer{
 
@@ -11,13 +13,13 @@ namespace pathtracer{
     class Ray;
     class Intersection;
     class Vector3;
-
     class Scene{
 
     private:
-    
-        std::vector<Instance*> m_instances;
-        std::vector<Light*> m_lights;
+
+        std::vector<std::unique_ptr<Instance>> m_instances;
+        std::vector<std::unique_ptr<Light>> m_lights;
+        AssetManager m_assetManager;
 
         AxisAlignedBox m_bounds;
 
@@ -28,8 +30,12 @@ namespace pathtracer{
 
     public:
 
-        Scene(const std::vector<Instance*>& instances,
-            const std::vector<Light*>& lights);
+        Scene(AssetManager assetManager,
+            std::vector<std::unique_ptr<Instance>> instances,
+            std::vector<std::unique_ptr<Light>> lights);
+
+
+        ~Scene();
 
 
         const AxisAlignedBox& getBoundingBox() const;

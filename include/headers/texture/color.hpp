@@ -18,6 +18,16 @@ namespace pathtracer{
         // color.
         virtual Vector3 sample(const Vector2& uv) const override;
 
+
+        virtual Vector3 getPixel(int w, int h) const override;
+
+
+        virtual Vector3 sampleMipMap(const Vector2& uv, int level) const override;
+
+
+        virtual void sampleGradient(const Vector2& uv, Vector3& dU, 
+            Vector3& dV) const override;
+
     };
 
 }

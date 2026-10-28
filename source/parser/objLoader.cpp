@@ -4,11 +4,13 @@
 #include "parser/objLoader.hpp"
 #include <stdexcept>
 #include <vector>
+#include <utility>
 #include <obj-loader/tiny_obj_loader.h>
 #include "math/vector2.hpp"
 #include "math/vector3.hpp"
 #include "shapes/mesh.hpp"
 #include "shapes/triangle.hpp"
+#include "logger.hpp"
 
 
 namespace pathtracer{
@@ -37,7 +39,7 @@ namespace pathtracer{
         }
 
         // Given an OBJ file, loads a mesh
-        Mesh* loadMesh(std::string filename) {
+        std::unique_ptr<Mesh> loadMesh(std::string filename) {
 
             tinyobj::attrib_t attrib;
             std::vector<tinyobj::shape_t> shapes;
@@ -46,15 +48,11 @@ namespace pathtracer{
             std::string warn;
             std::string err;
 
-            if (!tinyobj::LoadObj(
-                    &attrib,
-                    &shapes,
-                    &materials,
-                    &warn,
-                    &err,
-                    filename.c_str())){
+            if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn,
+                &err, filename.c_str())){
 
-                throw std::runtime_error(err);
+                LOG_ERROR(err);
+                throw std::runtime_error("");
             }
 
             std::vector<Triangle> data;
@@ -69,14 +67,9 @@ namespace pathtracer{
                     const auto& i1 = indices[i + 1];
                     const auto& i2 = indices[i + 2];
 
-                    Vector3 v0 =
-                        parseObjVector3(attrib.vertices, i0.vertex_index);
-
-                    Vector3 v1 =
-                        parseObjVector3(attrib.vertices, i1.vertex_index);
-
-                    Vector3 v2 =
-                        parseObjVector3(attrib.vertices, i2.vertex_index);
+                    Vector3 v0 = parseObjVector3(attrib.vertices, i0.vertex_index);
+                    Vector3 v1 = parseObjVector3(attrib.vertices, i1.vertex_index);
+                    Vector3 v2 = parseObjVector3(attrib.vertices, i2.vertex_index);
 
                     Vector3 n0;
                     Vector3 n1;
@@ -90,59 +83,34 @@ namespace pathtracer{
                     bool hasUVs = i0.texcoord_index >= 0;
 
                     if (hasNormals) {
-                        n0 = parseObjVector3(
-                            attrib.normals,
-                            i0.normal_index);
-
-                        n1 = parseObjVector3(
-                            attrib.normals,
-                            i1.normal_index);
-
-                        n2 = parseObjVector3(
-                            attrib.normals,
-                            i2.normal_index);
+                        n0 = parseObjVector3(attrib.normals, i0.normal_index);
+                        n1 = parseObjVector3(attrib.normals, i1.normal_index);
+                        n2 = parseObjVector3(attrib.normals, i2.normal_index);
                     }
 
                     if (hasUVs) {
-                        uv0 = parseObjVector2(
-                            attrib.texcoords,
-                            i0.texcoord_index);
-
-                        uv1 = parseObjVector2(
-                            attrib.texcoords,
-                            i1.texcoord_index);
-
-                        uv2 = parseObjVector2(
-                            attrib.texcoords,
-                            i2.texcoord_index);
+                        uv0 = parseObjVector2(attrib.texcoords, i0.texcoord_index);
+                        uv1 = parseObjVector2(attrib.texcoords, i1.texcoord_index);
+                        uv2 = parseObjVector2(attrib.texcoords, i2.texcoord_index);
                     }
 
-                    if (hasNormals && hasUVs)
-                        data.push_back(
-                            Triangle(
-                                v0, v1, v2,
-                                n0, n1, n2,
-                                uv0, uv1, uv2));
-
-                    else if (hasNormals)
-                        data.push_back(
-                            Triangle(
-                                v0, v1, v2,
-                                n0, n1, n2));
-
-                    else if (hasUVs)
-                        data.push_back(
-                            Triangle(
-                                v0, v1, v2,
-                                uv0, uv1, uv2));
-
-                    else
-                        data.push_back(
-                            Triangle(v0, v1, v2));
+                    if (hasNormals && hasUVs){
+                        data.push_back(Triangle(v0, v1, v2,
+                            n0, n1, n2, uv0, uv1, uv2));
+                    }
+                    else if (hasNormals){
+                        data.push_back(Triangle(v0, v1, v2, n0, n1, n2));
+                    }
+                    else if (hasUVs){
+                        data.push_back(Triangle(v0, v1, v2, uv0, uv1, uv2));
+                    }
+                    else{
+                        data.push_back(Triangle(v0, v1, v2));
+                    }
                 }
             }
 
-            return new Mesh(data);
+            return std::make_unique<Mesh>(data);
         }
 
     }

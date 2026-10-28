@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         LOG_INFO("Parsing and building scene.");
 
         std::string input = std::string("data/") + argv[1];
-        Renderer* renderer = Parser::parse(input);
+        auto [scene, renderer] = Parser::parse(input);
 
         LOG_INFO("Rendering start.");
 

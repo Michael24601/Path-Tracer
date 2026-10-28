@@ -1,6 +1,8 @@
 #include "parser/parser.hpp"
 #include <fstream>
 #include <string>
+#include <memory>
+#include <utility>
 #include <unordered_map>
 #include <nlohmann/json.hpp>
 #include "core/instance.hpp"
@@ -42,9 +44,12 @@
 #include "shapes/sphere.hpp"
 #include "shapes/triangle.hpp"
 #include "texture/texture.hpp"
+#include "texture/leanMap.hpp"
+#include "texture/mipMap.hpp"
 #include "texture/color.hpp"
 #include "parser/objLoader.hpp"
 #include "texture/leanMap.hpp"
+#include "parser/assetManager.hpp"
 
 
 namespace pathtracer{
@@ -160,8 +165,10 @@ namespace pathtracer{
     }
 
 
-    Texture* parseTexture(const json& texture, bool linearize = false,
-        bool isNormalMap = false, bool mipMap = false) {
+    Texture* parseTexture(const json& texture,
+        std::unordered_map<std::string, std::unique_ptr<Texture>>& textures,
+        std::vector<std::unique_ptr<Color>>& colors,
+        bool linearize = false, bool isNormalMap = false, bool mipMap = false) {
 
         const json& value = require(texture, "parameters");
         std::string type = parseString(texture, "type");
@@ -171,6 +178,12 @@ namespace pathtracer{
             std::string filename = parseString(value, "file-name");
             std::string borderMode = parseString(value, "border-mode");
             std::string filterMode = parseString(value, "filter-mode");
+
+            // If the texture already exists, we don't need to recreate it
+            auto it = textures.find(filename);
+            if (it != textures.end()) {
+                return it->second.get();
+            }
 
             BorderMode bm;
             FilterMode fm;
@@ -208,12 +221,23 @@ namespace pathtracer{
                 throw std::runtime_error("");
             }
 
-            return new Texture(parseImage(filename), bm, fm,
-                linearize, isNormalMap, mipMap);
+            std::unique_ptr<Texture> newTexture = std::make_unique<Texture>(
+                parseImage(filename), bm, fm, linearize, isNormalMap);
+
+            Texture* ptr = newTexture.get();
+            textures[filename] = std::move(newTexture);
+            return ptr;
         }
         else if(type == "color"){
+            
             Vector3 color = parseVector3(value, "color");
-            return new Color(color);
+            
+            // We have to store it
+            auto newColor = std::make_unique<Color>(color);
+            Color* ptr = newColor.get();
+
+            colors.push_back(std::move(newColor));
+            return ptr;
         }
         else{
             LOG_ERROR("Texture is not in a valid format.");
@@ -234,7 +258,8 @@ namespace pathtracer{
     }
 
 
-    Renderer* Parser::parse(const std::string& filename) {
+    std::pair<std::unique_ptr<Scene>, std::unique_ptr<Renderer>> 
+        Parser::parse(const std::string& filename) {
 
         std::ifstream file(filename);
 
@@ -245,13 +270,22 @@ namespace pathtracer{
 
         json data = json::parse(file);
 
-        std::unordered_map<std::string, Bsdf*> materials;
-        std::unordered_map<std::string, Instance*> instances;
-        std::unordered_map<std::string, Light*> lights;
+        // These use the source file path as id to check for duplicates
+        std::unordered_map<std::string, std::unique_ptr<MipMap>> mipmaps;
+        std::unordered_map<std::string, std::unique_ptr<Texture>> textures;
+        std::vector<std::unique_ptr<Color>> colors;
+        std::unordered_map<std::string, std::unique_ptr<Shape>> shapes;
+
+        std::unordered_map<std::string, std::unique_ptr<Bsdf>> materials;
+        std::unique_ptr<Sphere> sphere = std::make_unique<Sphere>();
+    
+        std::unordered_map<std::string, std::unique_ptr<Instance>> instances;
+        std::unordered_map<std::string, std::unique_ptr<Light>> lights;
+
         Camera* camera = nullptr;
         Integrator* integrator = nullptr;
-        Renderer* renderer = nullptr;
-        Sphere* sphere = new Sphere();
+        
+        std::unique_ptr<Renderer> renderer = nullptr;
         
         if(data.contains("camera")){
 
@@ -295,69 +329,62 @@ namespace pathtracer{
                 const json& params = require(material, "parameters");
 
                 if(type == "diffuse"){
+                    
+                    Texture* texture = parseTexture(require(params, "albedo"), 
+                        textures, colors, true);
 
-                    Texture* texture = parseTexture(
-                        require(params, "albedo"), true);
-
-                    materials[id] = new DiffuseBsdf(texture);
+                    materials[id] = std::make_unique<DiffuseBsdf>(texture);
                 }
                 else if(type == "mirror"){
 
-                    Texture* reflectance = parseTexture(
-                        require(params, "reflectance"));
+                    Texture* reflectance = parseTexture(require(params, "reflectance"),
+                        textures, colors);
 
-                    materials[id] = new MirrorBsdf(reflectance);
+                    materials[id] = std::make_unique<MirrorBsdf>(reflectance);
                 }
                 else if(type == "rough-conductor"){
 
-                    Texture* reflectance = parseTexture(
-                        require(params, "reflectance"));
-                    Texture* roughness = parseTexture(
-                        require(params, "roughness"));
+                    Texture* reflectance = parseTexture(require(params, "reflectance"),
+                         textures, colors);
+                    Texture* roughness = parseTexture(require(params, "roughness"),
+                         textures, colors);
 
-                    materials[id] = new RoughConductorBsdf(reflectance, roughness);
+                    materials[id] = std::make_unique<RoughConductorBsdf>(
+                        reflectance, roughness);
                 }
                 else if(type == "dielectric"){
 
-                    Texture* ior = parseTexture(require(params, "ior"));
-                    Texture* reflectance = parseTexture(
-                        require(params, "reflectance"));
-                    Texture* transmittance = parseTexture(
-                        require(params, "transmittance"));
+                    Texture* ior = parseTexture(require(params, "ior"),
+                        textures, colors);
+                    Texture* reflectance = parseTexture(require(params, "reflectance"),
+                        textures, colors);
+                    Texture* transmittance = parseTexture(require(params, "transmittance"),
+                        textures, colors);
 
-                    materials[id] =
-                        new DielectricBsdf(ior, reflectance, transmittance);
+                    materials[id] = std::make_unique<DielectricBsdf>(ior, 
+                        reflectance, transmittance);
                 }
                 else if(type == "principled"){
 
-                    Texture* roughness = new Color(Vector3(0.0));
-                    Texture* metallic = new Color(Vector3(0.0));
-                    Texture* specular = new Color(Vector3(0.0));
 
-                    Texture* baseColor = parseTexture(
-                        require(params, "base-color"));
+                    Texture* baseColor = parseTexture(require(params, "base-color"),
+                        textures, colors);
 
-                    if(params.contains("roughness")){
-                        roughness = parseTexture(params["roughness"]);
-                    }
+                    Texture* roughness = parseTexture(require(params, "roughness"),
+                        textures, colors);
 
-                    if(params.contains("metallic")){
-                        metallic = parseTexture(params["metallic"]);
-                    }
+                    Texture* metallic = parseTexture(require(params, "metallic"),
+                        textures, colors);
+                    
+                    Texture* specular = parseTexture(require(params, "specular"),
+                        textures, colors);
 
-                    if(params.contains("specular")){
-                        specular = parseTexture(params["specular"]);
-                    }
-
-                    materials[id] =
-                        new PrincipledBsdf(
-                            baseColor,
-                            roughness,
-                            metallic,
-                            specular);
+                    materials[id] = std::make_unique<PrincipledBsdf>(
+                        baseColor, roughness, metallic, specular);
                 }
             }
         }
+
 
         if(data.contains("instances")){
 
@@ -385,7 +412,9 @@ namespace pathtracer{
                     if(parseString(emissionJson, "type") == "lambertian"){
                         emission = new LambertianEmission(
                             parseVector3(
-                                require(emissionJson, "parameters"), "power"));
+                                require(emissionJson, "parameters"), "power"
+                            )
+                        );
                     }
                 }
 
@@ -401,27 +430,42 @@ namespace pathtracer{
                 }
 
                 Texture* normalMap = nullptr;
+                MipMap* lean = nullptr;
 
                 if(params.contains("normal-map")){
                     normalMap = parseTexture(params["normal-map"],
-                        false, true, true);
+                        textures, colors, false, true, true);
+
+                    std::string filename = parseString(
+                        require(params["normal-map"], "parameters"), "file-name");
+
+                    // If lean map already exists, we can reuse it
+                    auto it = mipmaps.find(filename);
+                    if (it != mipmaps.end()) {
+                        lean = it->second.get();
+                    }
+                    else {
+                        std::unique_ptr<MipMap> mipmap(LeanMap::constructLeanMap(normalMap));
+                        lean = mipmap.get();
+                        mipmaps[filename] = std::move(mipmap);
+                    }
                 }
 
                 Texture* alphaMask = nullptr;
 
                 if(params.contains("alpha-mask")){
-                    alphaMask = parseTexture(params["alpha-mask"]);
+                    alphaMask = parseTexture(params["alpha-mask"],
+                        textures, colors);
                 }
 
-                Instance* instance;
-                if(instType == "sphere"){
+                // Just a raw pointer to shape, the actual resource
+                // is stored in the shapes vector.
+                const Shape* shape = nullptr;
 
-                    instance = new Instance(sphere, alphaMask, normalMap,
-                        materials[materialID], emission, transform);
+                if(instType == "sphere"){
+                    shape = sphere.get();
                 }
                 else if(instType == "mesh"){
-
-                    Mesh* mesh = nullptr;
 
                     const json& vertexData = require(params, "vertex-data");
                     std::string format = parseString(vertexData, "format");
@@ -442,35 +486,47 @@ namespace pathtracer{
                             ));
                         }
 
-                        mesh = new Mesh(triangles);
+                        std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>(triangles);
+                        shape = mesh.get();
+                        shapes[id] = std::move(mesh);
                     }
                     else if(format == "obj"){
 
                         std::string objFilename =
                             parseString(vertexParams, "file-name");
 
-                        mesh = ObjLoader::loadMesh(objFilename);
+                        // Checks if duplicated
+                        auto it = shapes.find(objFilename);
+                        if (it != shapes.end()) {
+                            shape = it->second.get();
+                        }
+                        else {
+                            std::unique_ptr<Mesh> mesh = ObjLoader::loadMesh(objFilename);
+                            shape = mesh.get();
+
+                            // We use path as id to check for duplicates
+                            shapes[objFilename] = std::move(mesh);
+                        }
                     }
                     else{
                         LOG_ERROR("Invalid vertex-data format for instance: " + id);
                         throw std::runtime_error("");
                     }
 
-                    instance = new Instance(
-                        mesh,
-                        alphaMask,
-                        normalMap,
-                        materials[materialID],
-                        emission,
-                        transform);
                 }
                 else{
                     LOG_ERROR("Instance does not have a valid shape.");
                     throw std::runtime_error("");
                 }
 
+                std::unique_ptr<Instance> instance;
+                instance = std::make_unique<Instance>(
+                    shape, alphaMask, normalMap, lean, 
+                    materials[materialID].get(), emission, transform
+                );
+
                 instance->setCausticReceiver(isCausticReceiver);
-                instances[id] = instance;
+                instances[id] = std::move(instance);
             }
         }
 
@@ -501,40 +557,63 @@ namespace pathtracer{
                         throw std::runtime_error("");
                     }
 
-                    lights[id] = new AreaLight(instances[instID]);
+                    lights[id] = std::make_unique<AreaLight>(instances[instID].get());
                 }
                 else if(type == "point"){
 
                     Vector3 power = parseVector3(params, "power");
                     Vector3 pos = parseVector3(params, "position");
 
-                    lights[id] = new PointLight(pos, power);
+                    lights[id] = std::make_unique<PointLight>(pos, power);
                 }
                 else if(type == "directional"){
 
                     Vector3 power = parseVector3(params, "power");
                     Vector3 dir = parseVector3(params, "direction");
 
-                    lights[id] = new DirectionalLight(dir, power);
+                    lights[id] = std::make_unique<DirectionalLight>(dir, power);
                 }
             }
         }
 
-        std::vector<Instance*> instanceVector;
+
+        std::vector<std::unique_ptr<Instance>> instanceVector;
         instanceVector.reserve(instances.size());
 
-        for (const auto& [id, instance] : instances) {
-            instanceVector.push_back(instance);
+        for (auto& [id, instance] : instances) {
+            instanceVector.push_back(std::move(instance));
         }
 
-        std::vector<Light*> lightVector;
+        std::vector<std::unique_ptr<Light>> lightVector;
         lightVector.reserve(lights.size());
 
-        for (const auto& [id, light] : lights) {
-            lightVector.push_back(light);
+        for (auto& [id, light] : lights) {
+            lightVector.push_back(std::move(light));
         }
 
-        Scene* scene = new Scene(instanceVector, lightVector);
+
+        // The assets to preserve
+        AssetManager assetManager;
+
+        for (auto& [id, mipmap] : mipmaps)
+            assetManager.addMipMap(std::move(mipmap));
+        for (auto& [id, texture] : textures)
+            assetManager.addTexture(std::move(texture));
+        for (auto& color : colors)
+            assetManager.addTexture(std::move(color));
+        for (auto& [id, shape] : shapes)
+            assetManager.addShape(std::move(shape));
+        for (auto& [id, material] : materials)
+            assetManager.addMaterial(std::move(material));
+        assetManager.addShape(std::move(sphere));
+
+
+        std::unique_ptr<Scene> scene = std::make_unique<Scene>(
+            std::move(assetManager),
+            std::move(instanceVector),
+            std::move(lightVector)
+        );
+
 
         if(data.contains("renderer")){
 
@@ -634,7 +713,7 @@ namespace pathtracer{
                 bool twoStage = parseBool(ip, "two-stage");
 
                 integrator =
-                    new PathTracerSms(maxDepth, useHalfVector, biased, twoStage, scene);
+                    new PathTracerSms(maxDepth, useHalfVector, biased, twoStage, scene.get());
             }
             else if(integratorType == "path-tracer-nee-sms"){
 
@@ -644,7 +723,7 @@ namespace pathtracer{
                 bool twoStage = parseBool(ip, "two-stage");
 
                 integrator =
-                    new PathTracerNeeSms(maxDepth, useHalfVector, biased, twoStage, scene);
+                    new PathTracerNeeSms(maxDepth, useHalfVector, biased, twoStage, scene.get());
             }
             else if(integratorType == "photon-mapping-integrator"){
 
@@ -684,9 +763,9 @@ namespace pathtracer{
 
                 int sampleCount = parseInt(rendererParams, "sample-count");
 
-                renderer = new PathTracerRenderer(
+                renderer = std::make_unique<PathTracerRenderer>(
                     resolution.x(), resolution.y(),
-                    camera, scene, integrator, sampleCount, messageCount
+                    camera, scene.get(), integrator, sampleCount, messageCount
                 );
             }
             else if(rendererType == "photon-mapping-renderer"){
@@ -695,16 +774,16 @@ namespace pathtracer{
                 int threshold = parseInt(rendererParams, "threshold");
                 int photonCount = parseInt(rendererParams, "photon-count");
 
-                renderer = new PhotonMappingRenderer(
+                renderer = std::make_unique<PhotonMappingRenderer>(
                     resolution.x(), resolution.y(),
-                    camera, scene, integrator, photonCount, threshold, maxDepth,
+                    camera, scene.get(), integrator, photonCount, threshold, maxDepth,
                     messageCount
                 );
             }
             else if(rendererType == "renderer"){
 
-                renderer = new Renderer(
-                    resolution.x(), resolution.y(), camera, scene,
+                renderer = std::make_unique<Renderer>(
+                    resolution.x(), resolution.y(), camera, scene.get(),
                     integrator, messageCount
                 );
             }
@@ -722,11 +801,11 @@ namespace pathtracer{
                 int c = parseInt(rendererParams, "spatial-subdivision-c");
                 real alpha = parseReal(rendererParams, "mis-alpha");
 
-                renderer = new PathGuidingRenderer(
+                renderer = std::make_unique<PathGuidingRenderer>(
                     resolution.x(),
                     resolution.y(),
                     camera,
-                    scene,
+                    scene.get(),
                     integrator,
                     iterationCount,
                     renderSamples,
@@ -745,7 +824,7 @@ namespace pathtracer{
             throw std::runtime_error("");
         }
 
-        return renderer;
+        return std::make_pair(std::move(scene), std::move(renderer));;
     }
 
 }

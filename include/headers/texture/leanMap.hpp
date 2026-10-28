@@ -2,8 +2,7 @@
 #ifndef PATH_TRACER_LEAN_MAP_HPP
 #define PATH_TRACER_LEAN_MAP_HPP
 
-#include "image.hpp"
-#include <vector>
+#include "mipMap.hpp"
 
 namespace pathtracer{
 
@@ -12,31 +11,13 @@ namespace pathtracer{
     class Vector2;
 
 
-    class LeanMap{
+    namespace LeanMap{
 
-    private:
+        MipMap* constructLeanMap(const Texture* normalMap);
+
+        Vector2 mean(const MipMap* map, const Vector2& uv, int level);
         
-        // The moments of the lean map, for each level
-        std::vector<Image*> m_moments;
-
-    public:
-
-        LeanMap(const Texture* normalMap);
-
-        ~LeanMap(){
-            for(int i = 0; i < m_moments.size(); i++){
-                if(m_moments[i]){
-                    delete m_moments[i];
-                }
-            }
-        }
-
-        // The highest level of the Lean map, which contains only one gaussian
-        static int maxLevel(const Texture* normalMap);
-
-        Vector2 mean(const Vector2& uv, int level) const;
-        
-        Matrix2 covariance(const Vector2& uv, int level) const;
+        Matrix2 covariance(const MipMap* map, const Vector2& uv, int level);
         
     };
 }

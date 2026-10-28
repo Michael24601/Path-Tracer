@@ -30,95 +30,22 @@ namespace pathtracer{
     }
 
 
-    void Texture::generateMipmaps(bool isNormalMap) {
-
-        // Freeing old levels to avoid leaks
-        for (Image* level : mipmaps) {
-            delete level;
-        }
-
-        mipmaps.clear();
-
-        Image* current = image;
-
-        while (current->getHeight() > 1 || current->getWidth() > 1) {
-            int height = std::max(1, (current->getHeight() + 1) / 2);
-            int width = std::max(1, (current->getWidth() + 1) / 2);
-
-            std::vector<std::vector<std::vector<real>>> data(
-                height, std::vector<std::vector<real>>(width)
-            );
-
-            for (int h = 0; h < height; h++) {
-                for (int w = 0; w < width; w++) {
-                    Vector3 average(0.0f);
-                    int count = 0;
-
-                    for (int dh = 0; dh < 2; dh++) {
-                        for (int dw = 0; dw < 2; dw++) {
-                            int sourceH = 2 * h + dh;
-                            int sourceW = 2 * w + dw;
-
-                            if (sourceH >= current->getHeight() ||
-                                sourceW >= current->getWidth()) {
-                                continue;
-                            }
-
-                            std::vector<real> v = current->getPixel(sourceH, sourceW);
-
-                            // Level 0 already holds decoded normals so
-                            // no need to redecode them.
-                            average = average + Vector3(v[0], v[1], v[2]);
-                            count++;
-                        }
-                    }
-
-                    average = average / static_cast<real>(count);
-                    data[h][w] = {average[0], average[1], average[2]};
-                }
-            }
-
-            Image* next = new Image(data, image->borderMode(), image->filterMode());
-            mipmaps.push_back(next);
-            current = next;
-        }
+    Vector3 Texture::outputSample(const std::vector<real>& p) const {
+        Vector3 v(p[0], p[1], p[2]);
+        return m_isNormalMap ? v.normalized() : v;
     }
 
 
-    void Texture::sampleGradient(const Vector2& uv,
-        Vector3& dndu, Vector3& dndv) const {
-
-        std::vector<real> val, gu, gv;
-        image->sampleGradient(uv, val, gu, gv);
-
-        Vector3 v(val[0], val[1], val[2]);
-        Vector3 dvu(gu[0], gu[1], gu[2]);
-        Vector3 dvv(gv[0], gv[1], gv[2]);
-        real len = v.length();
-
-        if (len > EPSILON) {
-            // This code turns derivatives of v into derivatives
-            // of normalized v.
-            v = v / len;
-            dndu = (dvu - v * v.dot(dvu)) / len;
-            dndv = (dvv - v * v.dot(dvv)) / len;
-        }
-        else {
-            dndu = Vector3(0.0f);
-            dndv = Vector3(0.0f);
-        }
-    }
-
-    Texture::Texture(const std::vector<std::vector<Vector3>>& data, 
-        BorderMode borderMode, FilterMode filterMode, bool linearize,
-        bool isNormalMap, bool storeMipMaps) {
+    Image Texture::buildImage(const std::vector<std::vector<Vector3>>& data,
+        BorderMode borderMode, FilterMode filterMode,
+        bool linearize, bool isNormalMap) {
 
         std::vector<std::vector<std::vector<real>>> rawData(data.size());
-        
-        for(int i = 0; i < data.size(); i++){
+
+        for(size_t i = 0; i < data.size(); i++){
             rawData[i].resize(data[i].size());
 
-            for(int j = 0; j < data[i].size(); j++){
+            for(size_t j = 0; j < data[i].size(); j++){
 
                 Vector3 color = data[i][j];
 
@@ -134,25 +61,60 @@ namespace pathtracer{
             }
         }
 
-        // This checks for ragged input
-        image = new Image(rawData, borderMode, filterMode);
+        return Image(rawData, borderMode, filterMode);
+    }
 
-        if(storeMipMaps){
-            generateMipmaps(isNormalMap);
+
+    Texture::Texture(const std::vector<std::vector<Vector3>>& data, 
+        BorderMode borderMode, FilterMode filterMode, bool linearize,
+        bool isNormalMap) : m_isNormalMap{isNormalMap}, mipmap(
+            buildImage(data, borderMode, filterMode, linearize, isNormalMap
+        )) {}
+
+
+    void Texture::sampleGradient(const Vector2& uv,
+        Vector3& dndu, Vector3& dndv) const {
+
+        std::vector<real> val, gu, gv;
+        mipmap.level(0).sampleGradient(uv, val, gu, gv);
+
+        Vector3 v(val[0], val[1], val[2]);
+        Vector3 dvu(gu[0], gu[1], gu[2]);
+        Vector3 dvv(gv[0], gv[1], gv[2]);
+
+        if (!m_isNormalMap) {
+            // If not a normal map, we just use the derivatives as is
+            // and don't need to normzlied.
+            dndu = dvu;
+            dndv = dvv;
+            return;
         }
 
+        real len = v.length();
+
+        if (len > EPSILON) {
+            // This code turns derivatives of v into derivatives
+            // of normalized v.
+            v = v / len;
+            dndu = (dvu - v * v.dot(dvu)) / len;
+            dndv = (dvv - v * v.dot(dvv)) / len;
+        }
+        else {
+            dndu = Vector3(0.0f);
+            dndv = Vector3(0.0f);
+        }
     }
 
 
     Vector3 Texture::getPixel(int i, int j) const{
-        std::vector<real> p = image->getPixel(i, j);
-        return Vector3(p[0], p[1], p[2]);
+        std::vector<real> p = mipmap.level(0).getPixel(i, j);
+        return outputSample(p);
     }
         
 
     Vector3 Texture::sample(const Vector2& uv) const{
-        std::vector<real> p = image->sample(uv);
-        return Vector3(p[0], p[1], p[2]);
+        std::vector<real> p = mipmap.level(0).sample(uv);
+        return outputSample(p);
     }
 
 
@@ -160,15 +122,8 @@ namespace pathtracer{
     Vector3 Texture::sampleMipMap(const Vector2& uv, int level) const {
         
         // If the level is wrong, or we don't store any mipmaps
-        if (level <= 0 || mipmaps.empty()) {
-            // Then we just return a normal sample
-            return sample(uv);
-        }
-
-        level = std::min(level, static_cast<int>(mipmaps.size()));
-
-        std::vector<real> p = mipmaps[level - 1]->sample(uv);
-        return Vector3(p[0], p[1], p[2]);
+        std::vector<real> p = mipmap.level(level).sample(uv);
+        return outputSample(p);
     }
 
 }

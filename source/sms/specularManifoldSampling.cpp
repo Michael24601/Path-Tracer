@@ -329,9 +329,16 @@ namespace pathtracer{
             newIt.instance()->normalMap(newIt, true);
 
             // We also sample a random local offset from LEAN map
-            int maxL = it.instance()->leanMap()->maxLevel(it.instance()->normalTexture());
-            Vector2 mu = it.instance()->leanMap()->mean(it.uv(), maxL);
-            Matrix2 sigma = it.instance()->leanMap()->covariance(it.uv(), maxL);
+            const MipMap* map = it.instance()->leanMap();
+
+            if(!map){
+                LOG_ERROR("No Lean Map defined");
+                throw std::runtime_error("");
+            }
+
+            int maxL = map->maxLevel();
+            Vector2 mu = LeanMap::mean(map, it.uv(), maxL);
+            Matrix2 sigma = LeanMap::covariance(map, it.uv(), maxL);
 
             Vector2 muOffset(-localOffsetNormal.x() / localOffsetNormal.z(),
                 -localOffsetNormal.y() / localOffsetNormal.z());

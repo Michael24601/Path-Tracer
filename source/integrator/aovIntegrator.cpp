@@ -65,9 +65,17 @@ namespace pathtracer{
             Vector3 normal = it.shadingNormal();
 
             if(it.instance()->leanMap()){
-                int maxL = it.instance()->leanMap()->maxLevel(it.instance()->normalTexture());
-                Vector2 mu = it.instance()->leanMap()->mean(it.uv(), maxL);
-                Matrix2 sigma = it.instance()->leanMap()->covariance(it.uv(), maxL);
+
+                auto map = it.instance()->leanMap();
+                if(!map){
+                    LOG_ERROR("No Lean Map defined");
+                    throw std::runtime_error("");
+                }
+
+                int maxL = map->maxLevel();
+
+                Vector2 mu = LeanMap::mean(map, it.uv(), maxL);
+                Matrix2 sigma = LeanMap::covariance(map, it.uv(), maxL);
 
                 // This normal is in tangent/shading space
                 Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
