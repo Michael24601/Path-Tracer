@@ -22,6 +22,12 @@ namespace pathtracer {
         m_messageCount{messageCount},
         m_pathCounter{0}{}
 
+
+    Renderer::~Renderer(){
+        delete m_integrator;
+    }
+
+
     // By default, the path count is just the number of pixels
     void Renderer::preprocess() {
         m_totalPathCount = static_cast<long long>(m_width) * m_height;

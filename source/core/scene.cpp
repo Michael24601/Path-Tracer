@@ -1,7 +1,6 @@
 
 #include "core/scene.hpp"
 #include <cassert>
-#include <utility>
 #include "core/instance.hpp"
 #include "core/ray.hpp"
 #include "intersection/rayTracer.hpp"
@@ -21,7 +20,7 @@ namespace pathtracer{
         Intersection it = Intersection::NO_HIT;
 
         for(auto& inst: m_instances){
-            RayTracer::intersect(it, ray, inst.get());
+            RayTracer::intersect(it, ray, inst);
 
             if(it && !std::isfinite(maxDistance)){
                 return it;
@@ -35,12 +34,14 @@ namespace pathtracer{
     }
 
 
-    Scene::Scene(AssetManager assetManager,
-        std::vector<std::unique_ptr<Instance>> instances,
-        std::vector<std::unique_ptr<Light>> lights)
-        : m_assetManager(std::move(assetManager)),
-        m_instances(std::move(instances)),
-        m_lights(std::move(lights)) {
+    Scene::Scene(AssetManager* assetManager, 
+        const std::vector<Instance*>& instances, 
+        const std::vector<Light*>& lights) : 
+        // We use move here to avoid deleting the pointers in the
+        // asset manager.
+        m_assetManager(assetManager),
+        m_instances(instances),
+        m_lights(lights) {
 
         // These instances are now part of the scene, so we flag them
         for(auto& inst: m_instances){
@@ -53,7 +54,18 @@ namespace pathtracer{
     }
 
 
-    Scene::~Scene() = default;
+    Scene::~Scene(){
+        for(int i = 0; i < m_instances.size(); i++){
+            delete m_instances[i];
+        }
+
+        for(int i = 0; i < m_lights.size(); i++){
+            delete m_lights[i];
+        }
+
+        // Must be deleted last
+        delete m_assetManager;
+    }
 
 
     const AxisAlignedBox& Scene::getBoundingBox() const {
@@ -75,7 +87,7 @@ namespace pathtracer{
         assert((index >= 0 && index < m_instances.size())
             && "Index is out of bounds");
 
-        return m_instances[index].get();
+        return m_instances[index];
     }
 
 
@@ -83,7 +95,7 @@ namespace pathtracer{
         assert((index >= 0 && index < m_lights.size())
             && "Index is out of bounds");
 
-        return m_lights[index].get();
+        return m_lights[index];
     }
 
 
@@ -94,7 +106,7 @@ namespace pathtracer{
         Intersection it = Intersection::NO_HIT;
 
         for(auto& inst: m_instances){
-            RayTracer::intersect(it, ray, inst.get());
+            RayTracer::intersect(it, ray, inst);
         }
 
         return it;

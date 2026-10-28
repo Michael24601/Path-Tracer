@@ -40,12 +40,17 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    Scene* scene;
+    Renderer* renderer;
+
     try {
 
         LOG_INFO("Parsing and building scene.");
 
         std::string input = std::string("data/") + argv[1];
-        auto [scene, renderer] = Parser::parse(input);
+        auto result = Parser::parse(input);
+        scene = result.first;
+        renderer = result.second;
 
         LOG_INFO("Rendering start.");
 
@@ -98,11 +103,17 @@ int main(int argc, char* argv[]) {
             LOG_ERROR(e.what());
         }
 
+        delete renderer;
+        delete scene;
+
         std::cout << "\n" << line << "\n\n";
         std::cout.flush();
 
         return 1;
     }
+
+    delete renderer;
+    delete scene;
 
     std::cout << "\n" << line << "\n\n";
     std::cout.flush();

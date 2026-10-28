@@ -36,11 +36,15 @@ namespace pathtracer{
 
         const Scene* m_scene;
 
+        // Renderer owns integrator, and has to delete it
         Integrator* m_integrator;
 
         Renderer(int width, int height,
             const Camera* camera, const Scene* scene,
             Integrator* integrator, int messageCount = 10);
+
+
+        ~Renderer();
 
 
         // This is called in render before rendering, can be used to train

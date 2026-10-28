@@ -7,28 +7,41 @@
 
 namespace pathtracer {
 
-    AssetManager::AssetManager() = default;
+    AssetManager::AssetManager(){}
 
-    AssetManager::~AssetManager() = default;
+    AssetManager::~AssetManager(){
+        for(int i = 0; i < m_materials.size(); i++){
+            delete m_materials[i];
+        }
 
-    AssetManager::AssetManager(AssetManager&&) = default;
+        for(int i = 0; i < m_mipmaps.size(); i++){
+            delete m_mipmaps[i];
+        }
 
-    AssetManager& AssetManager::operator=(AssetManager&&) = default;
+        for(int i = 0; i < m_shapes.size(); i++){
+            delete m_shapes[i];
+        }
 
-    void AssetManager::addMaterial(std::unique_ptr<Bsdf> material) {
-        m_materials.push_back(std::move(material));
+        for(int i = 0; i < m_texture.size(); i++){
+            delete m_texture[i];
+        }
     }
 
-    void AssetManager::addShape(std::unique_ptr<Shape> shape) {
-        m_shapes.push_back(std::move(shape));
+
+    void AssetManager::addMaterial(Bsdf* material) {
+        m_materials.push_back(material);
     }
 
-    void AssetManager::addTexture(std::unique_ptr<Texture> texture) {
-        m_texture.push_back(std::move(texture));
+    void AssetManager::addShape(Shape* shape) {
+        m_shapes.push_back(shape);
     }
 
-    void AssetManager::addMipMap(std::unique_ptr<MipMap> mipmap) {
-        m_mipmaps.push_back(std::move(mipmap));
+    void AssetManager::addTexture(Texture* texture) {
+        m_texture.push_back(texture);
+    }
+
+    void AssetManager::addMipMap(MipMap* mipmap) {
+        m_mipmaps.push_back(mipmap);
     }
 
 }

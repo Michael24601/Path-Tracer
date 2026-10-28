@@ -34,17 +34,7 @@ namespace pathtracer{
         int messageCount) :
         PathTracerRenderer(width, height, camera, scene, integrator, renderSamples, messageCount),
         m_firstIterationSamples{firstIterationSamples},
-        m_iterationCount{iterationCount}, m_c{c} {
-
-        // The integrator has to be guidable (contains trees)
-        m_guidableIntegrator = dynamic_cast<Guidable*>(m_integrator);
-        if(!m_guidableIntegrator){
-            LOG_ERROR("Path guiding requires a guidable integrator");
-            throw std::runtime_error("");
-        }
-
-        m_guidableIntegrator->setAlpha(alpha);
-    }
+        m_iterationCount{iterationCount}, m_c{c}, m_alpha{alpha} {}
 
     PathGuidingRenderer::~PathGuidingRenderer(){
         if(m_guideTree) delete m_guideTree;
@@ -64,7 +54,12 @@ namespace pathtracer{
         m_trainTree = new KdTree(threshold);
         m_guideTree = nullptr;
 
-        KdTree* tree;
+        // The integrator has to be guidable (contains trees)
+        Guidable* m_guidableIntegrator = dynamic_cast<Guidable*>(m_integrator);
+        if(!m_guidableIntegrator){
+            LOG_ERROR("Path guiding requires a guidable integrator");
+            throw std::runtime_error("");
+        }
 
         // Saves the number of samples needed for the actual final render
         // as it will be overwritten during training.

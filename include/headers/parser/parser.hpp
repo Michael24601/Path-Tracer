@@ -3,7 +3,6 @@
 #define PATH_TRACER_PARSER_HPP
 
 #include <string>
-#include <memory>
 
 namespace pathtracer{
 
@@ -14,8 +13,7 @@ namespace pathtracer{
 
     public:
 
-        static std::pair<std::unique_ptr<Scene>, std::unique_ptr<Renderer>> 
-            parse(const std::string& filename);
+        static std::pair<Scene*, Renderer*> parse(const std::string& filename);
 
     };
 

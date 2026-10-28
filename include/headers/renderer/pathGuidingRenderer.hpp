@@ -29,8 +29,8 @@ namespace pathtracer{
         KdTree* m_guideTree;
         KdTree* m_trainTree;
 
-        // Stores downcast integrator as well
-        Guidable* m_guidableIntegrator;
+        // Stores the alpha for MIS
+        real m_alpha;
 
     public:
 

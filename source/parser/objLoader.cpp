@@ -4,7 +4,6 @@
 #include "parser/objLoader.hpp"
 #include <stdexcept>
 #include <vector>
-#include <utility>
 #include <obj-loader/tiny_obj_loader.h>
 #include "math/vector2.hpp"
 #include "math/vector3.hpp"
@@ -39,7 +38,7 @@ namespace pathtracer{
         }
 
         // Given an OBJ file, loads a mesh
-        std::unique_ptr<Mesh> loadMesh(std::string filename) {
+        Mesh* loadMesh(std::string filename) {
 
             tinyobj::attrib_t attrib;
             std::vector<tinyobj::shape_t> shapes;
@@ -110,7 +109,7 @@ namespace pathtracer{
                 }
             }
 
-            return std::make_unique<Mesh>(data);
+            return new Mesh(data);
         }
 
     }

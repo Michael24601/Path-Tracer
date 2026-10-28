@@ -28,8 +28,7 @@ namespace pathtracer
 
 
     PhotonMappingRenderer::~PhotonMappingRenderer() {
-        if (m_map)
-        {
+        if (m_map){
             delete m_map;
         }
     }
