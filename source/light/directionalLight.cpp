@@ -37,7 +37,7 @@ namespace pathtracer{
     PhotonSample DirectionalLight::samplePhoton() const{
         // Nothing to sample for directional light
         LOG_ERROR("NOT IMPLEMENTED");
-        exit(1);
+        throw std::runtime_error("");
     }
 
 

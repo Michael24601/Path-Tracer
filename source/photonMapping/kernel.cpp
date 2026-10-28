@@ -35,7 +35,7 @@ namespace pathtracer{
             }
 
             LOG_ERROR("Kernel type is unknown");
-            exit(1);
+            throw std::runtime_error("");
         }
 
     }

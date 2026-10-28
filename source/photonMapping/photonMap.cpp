@@ -130,7 +130,7 @@ namespace pathtracer{
 
         if(threshold < 1){
             LOG_ERROR("Threshold of photon map must be 1 or larger.");
-            exit(1);
+            throw std::runtime_error("");
         }
         
         m_root = new Node(0, m_photons.size());

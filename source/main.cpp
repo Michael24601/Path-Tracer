@@ -21,15 +21,6 @@
 using namespace pathtracer;
 
 
-static void printLine() {
-    std::string line;
-    for(int i = 0; i < 130; i++) line += "─";
-
-    std::cout << "\n" << line << "\n\n";
-    std::cout.flush();
-}
-
-
 int main(int argc, char* argv[]) {
 
     
@@ -39,96 +30,82 @@ int main(int argc, char* argv[]) {
     Logger::setConsoleOutput(true);
 
     SetConsoleOutputCP(CP_UTF8);
-    std::atexit(printLine);
-    printLine();
+    std::string line;
+    for(int i = 0; i < 130; i++) line += "─";
+    std::cout << "\n" << line << "\n\n";
+    std::cout.flush();
 
     if(argc != 3 && argc != 2) {
         LOG_ERROR("Invalid arguments");
         return 1;
     }
 
-    LOG_INFO("Parsing and building scene.");
+    try {
 
-    std::string input = std::string("data/") + argv[1];
-    Renderer* renderer = Parser::parse(input);
+        LOG_INFO("Parsing and building scene.");
 
-    LOG_INFO("Rendering start.");
+        std::string input = std::string("data/") + argv[1];
+        Renderer* renderer = Parser::parse(input);
 
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+        LOG_INFO("Rendering start.");
 
-    auto image = renderer->render();
-    
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-    LOG_INFO("Rendering end.");
-    LOG_INFO("Duration: " + std::to_string(duration) + " milliseconds");
+        auto image = renderer->render();
 
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
+        LOG_INFO("Rendering end.");
+        LOG_INFO("Duration: " + std::to_string(duration) + " milliseconds");
 
-    auto renderTree = [&](Vector3 p, const std::string& name) {
-        
-        auto guidable = dynamic_cast<Guidable*>(renderer->m_integrator);
+        std::string outputName;
 
-        if(guidable && guidable->guideTree()){
-
-            p = guidable->toTreeLocalSpace(p, *renderer->m_scene);   
-
-            auto tree = guidable->guideTree()->getDTree(p);
-
-            std::stringstream ss;
-            ss << static_cast<const void*>(tree);
-            LOG_INFO("name: " + ss.str());
-
-            real c = guidable->guideTree()->getSampleWeight(p);
-            LOG_INFO("count " + std::to_string(c));
-
-            auto image = QuadTreeUtil::renderQuadTree(tree, 512);
-
-            ImageIo::savePNG(image, "output/" + name + ".png");
+        // If output name already exists, we don't parse one from scene
+        if (argc == 3){
+            outputName = argv[2];
         }
-    };
+        else{
+            std::string sceneName = std::filesystem::path(input).stem().string();
+            std::string rendererName = renderer->toString();
+            std::replace(rendererName.begin(), rendererName.end(), ' ', '_');
 
-    renderTree(Vector3(0, 0.0, 0), "tree0");
-    renderTree(Vector3(0.98, 1.98, 0.98), "tree1");
-    renderTree(Vector3(0.98, 1.98, -0.98), "tree2");
-    renderTree(Vector3(0.98, 0, -0.98), "tree3");
-    renderTree(Vector3(0.98, 0, 0.98), "tree4");
+            outputName = sceneName + "_" + rendererName;
+            // The output also includes the duration
+            outputName += "_" + std::to_string(duration) + "ms";
+        }
 
+        std::string output = "output/" + outputName + ".png";
 
-    std::string outputName;
+        int index = 1;
 
-    // Iif output name already exists, we don't parse one from scene
-    if (argc == 3){
-        outputName = argv[2];
+        while (std::ifstream(output).good()) {
+            output = "output/" + outputName +
+                "[" + std::to_string(index) + "].png";
+            index++;
+        }
+
+        ImageIo::savePNG(image, output);
+
+        // Opens image when done
+        std::string command = "start \"\" \"" + output + "\"";
+        system(command.c_str());
+
     }
-    else{
-        std::string sceneName = std::filesystem::path(input).stem().string();
-        std::string rendererName = renderer->toString();
-        std::replace(rendererName.begin(), rendererName.end(), ' ', '_');
+    catch(const std::exception& e) {
 
-        outputName = sceneName + "_" + rendererName;
-        // The output also includes the duration
-        outputName += "_" + std::to_string(duration) + "ms";
+        if(e.what()[0] != '\0'){
+            LOG_ERROR(e.what());
+        }
+
+        std::cout << "\n" << line << "\n\n";
+        std::cout.flush();
+
+        return 1;
     }
 
-    std::string output = "output/" + outputName + ".png";
-
-    int index = 1;
-
-    while (std::ifstream(output).good()) {
-        output = "output/" + outputName +
-            "[" + std::to_string(index) + "].png";
-        index++;
-    }
-
-    ImageIo::savePNG(image, output);
-
-    LOG_INFO("Image saved.");
-
-    // Opens image when done
-    std::string command = "start \"\" \"" + output + "\"";
-    system(command.c_str());
+    std::cout << "\n" << line << "\n\n";
+    std::cout.flush();
 
     return 0;
 }

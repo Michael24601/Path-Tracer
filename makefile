@@ -45,6 +45,7 @@ build/%.debug.o: source/%.cpp
 
 # Runs existing build
 run:
+	$(CLEAR)
 	build/build.exe $(ARGS)
 
 # Builds and runs
@@ -54,6 +55,7 @@ build-run: all
 
 # Runs using gdb for debugging
 run-debug:
+	$(CLEAR)
 	gdb -q --args build/build.exe $(ARGS)
 
 # Deletes the build

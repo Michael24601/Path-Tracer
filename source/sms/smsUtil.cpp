@@ -126,7 +126,7 @@ namespace pathtracer{
             }
 
             LOG_ERROR("Light type is now known.");
-            exit(1);
+            throw std::runtime_error("");
         }
 
 

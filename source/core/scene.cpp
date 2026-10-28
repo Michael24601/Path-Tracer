@@ -101,7 +101,7 @@ namespace pathtracer{
         // any lights, as they can have infinitely far away points.
         if(!target.isFinite()){
             LOG_ERROR("Infinitely far away point should not be using this visibility function.");
-            exit(1);
+            throw std::runtime_error("");
         }
 
         real distance = (origin - target).length();

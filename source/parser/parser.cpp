@@ -56,7 +56,7 @@ namespace pathtracer{
     const json& require(const json& object, const std::string& key) {
         if(!object.is_object() || !object.contains(key)){
             LOG_ERROR("Parameter does not exist: " + key);
-            exit(1);
+            throw std::runtime_error("");
         }
         return object[key];
     }
@@ -68,12 +68,12 @@ namespace pathtracer{
 
         if(!ImageIo::loadImage(filename, image)){
             LOG_ERROR("Could not load image: " + filename);
-            exit(1);
+            throw std::runtime_error("");
         }
 
         if(image.empty() || image[0].empty()){
             LOG_ERROR("Image is empty: " + filename);
-            exit(1);
+            throw std::runtime_error("");
         }
 
         return image;
@@ -84,7 +84,7 @@ namespace pathtracer{
         const json& value = require(object, key);
         if(!value.is_number()){
             LOG_ERROR("Parameter is not a number: " + key);
-            exit(1);
+            throw std::runtime_error("");
         }
         return value.get<real>();
     }
@@ -94,7 +94,7 @@ namespace pathtracer{
         const json& value = require(object, key);
         if(!value.is_number_integer()){
             LOG_ERROR("Parameter is not an integer: " + key);
-            exit(1);
+            throw std::runtime_error("");
         }
         return value.get<int>();
     }
@@ -104,7 +104,7 @@ namespace pathtracer{
         const json& value = require(object, key);
         if(!value.is_boolean()){
             LOG_ERROR("Parameter is not a boolean: " + key);
-            exit(1);
+            throw std::runtime_error("");
         }
         return value.get<bool>();
     }
@@ -114,7 +114,7 @@ namespace pathtracer{
         const json& value = require(object, key);
         if(!value.is_string()){
             LOG_ERROR("Parameter is not a string: " + key);
-            exit(1);
+            throw std::runtime_error("");
         }
         return value.get<std::string>();
     }
@@ -186,7 +186,7 @@ namespace pathtracer{
             }
             else{
                 LOG_ERROR("Invalid border-mode specified for: " + filename);
-                exit(1);
+                throw std::runtime_error("");
             }
 
             if(filterMode == "nearest"){
@@ -205,7 +205,7 @@ namespace pathtracer{
             }
             else{
                 LOG_ERROR("Invalid filter-mode specified for: " + filename);
-                exit(1);
+                throw std::runtime_error("");
             }
 
             return new Texture(parseImage(filename), bm, fm,
@@ -217,7 +217,7 @@ namespace pathtracer{
         }
         else{
             LOG_ERROR("Texture is not in a valid format.");
-            exit(1);
+            throw std::runtime_error("");
         }
     }
 
@@ -240,11 +240,18 @@ namespace pathtracer{
 
         if (!file.is_open()){
             LOG_ERROR("File could not be opened");
-            exit(1);
+            throw std::runtime_error("");
         }
 
         json data = json::parse(file);
 
+        std::unordered_map<std::string, Bsdf*> materials;
+        std::unordered_map<std::string, Instance*> instances;
+        std::unordered_map<std::string, Light*> lights;
+        Camera* camera = nullptr;
+        Integrator* integrator = nullptr;
+        Renderer* renderer = nullptr;
+        Sphere* sphere = new Sphere();
         
         if(data.contains("camera")){
 
@@ -269,12 +276,12 @@ namespace pathtracer{
             }
             else{
                 LOG_ERROR("Camera type is not supported in: " + filename);
-                exit(1);
+                throw std::runtime_error("");
             }
         }
         else{
             LOG_ERROR("No camera in: " + filename);
-            exit(1);
+            throw std::runtime_error("");
         }
 
         if(data.contains("materials")){
@@ -367,7 +374,7 @@ namespace pathtracer{
                     LOG_ERROR(
                         "Could not find specified material: " + materialID);
 
-                    exit(1);
+                    throw std::runtime_error("");
                 }
 
                 Emission* emission = nullptr;
@@ -446,7 +453,7 @@ namespace pathtracer{
                     }
                     else{
                         LOG_ERROR("Invalid vertex-data format for instance: " + id);
-                        exit(1);
+                        throw std::runtime_error("");
                     }
 
                     instance = new Instance(
@@ -459,7 +466,7 @@ namespace pathtracer{
                 }
                 else{
                     LOG_ERROR("Instance does not have a valid shape.");
-                    exit(1);
+                    throw std::runtime_error("");
                 }
 
                 instance->setCausticReceiver(isCausticReceiver);
@@ -486,12 +493,12 @@ namespace pathtracer{
                             "Could not find specified emissive instance: "
                             + instID);
 
-                        exit(1);
+                        throw std::runtime_error("");
                     }
 
                     if(!instances[instID]->emission()){
                         LOG_ERROR("Instance is not emissive: " + instID);
-                        exit(1);
+                        throw std::runtime_error("");
                     }
 
                     lights[id] = new AreaLight(instances[instID]);
@@ -598,7 +605,7 @@ namespace pathtracer{
                 }
                 else{
                     LOG_ERROR("Invalid render-variable: " + var);
-                    exit(1);
+                    throw std::runtime_error("");
                 }
             }
             else if(integratorType == "path-tracer"){
@@ -655,7 +662,7 @@ namespace pathtracer{
                 }
                 else{
                     LOG_ERROR("Invalid kernel-type: " + var);
-                    exit(1);
+                    throw std::runtime_error("");
                 }
 
                 integrator = new PhotonMappingIntegrator(maxDepth,
@@ -663,7 +670,7 @@ namespace pathtracer{
             }
             else{
                 LOG_ERROR("No integrator found.");
-                exit(1);
+                throw std::runtime_error("");
             }
 
             int messageCount = 10;
@@ -730,12 +737,12 @@ namespace pathtracer{
             }
             else{
                 LOG_ERROR("No renderer found.");
-                exit(1);
+                throw std::runtime_error("");
             }
         }
         else{
             LOG_ERROR("No renderer in: " + filename);
-            exit(1);
+            throw std::runtime_error("");
         }
 
         return renderer;

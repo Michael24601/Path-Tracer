@@ -48,7 +48,7 @@ namespace pathtracer
 
         if (!pmi){
             LOG_ERROR("Wrong integrator type.");
-            exit(1);
+            throw std::runtime_error("");
         }
 
         pmi->setPhotonMap(m_map);

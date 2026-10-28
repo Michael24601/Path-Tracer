@@ -40,7 +40,7 @@ namespace pathtracer{
         m_guidableIntegrator = dynamic_cast<Guidable*>(m_integrator);
         if(!m_guidableIntegrator){
             LOG_ERROR("Path guiding requires a guidable integrator");
-            exit(1);
+            throw std::runtime_error("");
         }
 
         m_guidableIntegrator->setAlpha(alpha);
