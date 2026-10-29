@@ -414,7 +414,7 @@ namespace pathtracer{
             }
 
             reflection = SmsUtil::isReflection(wo, finalIt, wi);
-            Vector3 localWo = finalIt.shadingFrame().inverseTransformDirection(wo);
+            Vector3 localWo = finalIt.shadingFrame().toLocal(wo);
             eta = bsdf->eta(localWo, finalIt.uv());
             SurfaceDifferentials d = finalIt.instance()->computeDifferentials(finalIt, smooth);
 
@@ -523,13 +523,11 @@ namespace pathtracer{
         // functions.
 
         Vector3 secondWo = -wi;
-        secondWo = sample.finalPoint().shadingFrame()
-            .inverseTransformDirection(secondWo);
+        secondWo = sample.finalPoint().shadingFrame().toLocal(secondWo);
 
         Vector3 secondWi = (lightPoint.position() 
             - sample.finalPoint().position()).normalized();
-        secondWi = sample.finalPoint().shadingFrame()
-            .inverseTransformDirection(secondWi);
+        secondWi = sample.finalPoint().shadingFrame().toLocal(secondWi);
 
         Vector3 s1Weight;
         if(sample.isReflection()){

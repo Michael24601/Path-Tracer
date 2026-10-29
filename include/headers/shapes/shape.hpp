@@ -14,6 +14,7 @@ namespace pathtracer{
     class Vector2;
     class AxisAlignedBox;
     class Ray;
+    class Hit;
 
 
     // Contains point sampled from surface, and optionally

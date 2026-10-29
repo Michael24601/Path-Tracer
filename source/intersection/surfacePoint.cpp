@@ -53,12 +53,12 @@ namespace pathtracer{
 
 
     Vector3 SurfacePoint::s() const{
-        return m_shadingFrame.transform().column(0);
+        return m_shadingFrame.s;
     }
 
     
     Vector3 SurfacePoint::t() const{
-        return m_shadingFrame.transform().column(1);
+        return m_shadingFrame.t;
     }
 
 
@@ -72,12 +72,12 @@ namespace pathtracer{
     }
 
 
-    const Transform& SurfacePoint::shadingFrame() const {
+    const Frame& SurfacePoint::shadingFrame() const {
         return m_shadingFrame;
     }
 
 
-    const Transform& SurfacePoint::baseFrame() const {
+    const Frame& SurfacePoint::baseFrame() const {
         return m_baseFrame;
     }
 
@@ -136,9 +136,7 @@ namespace pathtracer{
         // Bitangent
         Vector3 bit = m_baseNormal.cross(s);
 
-        Matrix3 frame = Matrix3(s, bit, m_baseNormal);
-
-        m_baseFrame = Transform(frame, m_position);
+        m_baseFrame = Frame{s, bit, m_baseNormal, m_position};
     }
 
 
@@ -151,9 +149,7 @@ namespace pathtracer{
         // Bitangent
         Vector3 bit = m_shadingNormal.cross(s);
 
-        Matrix3 frame = Matrix3(s, bit, m_shadingNormal);
-
-        m_shadingFrame = Transform(frame, m_position);
+        m_shadingFrame = Frame{s, bit, m_shadingNormal, m_position};
     }
 
 
@@ -168,7 +164,7 @@ namespace pathtracer{
         }
 
         // We transform the direction wo to local coordinates
-        Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
+        Vector3 localWo = m_shadingFrame.toLocal(wo);
 
         // The bsdf functions sample and evaluate in shading
         // frame coordinates, so we need to transform the inputs,
@@ -177,7 +173,7 @@ namespace pathtracer{
         BsdfSample sample = m_instance->bsdf()->sample(localWo, m_uv, adjoint);
 
         // We then transform the result back to world coordinates
-        Vector3 wi = m_shadingFrame.transformDirection(sample.wi());
+        Vector3 wi = m_shadingFrame.toWorld(sample.wi());
 
         sample.setWi(wi);
 
@@ -201,9 +197,9 @@ namespace pathtracer{
         }
 
         // We transform the directions wo and wi to local coordinates
-        Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
+        Vector3 localWo = m_shadingFrame.toLocal(wo);
 
-        Vector3 localWi = m_shadingFrame.inverseTransformDirection(wi);
+        Vector3 localWi = m_shadingFrame.toLocal(wi);
 
         // No need to transform anything else
         BsdfSample sample = m_instance->bsdf()->evaluate(localWo, localWi, 
@@ -226,7 +222,7 @@ namespace pathtracer{
             return Vector3::ORIGIN;
         }
 
-        Vector3 localWo = m_shadingFrame.inverseTransformDirection(wo);
+        Vector3 localWo = m_shadingFrame.toLocal(wo);
 
         // The emission result is the same in world and shading
         // frame coordinates.

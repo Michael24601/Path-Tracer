@@ -13,6 +13,24 @@ namespace pathtracer{
     class Instance;
     class BsdfSample;
 
+
+    // A Transform that knows it is orthonormal, and writes to world
+    // and to local transforms that are faster.
+    struct Frame {
+        Vector3 s, t, n, origin;
+
+        // To be used with directions only
+        Vector3 toLocal(const Vector3& v) const {
+            return Vector3(s.dot(v), t.dot(v), n.dot(v));
+        }
+
+        // To be used with direction only
+        Vector3 toWorld(const Vector3& v) const {
+            return s * v.x() + t * v.y() + n * v.z();
+        }
+    };
+
+
     // Class that represents a surface point, that is, a point
     // on the surface of a shape that either by area sampling or ray
     // intersection, was chosen.
@@ -43,11 +61,11 @@ namespace pathtracer{
 
         // The shading frame that consists of the bitangent, tangent
         // and normals, where the normal is the z coordinate.
-        Transform m_shadingFrame;
+        Frame m_shadingFrame;
 
         // The same but using the base shading normal without normal
         // mapping.
-        Transform m_baseFrame;
+        Frame m_baseFrame;
 
         // Optional parameter, records which triangle in a mesh was
         // intersected.
@@ -79,9 +97,9 @@ namespace pathtracer{
 
         const Instance* instance() const;
 
-        const Transform& shadingFrame() const;
+        const Frame& shadingFrame() const;
 
-        const Transform& baseFrame() const;
+        const Frame& baseFrame() const;
 
         const SurfaceDifferentials& differentials() const;
 

@@ -61,7 +61,7 @@ namespace pathtracer{
 
         // Samples a random direction locally in upper hemisphere
         Vector3 localWo = SquareToHemisphereUniform::transform(Random::next2D());
-        Vector3 wo = s.shadingFrame().transformDirection(localWo);
+        Vector3 wo = s.shadingFrame().toWorld(localWo);
 
         // The light sample expects the pdf in solid angles
         real cosineY = std::max(0.0, s.shadingNormal().dot(wo));

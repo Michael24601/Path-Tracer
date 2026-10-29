@@ -8,19 +8,13 @@ namespace pathtracer{
 
     class Vector2;
 
-    class Random{
-
-    private:
-
-        static std::mt19937 engine;
-        static std::uniform_real_distribution<real> dist;
+    class Random {
 
     public:
 
         static real next();
-
+        
         static Vector2 next2D();
-
     };
 
 }

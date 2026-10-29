@@ -80,9 +80,8 @@ namespace pathtracer{
             // First we transform the ray to local coordinates
             // (But we don't normalize direction yet since we need
             // the scaling factor)
-            Transform inv = instance->transform().inverse();
 
-            Ray localRay = inv.transformKeepScale(ray);
+            Ray localRay = instance->inverse().transformKeepScale(ray);
 
             // Then we transform the intersection t (distance)
             // into local coordinates using the scale.

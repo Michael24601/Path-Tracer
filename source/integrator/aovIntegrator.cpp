@@ -50,7 +50,7 @@ namespace pathtracer{
 
                 // Must use the geometry frame here since the shading frame is
                 // already "infected" by the normal map.
-                normal = it.baseFrame().transformDirection(normal);
+                normal = it.baseFrame().toWorld(normal);
             }
 
             color = (normal + Vector3(1.0)) * 0.5;
@@ -81,7 +81,7 @@ namespace pathtracer{
                 Vector2 slope = Gaussian::transform(Random::next2D(), mu, sigma);
                 normal = Vector3(-slope[0], -slope[1], 1.0).normalized();
 
-                normal = it.baseFrame().transformDirection(normal);
+                normal = it.baseFrame().toWorld(normal);
             }
 
             color = (normal + Vector3(1.0)) * 0.5;

@@ -19,10 +19,8 @@ namespace pathtracer{
     // Given a ray and a distance t along it, sets the intersection
     // object. The uv are the barycentric coordinates of the
     // intersected point.
-    SurfacePoint Triangle::generateSurfacePoint(const Ray& ray,
-        real t, const Vector2& barycentric) const {
-
-        Vector3 point = ray.at(t);
+    SurfacePoint Triangle::generateSurfacePoint(const Vector3& point,
+        const Vector2& barycentric) const {
 
         // The shading and geometry normal are not the same,
         // unless no vertex normals are given.
@@ -48,6 +46,7 @@ namespace pathtracer{
         return sp;
     }
 
+
     Triangle::Triangle(const Vector3& v0, const Vector3& v1, 
         const Vector3& v2) :
         v0{v0},
@@ -60,6 +59,7 @@ namespace pathtracer{
         Vector3 n = (v1 - v0).cross(v2 - v0);
         assert((n.lengthSquared() > EPSILON) && "Degenerate triangle");
     }
+
 
     Triangle::Triangle(const Vector3& v0, const Vector3& v1,
         const Vector3& v2, const Vector3& n0, const Vector3& n1,
@@ -78,6 +78,7 @@ namespace pathtracer{
         assert((n.lengthSquared() > EPSILON) && "Degenerate triangle");
     }
 
+
     Triangle::Triangle(
         const Vector3& v0, const Vector3& v1, const Vector3& v2,
         const Vector2& uv0, const Vector2& uv1, const Vector2& uv2) :
@@ -94,6 +95,7 @@ namespace pathtracer{
         Vector3 n = (v1 - v0).cross(v2 - v0);
         assert((n.lengthSquared() > EPSILON) && "Degenerate triangle");
     }
+
 
     Triangle::Triangle(const Vector3& v0, const Vector3& v1, const Vector3& v2,
         const Vector3& n0, const Vector3& n1, const Vector3& n2,
@@ -115,6 +117,7 @@ namespace pathtracer{
         assert((n.lengthSquared() > EPSILON) && "Degenerate triangle");
     }
 
+
     real Triangle::getSurfaceArea() const {
 
         Vector3 r0 = v1 - v0;
@@ -122,6 +125,7 @@ namespace pathtracer{
 
         return 0.5 * (r0.cross(r1)).length();
     }
+
 
     AxisAlignedBox Triangle::getBoundingBox() const {
 
@@ -131,10 +135,12 @@ namespace pathtracer{
         return AxisAlignedBox(minimumPoint, maximumPoint);
     }
 
+
     Vector3 Triangle::getCentroid() const {
         // Just the vertex average
         return (v0 + v1 + v2) * ONE_THIRD;
     }
+
 
     // Intersects the shape with a ray
     Intersection Triangle::intersect(
@@ -184,11 +190,12 @@ namespace pathtracer{
             // Here we can conclude we have an intersection
             Vector2 barycentric(u, v);
 
-            return Intersection(t, generateSurfacePoint(ray, t, barycentric));
+            return Intersection(t, generateSurfacePoint(ray.at(t), barycentric));
         }
 
         return intersection;
     }
+
 
     AreaSample Triangle::sampleSurfaceArea() const {
 
@@ -206,16 +213,16 @@ namespace pathtracer{
 
         real pdf = 1.0 / getSurfaceArea();
 
-        return AreaSample(generateSurfacePoint(
-            Ray(point, Vector3(0, 0, 1)), 0, barycentric), pdf);
+        return AreaSample(generateSurfacePoint(point, barycentric), pdf);
     }
 
-    AreaSample Triangle::evaluateAreaSample(
-        const SurfaceSample& point) const {
 
+
+    Vector2 Triangle::getBarycentric(const Vector3& point) const{
+        
         Vector3 edge0 = v1 - v0;
         Vector3 edge1 = v2 - v0;
-        Vector3 relative = point.point - v0;
+        Vector3 relative = point - v0;
 
         real d00 = edge0.dot(edge0);
         real d01 = edge0.dot(edge1);
@@ -229,15 +236,18 @@ namespace pathtracer{
 
         real b1 = (d00 * d21 - d01 * d20) / denominator;
 
-        Vector2 barycentric(b0, b1);
+        return Vector2(b0, b1);
+    }
+
+
+    AreaSample Triangle::evaluateAreaSample(
+        const SurfaceSample& point) const {
 
         real pdf = 1.0 / getSurfaceArea();
 
-        return AreaSample(
-            generateSurfacePoint(
-                Ray(point.point, Vector3(0, 0, 1)), 0, barycentric
-            ), pdf
-        );
+        Vector2 barycentric = getBarycentric(point.point);
+
+        return AreaSample(generateSurfacePoint(point.point, barycentric), pdf);
     }
 
     
@@ -306,7 +316,6 @@ namespace pathtracer{
                 Vector3 n = interpolatedNormal / normalLength;
                 baseNormal = n;
 
-                // dn = (dN - n (n . dN)) / |N|
                 dndu = (dnduLinear - n * n.dot(dnduLinear)) / normalLength;
                 dndv = (dndvLinear - n * n.dot(dndvLinear)) / normalLength;
             }

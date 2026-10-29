@@ -33,7 +33,13 @@ namespace pathtracer{
         m_leanMap(leanMap),
         m_light{nullptr}, 
         m_inScene{false},
-        m_isCausticReceiver{false}{}
+        m_isCausticReceiver{false}{
+
+        // Cached
+        m_determinant = m_transform.determinant();
+        m_inverse = m_transform.inverse();
+        m_inverseTranspose = m_transform.inverseTranspose();
+    }
 
 
     bool Instance::hasAlphaTexture() const {
@@ -110,6 +116,11 @@ namespace pathtracer{
     }
 
 
+    const Transform& Instance::inverse() const {
+        return m_inverse;
+    }
+
+
     const Shape* const Instance::shape() const {
         return m_shape;
     }
@@ -164,8 +175,7 @@ namespace pathtracer{
 
         // The transform matrix is used directly since we don't
         // want it normalized yet.
-        Transform m = m_transform.inverseTranspose();
-        Vector3 normalWorld = m.transform(sample.shadingNormal());
+        Vector3 normalWorld = m_inverseTranspose.transform(sample.shadingNormal());
 
         // Transforming a local pdf to a world pdf
         real worldPdf = sample.pdf() / (normalWorld.length() 
@@ -197,7 +207,7 @@ namespace pathtracer{
     AreaSample Instance::evaluateAreaSample(const SurfaceSample& surPoint) const{
         // First we transform the point to local
         // coordinates.
-        Vector3 localPoint = m_transform.inverseTransform(surPoint.point);
+        Vector3 localPoint = m_inverse.transform(surPoint.point);
         SurfaceSample localSample{localPoint, surPoint.triangleIndex};
 
         // Then we evaluate the area sample.
@@ -207,8 +217,7 @@ namespace pathtracer{
 
         // The transform matrix is used directly since we don't
         // want it normalized yet.
-        Transform m = m_transform.inverseTranspose();
-        Vector3 normalWorld = m.transform(sample.shadingNormal());
+        Vector3 normalWorld = m_inverseTranspose.transform(sample.shadingNormal());
 
         // Transforming a local pdf to a world pdf
         real worldPdf = sample.pdf() / (normalWorld.length() 
@@ -244,8 +253,8 @@ namespace pathtracer{
         // If we have a normal map, then we need to change dndu and dndv
 
         Vector3 n = sp.baseNormal();
-        Vector3 s = sp.baseFrame().transform().column(0);
-        Vector3 t = sp.baseFrame().transform().column(1);
+        Vector3 s = sp.baseFrame().s;
+        Vector3 t = sp.baseFrame().t;
 
         FrameDifferentials fd = SmsUtil::computeFrameDifferentials(n, s, d);
 
@@ -395,7 +404,7 @@ namespace pathtracer{
             // then it.shadingFrame() already uses the coarse normal map,
             // which will break normal mapping in case we want to
             // smooth it again. So we use the base frame here.
-            normal = it.baseFrame().transformDirection(normal);
+            normal = it.baseFrame().toWorld(normal);
 
             // Then the frame is updated
             it.setShadingNormal(normal);

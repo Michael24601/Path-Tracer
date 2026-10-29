@@ -32,6 +32,11 @@ namespace pathtracer{
         const Emission* m_emission;
         Transform m_transform;
 
+        // These are cached for speed
+        Transform m_inverse;
+        Transform m_inverseTranspose;
+        real m_determinant;    
+
         // If this current instance is considered an area light,
         // then this pointer points to it.
         Light* m_light;
@@ -83,6 +88,9 @@ namespace pathtracer{
 
 
         const Transform& transform() const;
+
+
+        const Transform& inverse() const;
 
 
         const Shape* const shape() const;

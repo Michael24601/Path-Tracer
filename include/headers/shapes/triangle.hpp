@@ -23,13 +23,11 @@ namespace pathtracer{
         // True if we have shading normals and texture coordinates
         bool m_shadingNormals;
         bool m_uvCoordinates;
+    
 
-
-        // Given a ray and a distance t along it, sets the intersection
-        // object. The uv are the barycentric coordinates of the
-        // intersected point.
-        SurfacePoint generateSurfacePoint(const Ray& ray, real t,
-            const Vector2& barycentric) const;
+        // Returns u and v barycentric coordinates generated during
+        // an intersection, given a point.
+        Vector2 getBarycentric(const Vector3& point) const;
 
 
     public:
@@ -48,6 +46,13 @@ namespace pathtracer{
         Triangle(const Vector3& v0, const Vector3& v1, const Vector3& v2,
             const Vector3& n0, const Vector3& n1, const Vector3& n2,
             const Vector2& uv0, const Vector2& uv1, const Vector2& uv2);
+
+
+        // Given a ray and a distance t along it, sets the intersection
+        // object. The uv are the barycentric coordinates of the
+        // intersected point.
+        SurfacePoint generateSurfacePoint(const Vector3& point,
+            const Vector2& barycentric) const;
 
 
         real getSurfaceArea() const override;
