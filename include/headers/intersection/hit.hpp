@@ -13,7 +13,7 @@ namespace pathtracer{
         // Distance along ray in local coordinates (at start)
         real t;
         // The hit instance
-        Instance* instance;
+        const Instance* instance;
 
         // Barycentric coordinates (for triangle only)
         Vector2 barycentric;

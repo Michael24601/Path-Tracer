@@ -26,9 +26,9 @@ namespace pathtracer{
         static Vector3 mapToNormal(const Vector3& color);
 
 
-        Vector3 outputSample(const std::vector<real>& p) const;
+        Vector3 outputSample(const real* p) const;
 
-        
+
         static Image buildImage(const std::vector<std::vector<Vector3>>& data,
             BorderMode borderMode, FilterMode filterMode,
             bool linearize, bool isNormalMap);

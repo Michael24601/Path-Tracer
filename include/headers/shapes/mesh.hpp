@@ -9,6 +9,8 @@
 namespace pathtracer{
 
     class BlAccelerationStructure;
+    class Hit;
+    class SurfacePoint;
 
     class Mesh : public Shape {
 
@@ -37,7 +39,7 @@ namespace pathtracer{
         Vector3 getCentroid() const override;
 
         // Intersects the shape with a ray
-        Intersection intersect(const Ray& ray, real oldT) const override;
+        bool intersect(const Ray&, Hit& oldHit) const override;
 
         AreaSample sampleSurfaceArea() const override;
 
@@ -45,8 +47,13 @@ namespace pathtracer{
 
         Vector3 getPosition(const Vector2& uv, int triangleIndex) const override;
 
+        Vector2 getUv(const Hit& hit, const Ray& ray) const override;
+
         SurfaceDifferentials computeDifferentials(const Vector3& position, 
             const Vector2& uv, int triangleIndex) const;
+
+        SurfacePoint getSurfacePoint(const Vector3& point,
+            const Hit& hit) const override;
     };
 
 }

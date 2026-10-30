@@ -11,6 +11,9 @@
 #include "intersection/surfaceDifferentials.hpp"
 #include "sms/smsUtil.hpp"
 #include "math/constants.hpp"
+#include "intersection/Intersection.hpp"
+#include "intersection/Hit.hpp"
+#include "core/ray.hpp"
 #include "logger.hpp"
 
 namespace pathtracer{
@@ -121,7 +124,7 @@ namespace pathtracer{
     }
 
 
-    const Shape* const Instance::shape() const {
+    const Shape* Instance::shape() const {
         return m_shape;
     }
 
@@ -197,7 +200,7 @@ namespace pathtracer{
 
         // We can also do normal mapping here
         if(m_normal != nullptr){
-            normalMap(newSample);
+            normalMap(areaSample);
         }
 
         return areaSample;
@@ -238,6 +241,31 @@ namespace pathtracer{
         // The total pdf is just the pdf of choosing the point
         // multilplied by the pdf of choosing the shape.
         return AreaSample(newSample, worldPdf);   
+    }
+
+
+    Intersection Instance::constructIntersection(const Hit& hit,
+        const Ray& ray) const{
+
+        // First we get the point in local scape of the intersection.
+        // The ray and hit are world coordinates.
+        Vector3 point = ray.at(hit.t);
+        // Then we transform to local coordinates
+        point = m_inverse.transform(point);
+
+        SurfacePoint sp = m_shape->getSurfacePoint(point, hit);
+        sp = m_transform.transformSurfacePoint(sp);
+        sp.setInstance(this);
+
+        sp.computeShadingFrame();
+        sp.computeBaseFrame();
+
+        // We can also do normal mapping here
+        if(m_normal != nullptr){
+            normalMap(sp);
+        }
+        
+        return Intersection(hit.t, sp);
     }
 
 
@@ -283,97 +311,6 @@ namespace pathtracer{
             resU, resV,
             d.d2pdu2(), d.d2pdudv(), d.d2pdv2()
         );
-
-
-        // ALTERNATE
-
-        // If we have a normal map, then we need to change dndu and dndv
-
-        // Vector3 n = sp.baseNormal();
-        // Vector3 s = sp.baseFrame().transform().column(0);
-        // Vector3 t = sp.baseFrame().transform().column(1);
-
-        // FrameDifferentials fd =
-        //     SmsUtil::computeFrameDifferentials(n, s, d);
-
-        // Vector2 uv = sp.uv();
-
-        // // Sampling with some filters may not return normal vectors,
-        // // so we can renormalize
-        // Vector3 nm = smooth
-        //     ? m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel()).normalized()
-        //     : m_normal->sample(uv).normalized();
-
-        // Vector3 dndu(0.0);
-        // Vector3 dndv(0.0);
-
-        // // If it is smooth, then there is no normal map derivative,
-        // // but the frame derivative is still there.
-        // if (!smooth) {
-        //     real du = 1.0 / (m_normal->getWidth() * 32);
-        //     real dv = 1.0 / (m_normal->getHeight() * 32);
-
-        //     dndu = (m_normal->sample(uv + Vector2(du, 0.0)).normalized()
-        //         - m_normal->sample(uv - Vector2(du, 0.0)).normalized()) 
-        //         / (2.0 * du);
-
-        //     dndv = (m_normal->sample(uv + Vector2(0.0, dv)).normalized()
-        //         - m_normal->sample(uv - Vector2(0.0, dv)).normalized()) 
-        //         / (2.0 * dv);
-        // }
-
-        // Vector3 resU = fd.dsdu * nm.x() + fd.dtdu * nm.y() + d.dndu() * nm.z()
-        //     + s * dndu.x() + t * dndu.y() + n * dndu.z();
-
-        // Vector3 resV = fd.dsdv * nm.x() + fd.dtdv * nm.y() + d.dndv() * nm.z()
-        //     + s * dndv.x() + t * dndv.y() + n * dndv.z();
-
-        // return SurfaceDifferentials(
-        //     d.dpdu(), d.dpdv(),
-        //     resU, resV,
-        //     d.d2pdu2(), d.d2pdudv(), d.d2pdv2()
-        // );
-
-
-        // ALTERNATE
-
-        // int index = sp.triangleIndex();
-
-        // // World-space shading normal at an arbitrary uv on the same triangle.
-        // auto getNormal = [&](const Vector2& uv) -> Vector3 {
-        //     const Vector3 nm = smooth
-        //         ? m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel())
-        //         : m_normal->sample(uv);
-
-        //     const Vector3 pos =
-        //         m_transform.transform(m_shape->getPosition(uv, index));
-
-        //     const SurfacePoint p = evaluateAreaSample({pos, index});
-        //     const Transform& frame = p.baseFrame();
-
-        //     return frame.transformNormal(nm);
-        // };
-
-        // Vector2 uv = sp.uv();
-
-        // // Texel-sized step when the map varies; small fixed step when only
-        // // the frame varies.
-        // real du = smooth ? real(1e-3) : real(1.0) / m_normal->getWidth() * 16;
-        // real dv = smooth ? real(1e-3) : real(1.0) / m_normal->getHeight() * 16;
-
-        // Vector3 dndu =
-        //     (getNormal(uv + Vector2(du, 0.0)) - getNormal(uv - Vector2(du, 0.0)))
-        //     / (2.0 * du);
-
-        // Vector3 dndv =
-        //     (getNormal(uv + Vector2(0.0, dv)) - getNormal(uv - Vector2(0.0, dv)))
-        //     / (2.0 * dv);
-
-        // return SurfaceDifferentials(
-        //     d.dpdu(), d.dpdv(),
-        //     dndu, dndv,
-        //     d.d2pdu2(), d.d2pdudv(), d.d2pdv2()
-        // );
     }
 
 

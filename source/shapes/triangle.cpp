@@ -12,6 +12,8 @@
 #include "math/mathUtil.hpp"
 #include "math/vector2.hpp"
 #include "bvh/axisAlignedBox.hpp"
+#include "intersection/hit.hpp"
+
 
 namespace pathtracer{
 
@@ -143,11 +145,7 @@ namespace pathtracer{
 
 
     // Intersects the shape with a ray
-    Intersection Triangle::intersect(
-        const Ray& ray,
-        real oldT) const {
-
-        Intersection intersection;
+    bool Triangle::intersect(const Ray& ray, Hit& oldHit) const {
 
         // We can set the parametric ray equation equal to
         // the parametric plane equation, get an intersection,
@@ -166,34 +164,42 @@ namespace pathtracer{
         real det = edge0.dot(rayE1Cross);
 
         // It's better not to use == with floating point numbers
-        if(abs(det) < EPSILON)
-            return intersection;
+        if(abs(det) < EPSILON){
+            return false;
+        }
 
         real invDet = 1.0f / det;
 
         real detu = (origin - v0).dot(rayE1Cross);
         real u = detu * invDet;
 
-        if(u < 0.0f || u > 1.0f)
-            return intersection;
+        if(u < 0.0f || u > 1.0f){
+            return false;
+        }
 
         real detv = ray.direction().dot(originE0Cross);
         real v = detv * invDet;
 
-        if(v < 0.0f || u + v > 1.0f)
-            return intersection;
+        if(v < 0.0f || u + v > 1.0f){
+            return false;
+        }
 
         real dett = edge1.dot(originE0Cross);
         real t = dett * invDet;
 
-        if(t > SHADOW_EPSILON && t < oldT){
+        if(t > SHADOW_EPSILON && t < oldHit.t){
             // Here we can conclude we have an intersection
             Vector2 barycentric(u, v);
 
-            return Intersection(t, generateSurfacePoint(ray.at(t), barycentric));
+            oldHit.t = t;
+            oldHit.triangleIndex = -1;
+            oldHit.barycentric = barycentric;
+            oldHit.instance = nullptr;
+
+            return true;
         }
 
-        return intersection;
+        return false;
     }
 
 
@@ -248,6 +254,13 @@ namespace pathtracer{
         Vector2 barycentric = getBarycentric(point.point);
 
         return AreaSample(generateSurfacePoint(point.point, barycentric), pdf);
+    }
+
+
+    Vector2 Triangle::getUv(const Hit& hit, const Ray& ray) const {
+        return m_uvCoordinates
+            ? Barycentric::interpolate(uv0, uv1, uv2, hit.barycentric)
+            : hit.barycentric;
     }
 
     
@@ -328,9 +341,7 @@ namespace pathtracer{
     }
 
 
-    Vector3 Triangle::getPosition(
-        const Vector2& uv,
-        int triangleIndex) const {
+    Vector3 Triangle::getPosition(const Vector2& uv, int triangleIndex) const {
 
         if (!m_uvCoordinates) {
             // Fallback
@@ -358,6 +369,13 @@ namespace pathtracer{
         real b0 = 1.0 - b1 - b2;
 
         return v0 * b0 + v1 * b1 + v2 * b2;
+    }
+
+
+    SurfacePoint Triangle::getSurfacePoint(const Vector3& point,
+        const Hit& hit) const{
+
+        return generateSurfacePoint(point, hit.barycentric);
     }
 
 }

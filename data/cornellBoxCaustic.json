@@ -205,7 +205,7 @@
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/wavy_normal.png",
+                        "file-name": "data/textures/wave.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -240,7 +240,7 @@
     "renderer": {
         "type": "path-tracer-renderer",
         "parameters": {
-            "pixel-resolution": [256, 256],
+            "pixel-resolution": [512, 512],
             "sample-count": 5
         },
         "integrator": {

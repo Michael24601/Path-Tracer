@@ -9,6 +9,7 @@ namespace pathtracer{
     class LightSample;
     class SurfaceSample;
     class SurfaceDifferentials;
+    class Scene;
 
     struct PhotonSample{
         // The intensity, weighted by the direction and the area
@@ -34,7 +35,7 @@ namespace pathtracer{
         virtual LightSample sample(const Vector3&) const = 0;
 
 
-        virtual PhotonSample samplePhoton() const = 0;
+        virtual PhotonSample samplePhoton(const Scene& scene) const = 0;
 
 
         // Given a particular point on the light, this returns the

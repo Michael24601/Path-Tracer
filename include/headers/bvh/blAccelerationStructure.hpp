@@ -8,7 +8,7 @@ namespace pathtracer{
 
     class Triangle;
     class Ray;
-    class Intersection;
+    class Hit;
     
     // This is a bottom level acceleration structure (determines
     // closest hit among triangles of a mesh, not among different
@@ -105,7 +105,7 @@ namespace pathtracer{
         // We assume the ray is in the correct space.
         // OldT is passed by reference in order to keep track of it
         // on all branches.
-        Intersection intersectNode(const NodePtr node, real& oldT, 
+        bool intersectNode(const NodePtr node, Hit& oldHit, 
             const std::vector<Triangle>& shapes, const Ray& ray) const;
 
 
@@ -113,7 +113,7 @@ namespace pathtracer{
 
         BlAccelerationStructure(const std::vector<Triangle>& shapes);
 
-        Intersection intersect(real oldT, const std::vector<Triangle>& shapes, 
+        bool intersect(Hit& oldHit, const std::vector<Triangle>& shapes, 
             const Ray& ray) const;
      
         

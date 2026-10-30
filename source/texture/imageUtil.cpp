@@ -45,48 +45,50 @@ namespace pathtracer{
     namespace Filter{
 
 
-        std::vector<real> linearInterpolate(const std::vector<real>& a,
-            const std::vector<real>& b, real t) {
+        inline void linearInterpolate(const real* a, const real* b, real t,
+            real* out, int channels) {
 
-            std::vector<real> result(a.size());
-
-            for (int i = 0; i < a.size(); i++){
-                result[i] = a[i] * (1.0f - t) + b[i] * t;
+            for (int c = 0; c < channels; ++c) {
+                out[c] = a[c] + (b[c] - a[c]) * t;
             }
-
-            return result;
         }
 
 
-        std::vector<real> nearest(const Vector2& decimal, const Vector2i& floor, 
-            const Vector2i& ceiling, const std::vector<std::vector<std::vector<real>>>& data) {
+        void nearest(const Vector2& decimal, const Vector2i& floor,
+            const Vector2i& ceiling, const real* data, int width, int channels,
+            real* out) {
 
-            real tx = decimal.x();
-            real ty = decimal.y();
-            int x = (tx < 0.5f ? floor.x() : ceiling.x());
-            int y = (ty < 0.5f ? floor.y() : ceiling.y());
-            return data[y][x];
+            int x = (decimal.x() < 0.5f ? floor.x() : ceiling.x());
+            int y = (decimal.y() < 0.5f ? floor.y() : ceiling.y());
+
+            // Here we just use raw arrays because we want to avoid copies
+            // and allocations in low level code
+            const real* p = data + (size_t(y) * width + x) * channels;
+            for (int c = 0; c < channels; c++) {
+                out[c] = p[c];
+            }
         }
 
 
-        std::vector<real> bilinear(const Vector2& decimal, const Vector2i& floor, 
-            const Vector2i& ceiling, const std::vector<std::vector<std::vector<real>>>& data) {
+        void bilinear(const Vector2& decimal, const Vector2i& floor,
+            const Vector2i& ceiling, const real* data, int width, int channels,
+            real* out) {
 
             real tx = decimal.x();
             real ty = decimal.y();
 
-            std::vector<real> t00 = data[floor.y()][floor.x()];
-            std::vector<real> t01 = data[ceiling.y()][floor.x()];
-            std::vector<real> t10 = data[floor.y()][ceiling.x()];
-            std::vector<real> t11 = data[ceiling.y()][ceiling.x()];
+            // Again we use raw arrays to avoid costly allocations
+            const real* p00 = data + (size_t(floor.y()) * width + floor.x()) * channels;
+            const real* p10 = data + (size_t(floor.y()) * width + ceiling.x()) * channels;
+            const real* p01 = data + (size_t(ceiling.y()) * width + floor.x()) * channels;
+            const real* p11 = data + (size_t(ceiling.y()) * width + ceiling.x()) * channels;
 
-            // We interpolate horizontally
-            std::vector<real> t0 = linearInterpolate(t00, t10, tx);
-            std::vector<real> t1 = linearInterpolate(t01, t11, tx);
-            // Then vertically 
-            std::vector<real> t = linearInterpolate(t0, t1, ty);
-
-            return t;
+            // These are the two horizontal and vertical linear interpolations
+            for (int c = 0; c < channels; ++c) {
+                const real t0 = p00[c] + (p10[c] - p00[c]) * tx;
+                const real t1 = p01[c] + (p11[c] - p01[c]) * tx;
+                out[c] = t0 + (t1 - t0) * ty;
+            }
         }
 
     }

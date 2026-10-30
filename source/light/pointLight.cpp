@@ -7,6 +7,8 @@
 #include "math/constants.hpp"
 #include "core/random.hpp"
 #include "math/vector2.hpp"
+#include "core/scene.hpp"
+
 
 namespace pathtracer{
 
@@ -35,7 +37,7 @@ namespace pathtracer{
     }
 
 
-    PhotonSample PointLight::samplePhoton() const{
+    PhotonSample PointLight::samplePhoton(const Scene& scene) const{
         // The point on the light is always the same, the only thing
         // to sample is the direction.
         

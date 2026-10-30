@@ -31,22 +31,29 @@ namespace pathtracer{
 
     namespace Filter{
 
-        // Linearly interpolates two vectors
-        std::vector<real> linearInterpolate(const std::vector<real>& a,
-            const std::vector<real>& b, real t);
+        // Linearly interpolates two vectors.
+        // This then outputs to the raw array out to avoid any costly
+        // vector allocations.
+        inline void linearInterpolate(const real* a, const real* b, real t,
+            real* out, int channels);
 
         // Filters the texture by choosing the closest pixel to our
         // uv coordinate, by checking the decimal value of the uv
         // coordinate in image space.
         // Assumes that uv, floor, and ceilling have already
-        // 
-        std::vector<real> nearest(const Vector2& decimal, const Vector2i& floor, 
-            const Vector2i& ceiling, const std::vector<std::vector<std::vector<real>>>& data);
+        // This then outputs to the raw array out to avoid any costly
+        // vector allocations.
+        void nearest(const Vector2& decimal, const Vector2i& floor,
+            const Vector2i& ceiling, const real* data, int width, int channels,
+            real* out);
 
         // Filters the texture by doing bilinear interpolation.
         // Assumes that border handing has been done.
-        std::vector<real> bilinear(const Vector2& decimal, const Vector2i& floor, 
-            const Vector2i& ceiling, const std::vector<std::vector<std::vector<real>>>& data);
+        // This then outputs to the raw array out to avoid any costly
+        // vector allocations.
+        void bilinear(const Vector2& decimal, const Vector2i& floor,
+            const Vector2i& ceiling, const real* data, int width, int channels,
+            real* out);
 
     }
 

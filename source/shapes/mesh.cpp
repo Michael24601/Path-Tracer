@@ -5,6 +5,7 @@
 #include "intersection/areaSample.hpp"
 #include "shapes/meshUtil.hpp"
 #include "intersection/surfaceDifferentials.hpp"
+#include "intersection/hit.hpp"
 
 namespace pathtracer{
 
@@ -42,14 +43,18 @@ namespace pathtracer{
 
     Vector3 Mesh::getCentroid() const {
         // The centroid of the mesh is that of its box
-        return (m_box.minCorner() + m_box.maxCorner()) / 2.0f;;
+        return (m_box.minCorner() + m_box.maxCorner()) / 2.0f;
     }
 
 
     // Intersects the shape with a ray
-    Intersection Mesh::intersect(const Ray& ray, real oldT) const {
-        Intersection it = m_bvh->intersect(oldT, triangles, ray);
-        return it;
+    bool Mesh::intersect(const Ray& ray, Hit& oldHit) const {
+        return m_bvh->intersect(oldHit, triangles, ray);
+    }
+
+
+    Vector2 Mesh::getUv(const Hit& hit, const Ray& ray) const {
+        return triangles[hit.triangleIndex].getUv(hit, ray);
     }
 
 
@@ -91,6 +96,14 @@ namespace pathtracer{
 
     Vector3 Mesh::getPosition(const Vector2& uv, int triangleIndex) const {
         return triangles[triangleIndex].getPosition(uv, 0);
+    }
+
+
+    SurfacePoint Mesh::getSurfacePoint(const Vector3& point,
+        const Hit& hit) const{
+
+        return triangles[hit.triangleIndex].generateSurfacePoint(point, 
+            hit.barycentric);
     }
 
 }

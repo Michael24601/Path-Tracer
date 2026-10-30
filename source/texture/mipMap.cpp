@@ -1,4 +1,3 @@
-
 #include "math/vector2.hpp"
 #include "math/vector3.hpp"
 #include "texture/mipMap.hpp"
@@ -21,7 +20,7 @@ namespace pathtracer{
 
             int height = std::max(1, (current.getHeight() + 1) / 2);
             int width = std::max(1, (current.getWidth() + 1) / 2);
-            int channels = current.getPixel(0, 0).size();
+            int channels = current.getChannels();
 
             std::vector<std::vector<std::vector<real>>> data(
                 height, std::vector<std::vector<real>>(width)
@@ -42,9 +41,9 @@ namespace pathtracer{
                                 continue;
                             }
 
-                            std::vector<real> v = current.getPixel(sourceH, sourceW);
+                            const real* v = current.getPixel(sourceH, sourceW);
 
-                            for (size_t c = 0; c < channels; c++) {
+                            for (int c = 0; c < channels; c++) {
                                 average[c] += v[c];
                             }
 
@@ -52,7 +51,7 @@ namespace pathtracer{
                         }
                     }
 
-                    for (size_t c = 0; c < channels; c++) {
+                    for (int c = 0; c < channels; c++) {
                         average[c] /= static_cast<real>(count);
                     }
 
@@ -76,14 +75,14 @@ namespace pathtracer{
 
 
 
-    std::vector<real> MipMap::sample(const Vector2& uv, int level) const{
+    void MipMap::sample(const Vector2& uv, int level, real* out) const{
         int maxL = m_levels.size()-1;
         assert(level >= 0 && level <= maxL && "Level is out of bounds");
-        return m_levels[level].sample(uv);
+        m_levels[level].sample(uv, out);
     }
     
 
-    std::vector<real> MipMap::getPixel(int h, int w, int level) const{
+    const real* MipMap::getPixel(int h, int w, int level) const{
 
         int maxL = m_levels.size()-1;
         assert(level >= 0 && level <= maxL && "Level is out of bounds");

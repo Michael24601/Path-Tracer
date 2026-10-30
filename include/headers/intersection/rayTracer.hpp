@@ -7,7 +7,7 @@
 namespace pathtracer{
 
     class Instance;
-    class Intersection;
+    class Hit;
     class Ray;
 
     namespace RayTracer{
@@ -23,12 +23,12 @@ namespace pathtracer{
         // Note intersection is assumed to still be in local coordinates.
         // So no need to transform it for now.
         // Note that both localRay and intersection are changed.
-        bool alphaMask(Intersection& it, Ray& localRay,
-            real oldT, const Instance* instance);
+        bool alphaMask(Hit& hit, real oldT, Ray& localRay, 
+            const Instance* instance);
 
         // Intersects a ray with a shape instance. If we have a
         // closer intersection, we use it.
-        bool intersect(Intersection& oldIt, const Ray& ray,
+        bool intersect(Hit& oldHit, const Ray& ray, 
             const Instance* const instance);
 
     }

@@ -42,16 +42,18 @@ namespace pathtracer{
             return new MipMap(image);
         }
 
-
+        
         Vector2 mean(const MipMap* map, const Vector2& uv, int level){
-            std::vector<real> m = map->sample(uv, level);
+            real m[5];
+            map->sample(uv, level, m);
             return Vector2(m[0], m[1]);
         }
 
 
         Matrix2 covariance(const MipMap* map, const Vector2& uv, int level){
 
-            std::vector<real> m = map->sample(uv, level);
+            real m[5];
+            map->sample(uv, level, m);
             
             // The covariances are E[xx]-E[x]E[x], and so on for the rest...
             real vxx = m[2] - m[0] * m[0];
@@ -64,7 +66,6 @@ namespace pathtracer{
 
             return Matrix2(vxx, vxy, vxy, vyy);
         }
-
     }
             
 }

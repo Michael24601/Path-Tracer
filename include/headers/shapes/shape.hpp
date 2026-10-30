@@ -8,13 +8,13 @@
 namespace pathtracer{
 
     // Forward declarations
-    class Intersection;
     class AreaSample;
     class SurfaceDifferentials;
     class Vector2;
     class AxisAlignedBox;
     class Ray;
     class Hit;
+    class SurfacePoint;
 
 
     // Contains point sampled from surface, and optionally
@@ -55,7 +55,7 @@ namespace pathtracer{
         // (though it will also be checked later just in case).
         // If multiple hits are found, only the closest is returned.
         // Visibility is not checked at this level, but self intersection is.
-        virtual Intersection intersect(const Ray&, real oldT) const = 0;
+        virtual bool intersect(const Ray&, Hit& oldHit) const = 0;
 
 
         // Samples a random point on the surface area
@@ -70,6 +70,17 @@ namespace pathtracer{
         // Returns a position given the uv coordinates and optionally
         // the triangle index.
         virtual Vector3 getPosition(const Vector2& uv, int triangleIndex) const = 0;
+
+
+        // Returns uv coordinates given a Hit (needed for certain tasks
+        // while ray tracing like alpha masking)
+        virtual Vector2 getUv(const Hit& hit, const Ray& ray) const = 0;
+
+
+        // Generates the point with its shading frame and texture coordinates,
+        // and differential data.
+        virtual SurfacePoint getSurfacePoint(const Vector3& point,
+            const Hit& hit) const = 0;
 
 
     };

@@ -23,29 +23,36 @@ namespace pathtracer{
 
     Image::Image(const std::vector<std::vector<std::vector<real>>>& data, 
         BorderMode borderMode, FilterMode filterMode) :
-        m_data{data},
         m_borderMode{borderMode},
         m_filterMode{filterMode} {
 
         assert((data.size() > 0 && data[0].size() > 0)
             && "Image is not filled");
 
-        width = data[0].size();
         height = data.size();
+        width = data[0].size();
         channels = data[0][0].size();
 
-        // This ensures they have the same dimensions everywhere
-        for (const auto& row: data) {
-            assert(static_cast<int>(row.size()) == width && "ragged row");
-            for (const auto& pixel : row){
-                assert(static_cast<int>(pixel.size()) == channels && "channel mismatch");
+        // We then flatten the data here
+        m_data.resize(size_t(width) * height * channels);
+
+        for (int h = 0; h < height; h++) {
+            assert(static_cast<int>(data[h].size()) == width && "ragged row");
+
+            for (int w = 0; w < width; w++) {
+                assert(static_cast<int>(data[h][w].size()) == channels && "channel mismatch");
+
+                int baseIndex = (h * width + w) * channels;
+                for (int c = 0; c < channels; c++) {
+                    m_data[baseIndex + c] = data[h][w][c];
+                }
             }
         }
 
     }
 
 
-    std::vector<real> Image::sample(const Vector2& uv) const {
+    void Image::sample(const Vector2& uv, real* out) const {
 
         // First we precompute these values
         Vector2 imageUv = mapToImageSpace(uv);
@@ -68,20 +75,19 @@ namespace pathtracer{
         }
 
         // Then we apply filtering
-        std::vector<real> color;
         if(m_filterMode == FilterMode::NEAREST){
-            color = Filter::nearest(decimal, floor, ceiling, m_data);
+            Filter::nearest(decimal, floor, ceiling, m_data.data(), 
+                width, channels, out);
         }
         else if(m_filterMode == FilterMode::BILINEAR){
-            color = Filter::bilinear(decimal, floor, ceiling, m_data);
+            Filter::bilinear(decimal, floor, ceiling, m_data.data(), 
+                width, channels, out);
         }
-
-        return color;
     }
 
 
-    void Image::sampleGradient(const Vector2& uv, std::vector<real>& val, 
-        std::vector<real>& du, std::vector<real>& dv) const {
+    void Image::sampleGradient(const Vector2& uv, real* val, 
+        real* du, real* dv) const {
 
         const int w = getWidth();
         const int h = getHeight();
@@ -109,25 +115,18 @@ namespace pathtracer{
                 ceiling = Border::mirror(ceiling, w, h);
             }
 
-            std::vector<real> p00 = getPixel(floor.y(), floor.x());
-            std::vector<real> p10 = getPixel(floor.y(), ceiling.x());
-            std::vector<real> p01 = getPixel(ceiling.y(), floor.x());
-            std::vector<real> p11 = getPixel(ceiling.y(), ceiling.x());
+            const real* p00 = getPixel(floor.y(), floor.x());
+            const real* p10 = getPixel(floor.y(), ceiling.x());
+            const real* p01 = getPixel(ceiling.y(), floor.x());
+            const real* p11 = getPixel(ceiling.y(), ceiling.x());
 
-            val = Filter::linearInterpolate(
-                Filter::linearInterpolate(p00, p10, decimal.x()),
-                Filter::linearInterpolate(p01, p11, decimal.x()), 
-                decimal.y()
-            );
+            Filter::bilinear(decimal, floor, ceiling, m_data.data(), w, channels, val);
 
             // Convert from pixel space to uv space (chain rule,
             // and this is a scaling operation, so derivative is a
             // factor of thw width or height).
             real sx = real(w - 1);
             real sy = -real(h - 1);
-
-            du.resize(channels);
-            dv.resize(channels);
 
             for (int c = 0; c < channels; c++) {
                 real dx = (p10[c] - p00[c]) * (1 - decimal.y())
@@ -143,20 +142,22 @@ namespace pathtracer{
         case FilterMode::NEAREST: {
             // Not differentiable
             // Could maybe use central differences in the future
-            val = sample(uv);
-            du.assign(channels, 0.0f);
-            dv.assign(channels, 0.0f);
+            sample(uv, val);
+            for (int c = 0; c < channels; c++) {
+                du[c] = 0.0f;
+                dv[c] = 0.0f;
+            }
             return;
         }
         }
     }
 
 
-    const std::vector<real>& Image::getPixel(int h, int w) const {
+    const real* Image::getPixel(int h, int w) const {
         assert((h >= 0 && h < height) && (w>= 0 && w< width) &&
             "Dimensions don't match the texture's");
 
-        return m_data[h][w];
+        return &m_data[(size_t(h) * width + w) * channels];
     }
 
 

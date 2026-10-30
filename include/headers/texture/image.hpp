@@ -28,7 +28,9 @@ namespace pathtracer{
     private:
 
         // 2D texture with n-dimensional data (could be color or other)
-        std::vector<std::vector<std::vector<real>>> m_data;
+        // The data is stored in a flat array to avoid pointers to
+        // pointer to pointers of arrays...
+        std::vector<real> m_data;
 
         // Pixel dimensions
         int width, height, channels;
@@ -75,13 +77,13 @@ namespace pathtracer{
         }
 
 
-        const std::vector<real>& getPixel(int i, int j) const;
+        const real* getPixel(int i, int j) const;
 
 
         // Computes the derivative analytically using the filtering
         // that we have (no central differences).
-        void sampleGradient(const Vector2& uv, std::vector<real>& val, 
-            std::vector<real>& du, std::vector<real>& dv) const;
+        void sampleGradient(const Vector2& uv, real* val, real* du, 
+            real* dv) const;
         
 
         // Samples the texture according to the set modes. The given
@@ -89,7 +91,9 @@ namespace pathtracer{
         // 0 and 1, as the borderMode will handle it, nor does it
         // need to lie on any particular pixel center as the filterMode
         // will handle that.
-        std::vector<real> sample(const Vector2& uv) const;
+        // This fills a raw array to avoid heap allocating a vector and
+        // returning it (since the result has dynamic size).
+        void sample(const Vector2& uv, real* out) const;
 
     };
 

@@ -30,7 +30,7 @@ namespace pathtracer{
     }
 
 
-    Vector3 Texture::outputSample(const std::vector<real>& p) const {
+    Vector3 Texture::outputSample(const real* p) const {
         Vector3 v(p[0], p[1], p[2]);
         return m_isNormalMap ? v.normalized() : v;
     }
@@ -75,7 +75,7 @@ namespace pathtracer{
     void Texture::sampleGradient(const Vector2& uv,
         Vector3& dndu, Vector3& dndv) const {
 
-        std::vector<real> val, gu, gv;
+        real val[3], gu[3], gv[3];
         mipmap.level(0).sampleGradient(uv, val, gu, gv);
 
         Vector3 v(val[0], val[1], val[2]);
@@ -107,22 +107,22 @@ namespace pathtracer{
 
 
     Vector3 Texture::getPixel(int i, int j) const{
-        std::vector<real> p = mipmap.level(0).getPixel(i, j);
+        const real* p = mipmap.level(0).getPixel(i, j);
         return outputSample(p);
     }
         
 
     Vector3 Texture::sample(const Vector2& uv) const{
-        std::vector<real> p = mipmap.level(0).sample(uv);
+        real p[3];
+        mipmap.level(0).sample(uv, p);
         return outputSample(p);
     }
 
 
 
     Vector3 Texture::sampleMipMap(const Vector2& uv, int level) const {
-        
-        // If the level is wrong, or we don't store any mipmaps
-        std::vector<real> p = mipmap.level(level).sample(uv);
+        real p[3];
+        mipmap.level(level).sample(uv, p);
         return outputSample(p);
     }
 

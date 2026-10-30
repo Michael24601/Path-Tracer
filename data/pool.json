@@ -269,7 +269,7 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 5
+            "sample-count": 50
         },
         "integrator": {
             "type": "path-tracer-nee-sms",

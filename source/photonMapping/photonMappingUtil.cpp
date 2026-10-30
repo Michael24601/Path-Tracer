@@ -39,7 +39,7 @@ namespace pathtracer{
                 for (int photonIndex = 0; photonIndex < photonCount; photonIndex++) {
 
                     const Light* light = UniformLight::sample(scene);
-                    PhotonSample sample = light->samplePhoton();
+                    PhotonSample sample = light->samplePhoton(scene);
 
                     real lightPdf = UniformLight::pdf(scene, light);
 

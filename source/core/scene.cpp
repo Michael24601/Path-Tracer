@@ -9,28 +9,27 @@
 #include "math/vector3.hpp"
 #include "math/constants.hpp"
 #include "logger.hpp"
+#include "intersection/hit.hpp"
 
 
 namespace pathtracer{
 
     // Also intersects a scene but quits early if one is found
     // that is closer than some distance
-    Intersection Scene::intersect(const Ray& ray, real maxDistance) const {
-
-        Intersection it = Intersection::NO_HIT;
+    bool Scene::intersect(const Ray& ray, real maxDistance, Hit& hit) const {
 
         for(auto& inst: m_instances){
-            RayTracer::intersect(it, ray, inst);
+            bool success = RayTracer::intersect(hit, ray, inst);
 
-            if(it && !std::isfinite(maxDistance)){
-                return it;
+            if(success && !std::isfinite(maxDistance)){
+                return true;
             }
-            else if(it.t() < maxDistance){
-                return it;
+            else if(success && hit.t < maxDistance){
+                return true;
             }
         }
 
-        return it;
+        return false;
     }
 
 
@@ -103,13 +102,20 @@ namespace pathtracer{
     // Returns the closest hit.
     Intersection Scene::intersect(const Ray& ray) const {
 
-        Intersection it = Intersection::NO_HIT;
+        Hit hit;
+        hit.t = REAL_INFINITY;
+        bool success = false;
 
         for(auto& inst: m_instances){
-            RayTracer::intersect(it, ray, inst);
+            success |= RayTracer::intersect(hit, ray, inst);
         }
 
-        return it;
+        if(!success){
+            return Intersection::NO_HIT;
+        }
+
+        // Otherwise we can generate a surface point
+        return hit.instance->constructIntersection(hit, ray);
     }
 
 
@@ -138,10 +144,12 @@ namespace pathtracer{
         Ray ray(origin + direction * SHADOW_EPSILON, direction);
         real maxDistance = distance;
 
-        Intersection it = intersect(ray, maxDistance - 2 * SHADOW_EPSILON);
+        Hit hit;
+        hit.t = maxDistance - 2 * SHADOW_EPSILON;
+        bool success = intersect(ray, maxDistance - 2 * SHADOW_EPSILON, hit);
         
         // If we don't find an intersection we return true
-        if(!it){
+        if(!success){
             return true;
         }
 
@@ -151,7 +159,7 @@ namespace pathtracer{
 
         // If we find an intersection and it is closer we return
         // false as well.
-        if(it.t() < maxDistance - 2 * SHADOW_EPSILON){
+        if(hit.t < maxDistance - 2 * SHADOW_EPSILON){
             return false;
         }
 

@@ -22,9 +22,9 @@ namespace pathtracer{
 
         int maxLevel() const;
         
-        std::vector<real> getPixel(int h, int w, int level) const;
+        void sample(const Vector2& uv, int level, real* out) const;
 
-        std::vector<real> sample(const Vector2& uv, int level) const;
+        const real* getPixel(int h, int w, int level) const;
 
         const Image& level(int i) const;
 

@@ -805,7 +805,7 @@ namespace pathtracer{
             throw std::runtime_error("");
         }
 
-        return std::make_pair(scene, renderer);;
+        return std::make_pair(scene, renderer);
     }
 
 }

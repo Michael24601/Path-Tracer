@@ -7,6 +7,7 @@
 namespace pathtracer{
 
     class Instance;
+    class Scene;
 
     class AreaLight: public Light{
 
@@ -22,7 +23,7 @@ namespace pathtracer{
         // Calculates in global coordinates.
         LightSample sample(const Vector3& origin) const override;
 
-        PhotonSample samplePhoton() const override;
+        PhotonSample samplePhoton(const Scene& scene) const override;
 
         LightSample evaluateLightSample(const Vector3& origin,
             const SurfaceSample& surPoint) const override;

@@ -10,6 +10,7 @@
 #include "math/constants.hpp"
 #include "math/mathUtil.hpp"
 #include "bvh/axisAlignedBox.hpp"
+#include "intersection/hit.hpp"
 
 namespace pathtracer{
 
@@ -64,7 +65,7 @@ namespace pathtracer{
 
 
     // Intersects the shape with a ray
-    Intersection Sphere::intersect(const Ray& ray, real oldT) const {
+    bool Sphere::intersect(const Ray& ray, Hit& oldHit) const {
 
         // Solving for the sphere intersection can be done
         // by plugging the parametric ray equation into the implicit
@@ -74,9 +75,6 @@ namespace pathtracer{
         // t^2||d||^2 + 2t<d, o> + ||o||^2 - 1 = 0
         // at^2 + bt + c = 0
         // Which can be solved by checking the discriminant.
-
-        // No hit by default
-        Intersection intersection;
         
         // The norm of the direction is 1
         real a = 1;
@@ -86,15 +84,19 @@ namespace pathtracer{
         real discriminant = b * b - 4 * a * c;
 
         if(discriminant < 0){
-            return intersection;
+            return false;
         }
         else if(discriminant < EPSILON){
             // Only one solution, which is -b/2a
             real t = -b / (2.0 * a);
 
-            if(t > SHADOW_EPSILON && t < oldT){
-                Vector3 point = ray.at(t);
-                return Intersection(t, generateSurfacePoint(point));
+            if(t > SHADOW_EPSILON && t < oldHit.t){
+
+                oldHit.t = t;
+                oldHit.instance = nullptr;
+                oldHit.triangleIndex = -1;
+
+                return true;
             }
         }
         else{
@@ -103,18 +105,25 @@ namespace pathtracer{
             real t0 = (-b - sqrtDiscriminant) / (2.0 * a);
             real t1 = (-b + sqrtDiscriminant) / (2.0 * a);
 
-            Vector3 point0 = ray.at(t0);
-            Vector3 point1 = ray.at(t1);
+            if(t0 > SHADOW_EPSILON && t0 < oldHit.t){
 
-            if(t0 > SHADOW_EPSILON && t0 < oldT){
-                return Intersection(t0, generateSurfacePoint(point0));
+                oldHit.t = t0;
+                oldHit.instance = nullptr;
+                oldHit.triangleIndex = -1;
+
+                return true;
             }
-            else if(t1 > SHADOW_EPSILON && t1 < oldT){
-                return Intersection(t1, generateSurfacePoint(point1));;
+            else if(t1 > SHADOW_EPSILON && t1 < oldHit.t){
+
+                oldHit.t = t1;
+                oldHit.instance = nullptr;
+                oldHit.triangleIndex = -1;
+
+                return true;
             }
         }
 
-        return intersection;
+        return false;
     }
 
 
@@ -184,6 +193,21 @@ namespace pathtracer{
     }
 
 
+    Vector2 Sphere::getUv(const Hit& hit, const Ray& ray) const {
+
+        // Normal is the same as point on this sphere
+        const Vector3& normal = ray.at(hit.t);
+        real theta = std::acos(Util::clamp(normal.z(), -1, 1));
+        real phi = std::atan2(normal.y(), normal.x());
+
+        if(phi < 0){
+            phi += 2 * PI;
+        }
+
+        return Vector2(phi * 0.5 * INV_PI, theta * INV_PI);
+    }
+
+
     Vector3 Sphere::getPosition(const Vector2& uv, int triangleIndex) const {
 
         real phi = 2.0 * PI * uv.x();
@@ -194,6 +218,13 @@ namespace pathtracer{
         return Vector3(sinTheta * std::cos(phi),
             sinTheta * std::sin(phi),
             std::cos(theta));
+    }
+
+
+    SurfacePoint Sphere::getSurfacePoint(const Vector3& point,
+        const Hit& hit) const{
+
+        return generateSurfacePoint(point);
     }
 
 }

@@ -9,6 +9,7 @@
 #include "shapes/shape.hpp"
 #include "core/random.hpp"
 #include "math/vector2.hpp"
+#include "core/scene.hpp"
 
 namespace pathtracer{
     
@@ -54,7 +55,7 @@ namespace pathtracer{
     }
 
 
-    PhotonSample AreaLight::samplePhoton() const{
+    PhotonSample AreaLight::samplePhoton(const Scene& scene) const{
 
         // Samples a random point
         AreaSample s = m_instance->sampleArea();

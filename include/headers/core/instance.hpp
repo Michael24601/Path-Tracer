@@ -14,11 +14,14 @@ namespace pathtracer{
     class Scene;
     class AreaSample;
     class SurfaceDifferentials;
+    class Intersection;
     class SurfaceSample;
     class SurfacePoint;
     class AxisAlignedBox;
     class Vector2;
     class MipMap;
+    class Ray;
+    class Hit;
 
     class Instance{
 
@@ -90,10 +93,10 @@ namespace pathtracer{
         const Transform& transform() const;
 
 
+        const Shape* shape() const;
+
+
         const Transform& inverse() const;
-
-
-        const Shape* const shape() const;
 
 
         const Emission* const emission() const;
@@ -123,6 +126,11 @@ namespace pathtracer{
         // a point on the surface of the instance.
         // The input is in global coordinates.
         AreaSample evaluateAreaSample(const SurfaceSample&) const;
+
+
+        // Given a Hit and Ray in world coordinates, computes the Intersection
+        Intersection constructIntersection(const Hit& hit,
+            const Ray& ray) const;
 
 
         // Computes the differential info on the surface of the shape

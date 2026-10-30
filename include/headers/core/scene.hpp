@@ -12,6 +12,9 @@ namespace pathtracer{
     class Ray;
     class Intersection;
     class Vector3;
+    class Hit;
+
+
     class Scene{
 
     private:
@@ -24,7 +27,7 @@ namespace pathtracer{
 
         // Also intersects a scene but quits early if one is found
         // that is closer than some distance
-        Intersection intersect(const Ray& ray, real maxDistance) const;
+        bool intersect(const Ray& ray, real maxDistance, Hit& hit) const;
 
 
     public:

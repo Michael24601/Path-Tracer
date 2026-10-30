@@ -3,7 +3,7 @@
 #include "core/instance.hpp"
 #include "core/random.hpp"
 #include "core/ray.hpp"
-#include "intersection/intersection.hpp"
+#include "intersection/hit.hpp"
 #include "intersection/surfacePoint.hpp"
 #include "shapes/shape.hpp"
 #include "texture/texture.hpp"
@@ -14,7 +14,7 @@ namespace pathtracer{
 
     namespace RayTracer{
 
-        bool alphaMask(Intersection& it, Ray& localRay, real oldT,
+        bool alphaMask(Hit& hit, Ray& localRay, real oldT,
             const Instance* instance) {
 
             // First we extract the alpha value if available
@@ -24,15 +24,15 @@ namespace pathtracer{
             }
 
             bool pass = true;
-
-            real currentOldT = oldT;
+            bool success = true;
 
             // Difference keeps track of the offset applied
             real difference{0.0};
 
-            while(it && it.t() < currentOldT && it.t() > SHADOW_EPSILON && pass) {
+            while(success && hit.t > SHADOW_EPSILON && pass) {
 
-                real alpha = instance->alphaTexture()->sample(it.uv()).x();
+                Vector2 uv = instance->shape()->getUv(hit, localRay);
+                real alpha = instance->alphaTexture()->sample(uv).x();
 
                 real random = Random::next();
 
@@ -41,31 +41,39 @@ namespace pathtracer{
                 pass = random > alpha;
 
                 if(!pass){
-                    break;
+                    // We got a hit here, so we just return, but first
+                    // we adjust to reflect the original ray origin.
+                    hit.t = hit.t + difference;
+                    return true;
                 }
 
                 // We update oldT since origin of ray is changing
-                difference = difference + (localRay.origin() 
-                    - it.position()).length() + SHADOW_EPSILON;
+                real offset = hit.t + SHADOW_EPSILON;
+                difference += offset;
 
-                // If oldT is infinite, no need to even bother offsetting it
-                if(oldT < REAL_INFINITY){
-                    currentOldT = oldT - difference;
+                // New upperbound, distance until the oldHit we had
+                if(oldT < REAL_INFINITY) {
+                    hit.t = oldT - difference;
+
+                    // This means we already exceeded it
+                    if(hit.t <= SHADOW_EPSILON) {
+                        return false;
+                    }
+                }
+                // If the old hit is infinitely far away, we can continue 
+                else {
+                    hit.t = REAL_INFINITY;
                 }
 
                 // Then we reintersect the same shape if we pass
                 // We define a new (local) ray to do that.
-                localRay.setOrigin(it.position() 
-                    + localRay.direction() * SHADOW_EPSILON);
+                localRay.setOrigin(localRay.origin()
+                    + localRay.direction() * offset);
 
-                it = instance->shape()->intersect(localRay, currentOldT);
-            }
-
-            // When we are out, if we have a valid intersection, we
-            // update t to reflect the original origin of the ray.
-            if(!pass && it && it.t() < currentOldT && it.t() > SHADOW_EPSILON) {
-                it.setT(it.t() + difference);
-                return true;
+                // This won't return a success if the new hit as a smaller
+                // t than hit. It also won't overwrite hit.t if not
+                // a success.
+                success = instance->shape()->intersect(localRay, hit);
             }
 
             return false;
@@ -74,7 +82,7 @@ namespace pathtracer{
 
         // Intersects a ray with a shape instance. If we have a
         // closer intersection, we use it.
-        bool intersect(Intersection& oldIt, const Ray& ray,
+        bool intersect(Hit& oldHit, const Ray& ray, 
             const Instance* const instance) {
 
             // First we transform the ray to local coordinates
@@ -89,52 +97,40 @@ namespace pathtracer{
             // the direction was actually normalized to begin with.
             real scale = localRay.direction().length();
 
+            Hit localHit;
+            // Old t is the old T scaled in local coordinates
             real oldT;
-
-            if(oldIt){
-                oldT = oldIt.t() * scale;
+            if(oldHit.t < REAL_INFINITY){
+                oldT = oldHit.t * scale;
             }
-            // If the oldIt is not a valid hit, then oldT is the max value
             else{
                 oldT = REAL_INFINITY;
             }
+            localHit.t = oldT;
 
             // Now we can normalize the ray direction
             localRay.setDirection(localRay.direction() / scale);
 
             // Then we intersect the shape
-            Intersection it = instance->shape()->intersect(localRay, oldT);
+            bool success = instance->shape()->intersect(localRay, localHit);
 
             // If we have an intersection and it actually is closer
             // (could or could not have been checked inside).
-            if(it && it.t() > SHADOW_EPSILON && it.t() < oldT) {
+            if(success && localHit.t > SHADOW_EPSILON && localHit.t < oldT) {
 
                 // Before we process the intersection, we do
                 // alpha masking.
-                bool hit = alphaMask(it, localRay, oldT, instance);
+                bool hit = alphaMask(localHit, localRay, oldT, instance);
 
                 if(hit){
 
                     // Finally, if we get to this point, we know that
                     // we have a new closest intersection, so we can
-                    // transform it to world coordinates, and replace the
-                    // older one.
-                    it.setInstance(instance);
+                    // transform it to world coordinates.
+                    localHit.instance = instance;
+                    localHit.t = localHit.t / scale;
 
-                    SurfacePoint newIt = instance->transform().transformSurfacePoint(it);
-
-                    real newT = it.t() / scale;
-
-                    oldIt = Intersection(newT, newIt);
-
-                    // We also compute the shading frame now
-                    oldIt.computeShadingFrame();
-                    oldIt.computeBaseFrame();
-
-                    // Since we found the closest hit, we can now do normal mapping
-                    if(instance->normalTexture()){
-                        instance->normalMap(oldIt);
-                    }
+                    oldHit = localHit;
 
                     return true;
                 }

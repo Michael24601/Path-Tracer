@@ -106,7 +106,8 @@
                     "parameters":{
                         "file-name": "data/models/specular/backWall.obj"
                     }
-                }
+                },
+                "is-caustic-receiver": true
             }
         },
         {
@@ -167,7 +168,7 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [2048, 2048],
-            "sample-count": 2
+            "sample-count": 13
         },
         "integrator": {
             "type": "path-tracer-nee-sms",

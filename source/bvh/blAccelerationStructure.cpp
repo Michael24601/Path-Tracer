@@ -3,8 +3,9 @@
 #include <algorithm>
 #include "shapes/triangle.hpp"
 #include "core/ray.hpp"
-#include "intersection/intersection.hpp"
 #include "math/constants.hpp"
+#include "intersection/hit.hpp"
+
 
 namespace pathtracer{
     
@@ -305,30 +306,24 @@ namespace pathtracer{
     // We assume the ray is in the correct space.
     // OldT is passed by reference in order to keep track of it
     // on all branches.
-    Intersection BlAccelerationStructure::intersectNode(
-        const NodePtr node, real& oldT, 
-        const std::vector<Triangle>& shapes, const Ray& ray) const {
+    bool BlAccelerationStructure::intersectNode(const NodePtr node, 
+        Hit& oldHit, const std::vector<Triangle>& shapes, const Ray& ray) const {
 
         // If the node is a leaf, we just text the shapes inside it
         if (node->isLeaf()) {
 
-            Intersection result;
+            bool found = false;
 
             for (int i = node->firstShape(); i <= node->lastShape(); i++) {
-                Intersection it = shapes[m_shapeIndexes[i]].intersect(ray, oldT);
 
-                if(it && it.t() < oldT && it.t() > SHADOW_EPSILON){
-                    oldT = it.t();
-
-                    // We need to tell the intersection which triangle was hit
-                    // for reverse queries to work.
-                    it.setTriangleIndex(m_shapeIndexes[i]);
-
-                    result = it;
+                bool hit = shapes[m_shapeIndexes[i]].intersect(ray, oldHit);
+                if(hit){
+                    oldHit.triangleIndex = m_shapeIndexes[i];
+                    found = true;
                 }
             }
 
-            return result;
+            return found;
         }
 
         // Otherwise, we check which of the children is closer
@@ -338,55 +333,31 @@ namespace pathtracer{
         real leftT = node->left()->aabb().intersect(ray);
         real rightT = node->right()->aabb().intersect(ray);
 
-        Intersection result;
+        bool found = false;
 
         if (leftT < rightT) {
-            if (leftT < oldT){
-                // oldT is updated here
-                Intersection it = intersectNode(
-                    node->left(), oldT, shapes, ray);
-
-                // Result is only valid (true) if it was closer than oldT
-                if(it){
-                    result = it;
-                }
+            if (leftT < oldHit.t){
+                // oldHit is updated here
+                found |= intersectNode(node->left(), oldHit, shapes, ray);
             }
 
-            if (rightT < oldT){
-                // oldT is updated here
-                Intersection it = intersectNode(
-                    node->right(), oldT, shapes, ray);
-
-                // Result is only valid (true) if it was closer than oldT
-                if(it){
-                    result = it;
-                }
+            if (rightT < oldHit.t){
+                // oldHit is updated here
+                found |= intersectNode(node->right(), oldHit, shapes, ray);
             }
         } else {
-            if (rightT < oldT){
-                // oldT is updated here
-                Intersection it = intersectNode(
-                    node->right(), oldT, shapes, ray);
-
-                // Result is only valid (true) if it was closer than oldT
-                if(it){
-                    result = it;
-                }
+            if (rightT < oldHit.t){
+                // oldTHit is updated here
+                found |= intersectNode(node->right(), oldHit, shapes, ray);
             }
 
-            if (leftT < oldT){
-                // oldT is updated here
-                Intersection it = intersectNode(
-                    node->left(), oldT, shapes, ray);
-
-                // Result is only valid (true) if it was closer than oldT
-                if(it){
-                    result = it;
-                }
+            if (leftT < oldHit.t){
+                // oldHit is updated here
+                found |= intersectNode(node->left(), oldHit, shapes, ray);
             }
         }
 
-        return result;
+        return found;
     }
 
 
@@ -406,12 +377,10 @@ namespace pathtracer{
     }
 
 
-    Intersection BlAccelerationStructure::intersect(
-        real oldT, const std::vector<Triangle>& shapes, 
-        const Ray& ray) const {
-
-        real copyT = oldT;
-        return intersectNode(m_root, copyT, shapes, ray);
+    bool BlAccelerationStructure::intersect(Hit& oldHit, 
+        const std::vector<Triangle>& shapes, const Ray& ray) const {
+            
+        return intersectNode(m_root, oldHit, shapes, ray);
     }
 
 
