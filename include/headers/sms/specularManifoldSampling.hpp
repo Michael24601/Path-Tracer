@@ -73,7 +73,7 @@ namespace pathtracer{
         SpecularManifoldSampling(const Scene* scene, bool useHalfVector, 
             bool biased, bool twoStage, int maxIterations = 30, 
             int maxTrials = 1000, int maxBiasedTrials = 10, 
-            real epsilon = 1e-5, real threshold = 1e-5);
+            real epsilon = 1e-9, real threshold = 1e-6);
 
 
         // Returns the outgoing radiance from x0, after connecting
@@ -128,7 +128,7 @@ namespace pathtracer{
         Vector3 evaluatePathContribution(
             const SurfacePoint& causticPoint, const LightSample& lightPoint, 
             const SmsSample& sample, const SpecularManifoldBsdf* bsdf, 
-            const Vector3& wo, const Scene* scene);
+            const Vector3& wo, const Scene* scene, const Vector3& lon);
 
 
         std::string toString() const{

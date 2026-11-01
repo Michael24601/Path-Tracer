@@ -191,7 +191,7 @@ namespace pathtracer{
         // which includes the bsdf at x0 and x1, the cosine terms,
         // the pdf for sampling x2... all except the pdf of x1.
         Vector3 weight = evaluatePathContribution(causticPoint,
-            lightPoint, sample, bsdf, wo, scene);
+            lightPoint, sample, bsdf, wo, scene, localOffsetNormal);
 
         // We add both the invProbability for x1.
         weight = weight * invProbability;
@@ -267,7 +267,7 @@ namespace pathtracer{
             solutions.push_back(sample.finalPoint().position());
 
             Vector3 weight = evaluatePathContribution(causticPoint,
-                lightPoint, sample, bsdf, wo, scene);
+                lightPoint, sample, bsdf, wo, scene, localOffsetNormal);
 
             // Notice that we don't include the pdf of sampling this
             // point on the specular (unlike unbiased where we use a counter
@@ -528,7 +528,7 @@ namespace pathtracer{
     Vector3 SpecularManifoldSampling::evaluatePathContribution(
         const SurfacePoint& causticPoint, const LightSample& lightPoint, 
         const SmsSample& sample, const SpecularManifoldBsdf* bsdf, 
-        const Vector3& wo, const Scene* scene) {
+        const Vector3& wo, const Scene* scene, const Vector3& lon) {
 
         contributingSamples++;
 
@@ -548,8 +548,14 @@ namespace pathtracer{
         Vector3 secondWo = -wi;
         secondWo = sample.finalPoint().shadingFrame().toLocal(secondWo);
 
-        Vector3 secondWi = (lightPoint.position() 
-            - sample.finalPoint().position()).normalized();
+        Vector3 secondWi;
+        if (lightPoint.caster()->isDirectional()) {
+            secondWi = lightPoint.wi();
+        }
+        else {
+            secondWi = (lightPoint.position()
+                - sample.finalPoint().position()).normalized();
+        }
         secondWi = sample.finalPoint().shadingFrame().toLocal(secondWi);
 
         Vector3 s1Weight;
@@ -564,6 +570,7 @@ namespace pathtracer{
             s1Weight = bsdf->evaluateRefraction(secondWo, secondWi, 
                 sample.finalPoint().uv());
         }
+
 
         // This already includes the light pdf (in case of area light).
         SmsLightSample lightSample = SmsUtil::lightContribution(lightPoint, 

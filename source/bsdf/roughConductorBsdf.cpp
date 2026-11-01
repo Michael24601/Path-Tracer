@@ -119,14 +119,24 @@ namespace pathtracer{
 
         const Vector3 wm = (wo + wi).normalized();
 
+        const real D = Microfacet::evaluateGGX(alpha, wm);
+
         const real G = Microfacet::smithG1(alpha, wm, wi)
             * Microfacet::smithG1(alpha, wm, wo);
 
-        return m_reflectance->sample(uv) * (G * std::abs(wo.dot(wm)) / cosWo);
+        // Note, this function doesn't return the exact same weight
+        // as the one returned by the evaluate and sample functions.
+        // This is because it must match the way the normal was sampled
+        // in sampleManifoldNormal, which uses NDF, not VNDF, since
+        // we don;t necessarily know wo when sampling the normal
+        // (wo depends on final converged position of x1).
+        return m_reflectance->sample(uv)
+            * (D * G * std::abs(wo.dot(wm)) / cosWo);
     }
 
 
     ManifoldNormal RoughConductorBsdf::sampleManifoldNormal(const Vector2& uv) const {
+
         const real roughness = m_roughness->sample(uv).x();
         const real alpha = std::max(real(1e-3), sqrtReal(roughness));
 
@@ -140,11 +150,11 @@ namespace pathtracer{
 
         const Vector3 wm(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
 
-        const real pdf = cosTheta;
+        const real pdf = Microfacet::evaluateGGX(alpha, wm) * cosTheta;
 
         return ManifoldNormal{wm, pdf};
     }
-    
+        
 
     bool RoughConductorBsdf::isRough() const{
         return true;

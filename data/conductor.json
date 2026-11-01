@@ -125,7 +125,7 @@
             "id": "ceiling-light",
             "type": "directional",
             "parameters": {
-                "direction": [0.1, -0.4, -1.1],
+                "direction": [-0.1, -1.4, -1.6],
                 "power": [1, 1, 1]
             }
         }
@@ -147,7 +147,7 @@
     "renderer": {
         "type": "path-tracer-renderer",
         "parameters": {
-            "pixel-resolution": [1024, 1024],
+            "pixel-resolution": [512, 512],
             "sample-count": 12
         },
         "integrator": {
@@ -157,26 +157,6 @@
                 "use-halfvector": false,
                 "biased": false,
                 "two-stage": false
-            }
-        }
-    },
-
-
-    "renderer-": {
-        "type": "photon-mapping-renderer",
-        "parameters": {
-            "pixel-resolution": [1024, 1024],
-            "sample-count": 100,
-            "max-depth": 100,
-            "threshold": 4,
-            "photon-count": 10000000
-        },
-        "integrator": {
-            "type": "photon-mapping-integrator",
-            "parameters": {
-                "max-depth": 100,
-                "kernel-radius": 0.005,
-                "kernel-type": "epanechnikov" 
             }
         }
     }
