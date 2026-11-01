@@ -240,7 +240,8 @@
         "type": "path-tracer-renderer",
         "parameters": {
             "pixel-resolution": [512, 512],
-            "sample-count": 5
+            "sample-count": 5,
+            "message-count": 10
         },
         "integrator": {
             "type": "path-tracer-nee-sms",
@@ -251,6 +252,9 @@
                 "two-stage": false
             }
         }
-    }
+    },
     
+    "reference":{
+        "file-name": "data/references/cornellBoxWater.png"
+    }
 }

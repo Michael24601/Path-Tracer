@@ -256,6 +256,7 @@ namespace pathtracer{
         SurfacePoint sp = m_shape->getSurfacePoint(point, hit);
         sp = m_transform.transformSurfacePoint(sp);
         sp.setInstance(this);
+        sp.setTriangleIndex(hit.triangleIndex);
 
         sp.computeShadingFrame();
         sp.computeBaseFrame();

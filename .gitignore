@@ -4,6 +4,7 @@ build/
 include/libs/
 data/models/
 data/textures/
+data/references/
 output/
 *.png
 *.txt

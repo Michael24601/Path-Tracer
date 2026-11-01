@@ -4,6 +4,7 @@
 #define PATH_TRACER_INTEGRATOR_HPP
 
 #include <string>
+#include <atomic>
 
 namespace pathtracer{
 
@@ -15,6 +16,9 @@ namespace pathtracer{
     class Integrator{
 
     public:
+
+        // Used for debugging
+        std::atomic<long long> bounceCount{0};
     
         // Uses whatever rendering technique it wants to render
         // the light received by the given shadow ray.
@@ -22,6 +26,13 @@ namespace pathtracer{
 
 
         virtual std::string toString() const = 0;
+
+
+        virtual ~Integrator() = default;
+
+
+        // This is empty unless overriden
+        virtual void printStatistics() const {}
      
     };
 

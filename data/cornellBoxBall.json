@@ -1,6 +1,5 @@
 
 {
-
     "materials" : [
         {
             "id": "diffuse-white",
@@ -13,16 +12,15 @@
                     }
                 }
             }
-
         },
         {
-            "id": "diffuse-green",
+            "id": "diffuse-blue",
             "type": "diffuse",
             "parameters": {
                 "albedo": {
                     "type": "color",
                     "parameters": {
-                        "color": [0.14, 0.45, 0.091]
+                        "color": [0.28, 0.21, 0.56]
                     }
                 }
             }
@@ -52,26 +50,51 @@
             }
         },
         {
-            "id": "conductor-bsdf",
-            "type": "mirror",
+            "id": "water",
+            "type": "dielectric",
             "parameters": {
+                "ior": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [1.5, 1.5, 1.5]
+                    }
+                },
                 "reflectance": {
                     "type": "color",
                     "parameters": {
-                        "color": [0.98, 0.98, 0.98]
+                        "color": [1.0, 1.0, 1.0]
                     }
                 },
-                "roughness": {
+                "transmittance": {
                     "type": "color",
                     "parameters": {
-                        "color": [0.002, 0.002, 0.002]
+                        "color": [1.0, 1.0, 1.0]
                     }
                 }
             }
         }
     ],
 
-    "instances": [
+    "instances" : [
+        {
+            "id": "ceiling",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cornellBox/ceiling.obj"
+                    }
+                },
+                "is-caustic-receiver": true
+            }
+        },
         {
             "id": "floor",
             "type": "mesh",
@@ -85,7 +108,7 @@
                 "vertex-data":{ 
                     "format": "obj",
                     "parameters":{
-                        "file-name": "data/models/specular/floor.obj"
+                        "file-name": "data/models/cornellBox/floor.obj"
                     }
                 },
                 "is-caustic-receiver": true
@@ -104,7 +127,7 @@
                 "vertex-data":{ 
                     "format": "obj",
                     "parameters":{
-                        "file-name": "data/models/specular/backWall.obj"
+                        "file-name": "data/models/cornellBox/backWall.obj"
                     }
                 },
                 "is-caustic-receiver": true
@@ -113,7 +136,7 @@
         {
             "id": "right-wall",
             "type": "mesh",
-            "material": "conductor-bsdf",
+            "material": "diffuse-blue",
             "parameters": {
                 "transform": [
                     1.0, 0.0, 0.0, 0.0,
@@ -123,13 +146,45 @@
                 "vertex-data":{ 
                     "format": "obj",
                     "parameters":{
-                        "file-name": "data/models/specular/rightWall.obj"
+                        "file-name": "data/models/cornellBox/rightWall.obj"
                     }
                 },
+                "is-caustic-receiver": true
+            }
+        },
+        {
+            "id": "left-wall",
+            "type": "mesh",
+            "material": "diffuse-red",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cornellBox/leftWall.obj"
+                    }
+                },
+                "is-caustic-receiver": true
+            }
+        },
+        {
+            "id": "glass-sphere",
+            "type": "sphere",
+            "material": "water",
+            "parameters": {
+                "transform": [
+                    0.35, 0.0, 0.0, 0.0,
+                    0.0, 0.35, 0.0, 1.0,
+                    0.0, 0.0, 0.35, 0.0
+                ],
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/wavy_normal.png",
+                        "file-name": "data/textures/very_wavy_normal.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -138,14 +193,13 @@
         }
     ],
 
-
     "lights": [
         {
             "id": "ceiling-light",
-            "type": "directional",
+            "type": "point",
             "parameters": {
-                "direction": [1, -1.0, -0.3],
-                "power": [1, 1, 1]
+                "power": [1, 1, 1],
+                "position": [0, 1.0, 0]
             }
         }
     ],
@@ -153,25 +207,26 @@
     "camera": {
         "type": "perspective",
         "parameters": {
-            "focal-length": 0.0216506,
-            "sensor-dimension": [0.025, 0.0201172],
+            "focal-length": 0.02165,
+            "sensor-dimension": [0.025, 0.025],
             "look-at": {
-                "eye": [0, 0.75, 2.5],
-                "target": [0, 0.75, -100],
+                "eye": [0, 0.9, 2.5],
+                "target": [0, 0.9, -100],
                 "up": [0, 1, 0]
             }
         }
     },
-    
+        
 
     "renderer": {
         "type": "path-tracer-renderer",
         "parameters": {
-            "pixel-resolution": [2048, 2048],
-            "sample-count": 13
+            "pixel-resolution": [1024, 1024],
+            "sample-count": 4,
+            "message-count": 10
         },
         "integrator": {
-            "type": "path-tracer-nee-sms",
+            "type": "path-tracer-sms",
             "parameters": {
                 "max-depth": 100,
                 "use-halfvector": false,
@@ -179,6 +234,10 @@
                 "two-stage": true
             }
         }
-    }
+    },
 
+
+    "reference":{
+        "file-name": "data/references/cornellBoxBall.png"
+    }
 }

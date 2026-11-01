@@ -5,6 +5,7 @@
 #include "renderer/renderer.hpp"
 #include "integrator/pathTracerNeeSms.hpp"
 #include "sms/specularManifoldSampling.hpp"
+#include "image/imageUtil.hpp"
 #include "core/scene.hpp"
 #include <iostream>
 #include <fstream>
@@ -29,6 +30,8 @@ int main(int argc, char* argv[]) {
     Logger::setMaxTimeInterval(-1.0);
     Logger::setConsoleOutput(true);
 
+    Logger::enableDebug(true);
+
     SetConsoleOutputCP(CP_UTF8);
     std::string line;
     for(int i = 0; i < 130; i++) line += "─";
@@ -42,15 +45,14 @@ int main(int argc, char* argv[]) {
 
     Scene* scene;
     Renderer* renderer;
+    std::vector<std::vector<Vector3>> reference;
 
     try {
 
         LOG_INFO("Parsing and building scene.");
 
         std::string input = std::string("data/") + argv[1];
-        auto result = Parser::parse(input);
-        scene = result.first;
-        renderer = result.second;
+        std::tie(scene, renderer, reference) = Parser::parse(input);
 
         LOG_INFO("Rendering start.");
 
@@ -89,6 +91,15 @@ int main(int argc, char* argv[]) {
                 "[" + std::to_string(index) + "].png";
             index++;
         }
+
+
+        std::cout << "\n" << line << "\n\n";
+        std::cout.flush();
+
+        real difference = ImageUtil::relativeMse(image, reference);
+        LOG_INFO("Relative mean square error: " + std::to_string(difference));
+        renderer->printStatistics();
+        
 
         ImageIo::savePNG(image, output);
 

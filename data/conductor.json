@@ -1,0 +1,184 @@
+
+{
+
+    "materials" : [
+        {
+            "id": "diffuse-white",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.725, 0.71, 0.68]
+                    }
+                }
+            }
+
+        },
+        {
+            "id": "diffuse-green",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.14, 0.45, 0.091]
+                    }
+                }
+            }
+        },
+        {
+            "id": "diffuse-red",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.63, 0.065, 0.05]
+                    }
+                }
+            }
+        },
+        {
+            "id": "light-bsdf",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.0, 0.0, 0.0]
+                    }
+                }
+            }
+        },
+        {
+            "id": "conductor-bsdf",
+            "type": "rough-conductor",
+            "parameters": {
+                "reflectance": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.84, 0.65, 0.32]
+                    }
+                },
+                "roughness": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.0001, 0.0001, 0.0001]
+                    }
+                }
+            }
+        }
+    ],
+
+    "instances": [
+        {
+            "id": "floor",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    0.3, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 0.3, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/conductor/floor.obj"
+                    }
+                },
+                "is-caustic-receiver": true
+            }
+        },
+        {
+            "id": "box",
+            "type": "mesh",
+            "material": "conductor-bsdf",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/conductor/box.obj"
+                    }
+                },
+                "normal-map": {
+                    "type": "texture",
+                    "parameters": {
+                        "file-name": "data/textures/very_wavy_bumpy_normal.png",
+                        "border-mode": "repeat",
+                        "filter-mode": "bilinear"
+                    }
+                }
+            }
+        }
+    ],
+
+
+    "lights": [
+        {
+            "id": "ceiling-light",
+            "type": "directional",
+            "parameters": {
+                "direction": [0.1, -0.4, -1.1],
+                "power": [1, 1, 1]
+            }
+        }
+    ],
+
+    "camera": {
+        "type": "perspective",
+        "parameters": {
+            "focal-length": 0.060,
+            "sensor-dimension": [0.036, 0.036],
+            "look-at": {
+                "eye": [2.4559, 4.8173, 4.1689],
+                "target": [2.09647, 4.26285, 3.41830],
+                "up": [-0.39756, 0.81869, -0.41436]
+            }
+        }
+    },
+
+    "renderer": {
+        "type": "path-tracer-renderer",
+        "parameters": {
+            "pixel-resolution": [1024, 1024],
+            "sample-count": 12
+        },
+        "integrator": {
+            "type": "path-tracer-nee-sms",
+            "parameters": {
+                "max-depth": 100,
+                "use-halfvector": false,
+                "biased": false,
+                "two-stage": false
+            }
+        }
+    },
+
+
+    "renderer-": {
+        "type": "photon-mapping-renderer",
+        "parameters": {
+            "pixel-resolution": [1024, 1024],
+            "sample-count": 100,
+            "max-depth": 100,
+            "threshold": 4,
+            "photon-count": 10000000
+        },
+        "integrator": {
+            "type": "photon-mapping-integrator",
+            "parameters": {
+                "max-depth": 100,
+                "kernel-radius": 0.005,
+                "kernel-type": "epanechnikov" 
+            }
+        }
+    }
+
+}

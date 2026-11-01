@@ -19,9 +19,6 @@ namespace pathtracer{
 
         bool m_isNormalMap;
 
-        // For color textures, we need to turn srgb to linear
-        static Vector3 srgbToLinear(const Vector3& color);
-
         // Maps normal from [0, 1] to [-1, 1] and normalizes
         static Vector3 mapToNormal(const Vector3& color);
 
@@ -40,6 +37,10 @@ namespace pathtracer{
         Texture(const std::vector<std::vector<Vector3>>& data, 
             BorderMode borderMode, FilterMode filterMode, 
             bool linearize = false, bool isNormalMap = false);
+
+
+        // For color textures, we need to turn srgb to linear
+        static Vector3 srgbToLinear(const Vector3& color);
 
         
         inline int getWidth() const{

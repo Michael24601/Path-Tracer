@@ -130,7 +130,6 @@ namespace pathtracer{
         }
 
 
-
         real geometricTerm(const SurfacePoint& x0, const SmsSample& sample, 
             const LightSample& x2, const SurfaceDifferentials& d0,
             const SurfaceDifferentials& d1, const SurfaceDifferentials& d2) {
@@ -279,7 +278,7 @@ namespace pathtracer{
                 // Invert 2x2 block matrix system
                 real determinant = dc2_dx2.determinant();
 
-                if (abs(determinant) < 1e-6f) {
+                if (std::abs(determinant) < 1e-6f) {
                     return 0.0;
                 }
 
@@ -288,7 +287,7 @@ namespace pathtracer{
                 Matrix2 m = dc1_dx1 - dc1_dx2 * tmp;
                 determinant = m.determinant();
 
-                if (abs(determinant) < 1e-6f) {
+                if (std::abs(determinant) < 1e-6f) {
                     return 0.0;
                 }
 

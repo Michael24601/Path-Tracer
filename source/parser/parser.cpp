@@ -254,7 +254,8 @@ namespace pathtracer{
     }
 
 
-    std::pair<Scene*, Renderer*> Parser::parse(const std::string& filename) {
+    std::tuple<Scene*, Renderer*, std::vector<std::vector<Vector3>>> 
+        Parser::parse(const std::string& filename) {
 
         std::ifstream file(filename);
 
@@ -805,7 +806,22 @@ namespace pathtracer{
             throw std::runtime_error("");
         }
 
-        return std::make_pair(scene, renderer);
+        // Reference
+        std::vector<std::vector<Vector3>> reference;
+        if(data.contains("reference")){
+            const json& referenceData = data["reference"];
+            std::string name = parseString(referenceData, "file-name");
+            reference = parseImage(name);
+
+            // Decode sRGB to linear so it matches the linear render
+            for(auto& row : reference){
+                for(Vector3& pixel : row){
+                    pixel = Texture::srgbToLinear(pixel);
+                }
+            }
+        }
+
+        return std::make_tuple(scene, renderer, reference);
     }
 
 }

@@ -6,6 +6,7 @@
 #include "shapes/meshUtil.hpp"
 #include "intersection/surfaceDifferentials.hpp"
 #include "intersection/hit.hpp"
+#include "logger.hpp"
 
 namespace pathtracer{
 
@@ -77,7 +78,6 @@ namespace pathtracer{
         int index = point.triangleIndex;
 
         AreaSample sample = triangles[index].evaluateAreaSample(point);
-
         real selectionPdf = UniformTriangle::pdf(triangles, index);
 
         sample.setPdf(sample.pdf() * selectionPdf);

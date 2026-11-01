@@ -22,7 +22,7 @@ namespace pathtracer{
         std::string toString() const override{
             return "PT";
         }
-
+        
     };
 
 }

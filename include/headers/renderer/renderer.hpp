@@ -44,7 +44,7 @@ namespace pathtracer{
             Integrator* integrator, int messageCount = 10);
 
 
-        ~Renderer();
+        virtual ~Renderer();
 
 
         // This is called in render before rendering, can be used to train
@@ -73,6 +73,9 @@ namespace pathtracer{
 
 
         virtual std::string toString() const;
+
+
+        virtual void printStatistics() const;
 
     };
 

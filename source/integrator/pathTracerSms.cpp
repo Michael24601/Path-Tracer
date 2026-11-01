@@ -13,6 +13,7 @@
 #include "sms/specularManifoldSampling.hpp"
 #include "bsdf/bsdf.hpp"
 #include "math/constants.hpp"
+#include "logger.hpp"
 
 
 namespace pathtracer{
@@ -29,8 +30,7 @@ namespace pathtracer{
     }
 
 
-    Vector3 PathTracerSms::color(
-        const Ray& ray, const Scene& scene) {
+    Vector3 PathTracerSms::color(const Ray& ray, const Scene& scene) {
 
         Ray currRay = ray;
         Vector3 color = Vector3(0.0);
@@ -44,6 +44,7 @@ namespace pathtracer{
             Vector3 wo = -currRay.direction();
 
             // First we intersect the scene
+            bounceCount++;
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
@@ -107,6 +108,7 @@ namespace pathtracer{
             // and points towards the new intersected point.
             currRay = Ray(it.position() + sample.wi() * SHADOW_EPSILON,
                 sample.wi());
+
         }
 
         return color;
@@ -115,6 +117,33 @@ namespace pathtracer{
 
     std::string PathTracerSms::toString() const{
         return "PT " + sms->toString();
+    }
+
+
+    void PathTracerSms::printStatistics() const {
+        int smoothUnconverged = sms->smoothRun - sms->smoothConverged;
+        int trueUnconverged = sms->trueRun - sms->trueConverged;
+        real smoothConvergenceRate = real(sms->smoothConverged) / real(sms->smoothRun);
+        real trueConvergenceRate = real(sms->trueConverged) / real(sms->trueRun);
+        real averageInverseProbability = real(sms->counterSum) / real(sms->unbiasedSuccess);
+        real averageIterationsSmooth = real(sms->smoothIterationSum) / real(sms->smoothConverged);
+        real averageIterationsTrue = real(sms->trueIterationSum) / real(sms->trueConverged);
+
+        LOG_DEBUG("Smooth solvers run: " + std::to_string(sms->smoothRun.load()));
+        LOG_DEBUG("Smooth converged: " + std::to_string(sms->smoothConverged.load()));
+        LOG_DEBUG("Smooth unconverged: " + std::to_string(smoothUnconverged));
+        LOG_DEBUG("Smooth convergence rate: " + std::to_string(smoothConvergenceRate));
+        LOG_DEBUG("True solvers run: " + std::to_string(sms->trueRun.load()));
+        LOG_DEBUG("True converged: " + std::to_string(sms->trueConverged.load()));
+        LOG_DEBUG("True unconverged: " + std::to_string(trueUnconverged));
+        LOG_DEBUG("True convergence rate: " + std::to_string(trueConvergenceRate));
+        LOG_DEBUG("Unbiased successes: " + std::to_string(sms->unbiasedSuccess.load()));
+        LOG_DEBUG("Average unique biased samples: " + std::to_string(sms->averageUniquePerRun.load()));
+        LOG_DEBUG("Average inverse probability (counter): " + std::to_string(averageInverseProbability));
+        LOG_DEBUG("Average iterations smooth: " + std::to_string(averageIterationsSmooth));
+        LOG_DEBUG("Average iterations true: " + std::to_string(averageIterationsTrue));
+        LOG_DEBUG("Contributing samples: " + std::to_string(sms->contributingSamples.load()));
+        LOG_DEBUG("Zero geometric term samples: " + std::to_string(sms->zeroGeometricTerm.load()));
     }
 
 }

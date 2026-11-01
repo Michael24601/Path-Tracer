@@ -143,7 +143,6 @@ namespace pathtracer{
         }
 
         if(!visible){
-            m_notVis++;
             return Vector3(0.0);
         }
 
@@ -169,16 +168,17 @@ namespace pathtracer{
                 delta.lengthSquared() < m_threshold * m_threshold) {
 
                 found = true;
-                m_sameFound++;
                 break;
             }
         }
 
         // Failure (if none are found)
         if(!found){
-            m_sameNotFound++;
             return Vector3(0.0);
         }
+
+        unbiasedSuccess++;
+        counterSum += counter;
 
         // Otherwise we can compute the probability of sampling x1.
         // Based on the fact that this a geometric distribution,
@@ -228,22 +228,6 @@ namespace pathtracer{
                 continue;
             }
 
-            // We know x0 to x1 is visible (samplePath checks),
-            // but now we check x1 to x2.
-            bool visible;
-            if(lightPoint.caster()->isDirectional()){
-                visible = scene->visibility(sample.finalPoint().position(),
-                    lightPoint.wi(), lightPoint.distance());
-            }
-            else{
-                visible = scene->visibility(sample.finalPoint().position(),
-                    lightPoint.position());
-            }
-
-            if(!visible){ 
-                continue;
-            }
-
             // We check if this has already been discovered before
             bool duplicate = false;
 
@@ -261,6 +245,24 @@ namespace pathtracer{
                 continue;
             }
 
+            // We know x0 to x1 is visible (samplePath checks),
+            // but now we check x1 to x2 (we do this after duplicate
+            // check to avoid doing visibility checks that are not necessary)
+            bool visible;
+            if(lightPoint.caster()->isDirectional()){
+                visible = scene->visibility(sample.finalPoint().position(),
+                    lightPoint.wi(), lightPoint.distance());
+            }
+            else{
+                visible = scene->visibility(sample.finalPoint().position(),
+                    lightPoint.position());
+            }
+
+            if(!visible){ 
+                continue;
+            }
+
+
             // New unique solution is added otherwise
             solutions.push_back(sample.finalPoint().position());
 
@@ -274,6 +276,10 @@ namespace pathtracer{
             // sample point).
             value = value + weight;
         }
+
+        // Average number of unique samples per run
+        real old = averageUniquePerRun.load();
+        averageUniquePerRun.store(old + (solutions.size() - old) * 0.001);
 
         return value;
 
@@ -317,7 +323,8 @@ namespace pathtracer{
         Intersection it = scene->intersect(ray);
 
         if(!it || it.t() < distance - 2 * SHADOW_EPSILON || it.instance() != specular){
-            return SmsSample(sample, Vector3(0.0), 1.0, true, false);
+            return SmsSample(sample, SurfaceDifferentials(), Vector3(0.0), 
+                1.0, true, false);
         }
 
         SurfacePoint seedIt = it;
@@ -354,10 +361,8 @@ namespace pathtracer{
 
             // If not converged, we just return a false sample
             if(!result.isConverged()){
-                m_not++;
                 return result;
             }
-            m_con++;
 
             // And we use a new seed
             seedIt = result.finalPoint();
@@ -374,10 +379,17 @@ namespace pathtracer{
     }
 
 
-    SmsSample SpecularManifoldSampling::newtonSolver(const SurfacePoint& x0, 
+       SmsSample SpecularManifoldSampling::newtonSolver(const SurfacePoint& x0, 
         const SurfacePoint& seedIt, const LightSample& x2, 
         const SpecularManifoldBsdf* bsdf, const Vector3& localOffsetNormal,
         const Scene* scene, bool smooth) {
+
+        if(smooth){
+            smoothRun++;
+        }
+        else{
+            trueRun++;
+        }
 
         // We use the newton solver to converge to a point on the
         // instance that satisfies the chosen specular constraint
@@ -393,6 +405,7 @@ namespace pathtracer{
         Vector3 halfVector;
         real eta;
         bool reflection;
+        SurfaceDifferentials d;
 
         // Adaptive step size
         real beta = 1.0;
@@ -416,7 +429,7 @@ namespace pathtracer{
             reflection = SmsUtil::isReflection(wo, finalIt, wi);
             Vector3 localWo = finalIt.shadingFrame().toLocal(wo);
             eta = bsdf->eta(localWo, finalIt.uv());
-            SurfaceDifferentials d = finalIt.instance()->computeDifferentials(finalIt, smooth);
+            d = finalIt.instance()->computeDifferentials(finalIt, smooth);
 
             // Notice that half vector is updated regardless of which
             // constraint we use as we need it for the geometric term anyway.
@@ -452,12 +465,20 @@ namespace pathtracer{
                 if((reflection && bsdf->supportsReflection(finalIt.uv()))
                     || (!reflection && bsdf->supportsRefraction(finalIt.uv()))){
 
-                    ++m_converged;
-                    return SmsSample(finalIt, halfVector, eta, reflection, true);
+                    if(smooth){
+                        smoothConverged++;
+                        smoothIterationSum += k;
+                    }
+                    else{
+                        trueConverged++;
+                        trueIterationSum += k;
+                    }
+
+                    return SmsSample(finalIt, d, halfVector, eta, reflection, true);
                 }
 
                 // Otherwise we return false
-                return SmsSample(finalIt, halfVector, eta, reflection, false);
+                return SmsSample(finalIt, d, halfVector, eta, reflection, false);
             }
 
             Intersection nextIt;
@@ -499,15 +520,17 @@ namespace pathtracer{
         }
 
         // Failure
-        ++m_maxIt;
-        return SmsSample(finalIt, halfVector, eta, reflection, false);
+        return SmsSample(finalIt, d, halfVector, eta, reflection, false);
     }
 
+    
 
     Vector3 SpecularManifoldSampling::evaluatePathContribution(
         const SurfacePoint& causticPoint, const LightSample& lightPoint, 
         const SmsSample& sample, const SpecularManifoldBsdf* bsdf, 
         const Vector3& wo, const Scene* scene) {
+
+        contributingSamples++;
 
         Vector3 wi = (sample.finalPoint().position() 
             - causticPoint.position()).normalized();
@@ -553,8 +576,7 @@ namespace pathtracer{
             ->computeDifferentials(causticPoint);
         d0.makeOrthonormal();
 
-        SurfaceDifferentials d1 = sample.finalPoint().instance()
-            ->computeDifferentials(sample.finalPoint());
+        SurfaceDifferentials d1 = sample.differentials();
         d1.makeOrthonormal();
 
         // The other one, at a light
@@ -568,6 +590,10 @@ namespace pathtracer{
 
         real g = SmsUtil::geometricTerm(causticPoint, sample, 
             lightSample.sample, d0, d1, d2);
+
+        if(g == 0.0){
+            zeroGeometricTerm++;
+        }
 
         return lightSample.contribution * s1Weight * s0Weight * g;
     }

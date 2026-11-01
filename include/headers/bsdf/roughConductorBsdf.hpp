@@ -50,9 +50,7 @@ namespace pathtracer{
 
 
         // It is not rough so should return false
-        bool isRough() const override{
-            return true;
-        }
+        bool isRough() const override;
 
 
         bool supportsReflection(const Vector2& uv) const override{

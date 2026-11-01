@@ -8,7 +8,6 @@
 #include "math/vector2.hpp"
 #include "math/vector3.hpp"
 #include "logger.hpp"
-#include <iostream>
 
 namespace pathtracer {
 
@@ -104,5 +103,16 @@ namespace pathtracer {
         return m_integrator->toString() + " "
             + std::to_string(m_height) + "x" 
             + std::to_string(m_width) + "px";
+    }
+
+
+    void Renderer::printStatistics() const{
+
+        real averageBounceCount = real(m_integrator->bounceCount) 
+            / m_totalPathCount;
+
+        LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
+
+        m_integrator->printStatistics();
     }
 }

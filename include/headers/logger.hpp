@@ -17,7 +17,7 @@ namespace pathtracer {
             Info,
             Warning,
             Error,
-            Trace
+            Debug
         };
 
     private:
@@ -25,6 +25,7 @@ namespace pathtracer {
         static std::ostream* output;
         static float MAX_TIME_INTERVAL;
         static bool OUTPUT_TO_CONSOLE;
+        static bool DEBUG_ENABLED;
 
         // Keeps track of logs, ensures the same message is not spammed
         static std::unordered_map<std::string, float> lastLogged;
@@ -41,6 +42,8 @@ namespace pathtracer {
 
         static void setConsoleOutput(bool consoleOutput);
 
+        static void enableDebug(bool enabled);
+
         static void setMaxTimeInterval(float seconds);
 
         static void info(const std::string& message, const char* file,
@@ -52,7 +55,7 @@ namespace pathtracer {
         static void error(const std::string& message, const char* file,
             int line, const char* function);
 
-        static void trace(const std::string& message, const char* file,
+        static void debug(const std::string& message, const char* file,
             int line, const char* function);
     };
 
@@ -72,7 +75,7 @@ namespace pathtracer {
 #define LOG_ERROR(msg) \
     pathtracer::Logger::error(msg, __FILE__, __LINE__, __FUNCTION__)
 
-#define LOG_TRACE(msg) \
-    pathtracer::Logger::trace(msg, __FILE__, __LINE__, __FUNCTION__)
+#define LOG_DEBUG(msg) \
+    pathtracer::Logger::debug(msg, __FILE__, __LINE__, __FUNCTION__)
 
 #endif

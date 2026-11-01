@@ -23,11 +23,13 @@ namespace pathtracer{
         PathTracerSms(int maxDepth, bool useHalfVector, bool biased,
             bool twoStage, const Scene* scene);
 
-        ~PathTracerSms();
+        ~PathTracerSms() override;
 
         Vector3 color(const Ray& ray, const Scene& scene) override;
 
         std::string toString() const override;
+
+        void printStatistics() const override;
     };
 
 }

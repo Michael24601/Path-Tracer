@@ -41,8 +41,8 @@ namespace pathtracer{
         // since this will be the case by default (I'm assuming).
 
 
-        const real cosine = abs(wi.z());
-        const real cosWo = abs(wo.z());
+        const real cosine = std::abs(wi.z());
+        const real cosWo = std::abs(wo.z());
         const real G1Wi = Microfacet::smithG1(alpha, wm, wi);
         const real G1Wo = Microfacet::smithG1(alpha, wm, wo);
         const real D = Microfacet::evaluateGGX(alpha, wm);
@@ -51,7 +51,7 @@ namespace pathtracer{
             * (D * G1Wi * G1Wo / (4.0 * cosWo * cosine));
 
         const real pdf = Microfacet::pdfGGXVNDF(alpha, wm, wo)
-            / (4.0 * abs(wm.dot(wo)));
+            / (4.0 * std::abs(wm.dot(wo)));
 
         const Vector3 weight = m_reflectance->sample(uv)
             * Microfacet::smithG1(alpha, wm, wi);
@@ -72,10 +72,10 @@ namespace pathtracer{
 
         const Vector3 wm = (wo + wi).normalized();
 
-        const real cosine = abs(wi.z());
-        const real cosWo = abs(wo.z());
+        const real cosine = std::abs(wi.z());
+        const real cosWo = std::abs(wo.z());
 
-        if (cosWo == 0.0 || abs(wm.dot(wo)) == 0.0) {
+        if (cosWo == 0.0 || std::abs(wm.dot(wo)) == 0.0) {
             return BsdfSample();
         }
 
@@ -87,7 +87,7 @@ namespace pathtracer{
             * (D * G1Wi * G1Wo / (4.0 * cosWo * cosine));
 
         const real pdf = Microfacet::pdfGGXVNDF(alpha, wm, wo)
-            / (4.0 * abs(wm.dot(wo)));
+            / (4.0 * std::abs(wm.dot(wo)));
 
         const Vector3 weight = m_reflectance->sample(uv) * G1Wi;
 
@@ -95,11 +95,22 @@ namespace pathtracer{
     }
 
 
-    // Essentially returns the weight of reflecting
+    Vector3 RoughConductorBsdf::evaluateRefraction(const Vector3& wo, 
+        const Vector3& wi, const Vector2& uv) const {
+
+        return Vector3(0.0);
+    }
+
+
     Vector3 RoughConductorBsdf::evaluateReflection(const Vector3& wo,
         const Vector3& wi, const Vector2& uv) const {
 
         if (wo.z() * wi.z() <= 0.0) {
+            return Vector3(0.0);
+        }
+
+        const real cosWo = std::abs(wo.z());
+        if (cosWo == 0.0) {
             return Vector3(0.0);
         }
 
@@ -108,14 +119,10 @@ namespace pathtracer{
 
         const Vector3 wm = (wo + wi).normalized();
 
-        return m_reflectance->sample(uv) * Microfacet::smithG1(alpha, wm, wi);
-    }
+        const real G = Microfacet::smithG1(alpha, wm, wi)
+            * Microfacet::smithG1(alpha, wm, wo);
 
-
-    Vector3 RoughConductorBsdf::evaluateRefraction(const Vector3& wo, 
-        const Vector3& wi, const Vector2& uv) const {
-
-        return Vector3(0.0);
+        return m_reflectance->sample(uv) * (G * std::abs(wo.dot(wm)) / cosWo);
     }
 
 
@@ -133,10 +140,14 @@ namespace pathtracer{
 
         const Vector3 wm(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
 
-        const real pdf = Microfacet::evaluateGGX(alpha, wm) * cosTheta;
+        const real pdf = cosTheta;
 
         return ManifoldNormal{wm, pdf};
     }
+    
 
+    bool RoughConductorBsdf::isRough() const{
+        return true;
+    }
 
 }

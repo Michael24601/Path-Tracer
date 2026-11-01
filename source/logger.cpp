@@ -15,6 +15,8 @@ namespace pathtracer {
 
     bool Logger::OUTPUT_TO_CONSOLE = true;
 
+    bool Logger::DEBUG_ENABLED = true;
+
     std::unordered_map<std::string, float> Logger::lastLogged;
 
     std::mutex Logger::mutex;
@@ -76,8 +78,8 @@ namespace pathtracer {
                 tag = "[ERROR]";  
                 color = "\033[38;2;205;49;49m";
                 break;
-            case Level::Trace:   
-                tag = "[TRACE]";   
+            case Level::Debug:   
+                tag = "[DEBUG]";   
                 color = "\033[38;2;36;114;200m";
                 break;
         }
@@ -87,7 +89,7 @@ namespace pathtracer {
 
         std::ostringstream rest_stream;
         rest_stream << " "
-                    << std::left << std::setfill(' ') << std::setw(50)
+                    << std::left << std::setfill(' ') << std::setw(65)
                     << location_stream.str()
                     << " " << message << "\n";
 
@@ -131,6 +133,11 @@ namespace pathtracer {
         OUTPUT_TO_CONSOLE = consoleOutput;
     }
 
+
+    void Logger::enableDebug(bool enabled){
+        DEBUG_ENABLED = enabled;
+    }
+
     
     void Logger::setMaxTimeInterval(float seconds) {
         std::lock_guard<std::mutex> lock(mutex);
@@ -156,9 +163,13 @@ namespace pathtracer {
     }
 
 
-    void Logger::trace(const std::string& message, const char* file,
+    void Logger::debug(const std::string& message, const char* file,
         int line, const char* function) {
-        log(Level::Trace, message, file, line, function);
+            
+        if(!DEBUG_ENABLED){
+            return;
+        }
+        log(Level::Debug, message, file, line, function);
     }
 
 }

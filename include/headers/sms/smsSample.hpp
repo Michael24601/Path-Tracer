@@ -14,6 +14,8 @@ namespace pathtracer{
 
         SurfacePoint m_finalPoint;
 
+        SurfaceDifferentials m_differentials;
+
         // We also keep track of eta and half vector.
         // The halfvector is not normalized.
         Vector3 m_halfVector;
@@ -24,8 +26,9 @@ namespace pathtracer{
 
     public:
 
-        SmsSample(const SurfacePoint& finalPoint,  const Vector3& halfVector, 
-            real eta, bool isReflection, bool isConverged);
+        SmsSample(const SurfacePoint& finalPoint, const SurfaceDifferentials& d, 
+            const Vector3& halfVector, real eta, bool isReflection, 
+            bool isConverged);
 
 
         const SurfacePoint& finalPoint() const;
@@ -37,6 +40,8 @@ namespace pathtracer{
         bool isConverged() const;
 
         bool isReflection() const;
+
+        const SurfaceDifferentials& differentials() const;
     };
 
 }

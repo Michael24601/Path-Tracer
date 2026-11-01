@@ -281,15 +281,21 @@ namespace pathtracer{
             // frame. Notice the frame differential is computed from the
             // shading normal not the offset.
 
-            FrameDifferentials f = SmsUtil::computeFrameDifferentials(p.shadingNormal(), s, d);
+            // We only need this if the local offset normal is not (0, 0, 1)
+            Vector3 dsdu(0.0), dsdv(0.0), dtdu(0.0), dtdv(0.0);
+            if(localOffsetNormal.x() != 0.0 || localOffsetNormal.y() != 0.0){
+                FrameDifferentials f = SmsUtil::computeFrameDifferentials(p.shadingNormal(), s, d);
+                dsdu = f.dsdu;
+                dsdv = f.dsdv;
+                dtdu = f.dtdu;
+                dtdv = f.dtdv;
+            }
 
-            Vector3 dndu = f.dsdu * localOffsetNormal.x()
-                + f.dtdu * localOffsetNormal.y()
-                + d.dndu() * localOffsetNormal.z();
+            Vector3 dndu = dsdu * localOffsetNormal.x()
+                + dtdu * localOffsetNormal.y() + d.dndu() * localOffsetNormal.z();
 
-            Vector3 dndv = f.dsdv * localOffsetNormal.x()
-                + f.dtdv * localOffsetNormal.y()
-                + d.dndv() * localOffsetNormal.z();
+            Vector3 dndv = dsdv * localOffsetNormal.x()
+                + dtdv * localOffsetNormal.y() + d.dndv() * localOffsetNormal.z();
 
 
             Matrix2 dC_dX;

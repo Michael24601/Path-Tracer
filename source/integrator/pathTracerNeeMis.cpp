@@ -23,8 +23,7 @@ namespace pathtracer{
     PathTracerNeeMis::PathTracerNeeMis(int maxDepth) :
         m_maxDepth{maxDepth} {}
 
-    Vector3 PathTracerNeeMis::color(
-        const Ray& ray, const Scene& scene) {
+    Vector3 PathTracerNeeMis::color(const Ray& ray, const Scene& scene) {
 
         Ray currRay = ray;
         Vector3 color = Vector3(0.0);
@@ -41,6 +40,7 @@ namespace pathtracer{
             Vector3 wo = -currRay.direction();
 
             // First we intersect the scene
+            bounceCount++;
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
@@ -126,10 +126,10 @@ namespace pathtracer{
                         }
                     }
 
-
                     // Contribution includes pdf
                     color = color + s.contribution * bsdfEval.bsdf() 
                         * bsdfEval.cosine() * throughput * misWeight;
+
                 }
             }
 

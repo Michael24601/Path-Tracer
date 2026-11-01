@@ -33,6 +33,7 @@ namespace pathtracer{
             Vector3 wo = -currRay.direction();
 
             // First we intersect the scene
+            bounceCount++;
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
@@ -118,6 +119,7 @@ namespace pathtracer{
             // and points towards the new intersected point.
             currRay = Ray(it.position() + sample.wi() * SHADOW_EPSILON,
                 sample.wi());
+
         }
 
         return color;

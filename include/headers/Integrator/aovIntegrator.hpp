@@ -37,6 +37,7 @@ namespace pathtracer{
 
         AovIntegrator(RenderVariable variable);
 
+
         // Uses whatever rendering technique it wants to render
         // the light received by the given shadow ray.
         Vector3 color(const Ray& ray, const Scene& scene) override;

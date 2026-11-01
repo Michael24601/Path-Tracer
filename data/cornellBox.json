@@ -237,10 +237,12 @@
         "integrator": {
             "type": "path-tracer",
             "parameters": {
-                "max-depth": 100,
-                "kernel-radius": 0.05,
-                "kernel-type": "uniform"   
+                "max-depth": 100
             }
         }
+    },
+
+    "reference":{
+        "file-name": "data/references/cornellBox.png"
     }
 }
