@@ -57,7 +57,7 @@ namespace pathtracer{
 
         // Expects ray this is in world coordinates.
         // Returns the closest hit.
-        Intersection intersect(const Ray& ray) const;
+        Intersection intersect(const Ray& ray, bool smooth = false) const;
 
 
         bool visibility(const Vector3& origin, const Vector3& target) const;

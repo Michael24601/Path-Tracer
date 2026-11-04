@@ -10,16 +10,154 @@
 #include "math/mathUtil.hpp"
 #include "core/instance.hpp"
 #include "math/constants.hpp"
+#include "core/sceneUtil.hpp"
+#include "light/light.hpp"
+#include "photonMapping/photonMap.hpp"
+#include "renderer/progressReporter.hpp"
 #include "logger.hpp"
+#include <omp.h>
 
 
 namespace pathtracer{
 
     
     PhotonMappingIntegrator::PhotonMappingIntegrator(int maxDepth, 
-        real kernelRadius, KernelType kernelType) : 
+        int photonCount, real kernelRadius, 
+        KernelType kernelType, int threshold) : 
+        // Only one sample per pixel for a photon mapper
+        PixelIntegrator(1), m_photonCount{photonCount},
         m_kernelType{kernelType}, m_kernelRadius{kernelRadius}, 
-        m_maxDepth{maxDepth}{}
+        m_threshold{threshold}, m_maxDepth{maxDepth}, m_map{nullptr}{}
+
+
+    PhotonMappingIntegrator::~PhotonMappingIntegrator(){
+        if(m_map){
+            delete m_map;
+        }
+    }
+
+
+    PhotonMap* PhotonMappingIntegrator::tracePhotons(const Scene& scene,
+        ProgressReporter& reporter){
+
+        // We create a photon vector for each thread to avoid data race
+        std::vector<std::vector<Photon>> threadPhotons(omp_get_max_threads());
+
+        // This is used for logging reports
+        reporter.start(m_photonCount, "Photon Tracing");
+
+        #pragma omp parallel
+        {
+
+            std::vector<Photon>& photons = threadPhotons[omp_get_thread_num()];
+
+            // Here we disperse the photons
+            #pragma omp for schedule(dynamic, 64)
+            for (int photonIndex = 0; photonIndex < m_photonCount; photonIndex++) {
+
+                if(g_stopRendering){
+                    continue;
+                }
+
+                const Light* light = UniformLight::sample(scene);
+                EmissionSample sample = light->sampleEmission(scene);
+
+                real lightPdf = UniformLight::pdf(scene, light);
+
+                Vector3 intensity = sample.intensity / lightPdf;
+                Vector3 throughput(1.0);
+
+                Ray currRay(
+                    sample.point + sample.direction * SHADOW_EPSILON,
+                    sample.direction);
+
+                for (int depth = 0; depth < m_maxDepth; depth++) {
+                    
+                    if (g_stopRendering) {
+                        break;
+                    }
+
+                    Vector3 wo = -currRay.direction();
+
+                    Intersection it = scene.intersect(currRay);
+
+                    if (!it || it.instance()->emission()) {
+                        break;
+                    }
+
+                    if (!it.instance()->bsdf()->isSpecular()) {
+                        Photon p{intensity, wo, it};
+                        photons.push_back(p);
+                    }
+
+
+                    real p = Util::russianRoulette(throughput, depth);
+                    if (Random::next() > p) {
+                        break;
+                    }
+
+                    // Notice that when we sample the bsdf, we have to
+                    // tell it we are doing photon mapping (adjoint = true),
+                    // since it affects some bsdfs, like refractive specular
+                    // lobes.
+                    BsdfSample bsdfSample = it.sampleBsdf(wo, true);
+                    Vector3 weight = bsdfSample.weight();
+
+                    weight = weight * 
+                        Util::shadingNormalAdjoint(bsdfSample.wi(), it, wo);
+                    weight = weight / p;
+
+                    throughput = throughput * weight;
+                    intensity = intensity * weight;
+
+                    currRay = Ray(it.position() + bsdfSample.wi() * SHADOW_EPSILON,
+                        bsdfSample.wi());
+                }
+
+                // Everytime a path is done
+                reporter.step();
+            }
+        }
+
+        if (g_stopRendering){
+            return nullptr;
+        }
+
+        // We then merge the photon vectors from each thread
+        // (without copying).
+        std::vector<Photon> photons;
+
+        size_t totalCount = 0;
+        for (const auto& localPhotons : threadPhotons) {
+            totalCount += localPhotons.size();
+        }
+
+        photons.reserve(totalCount);
+
+        for (auto& localPhotons : threadPhotons) {
+            photons.insert(
+                photons.end(),
+                std::make_move_iterator(localPhotons.begin()),
+                std::make_move_iterator(localPhotons.end()));
+        }
+
+        // Once we have our photons, we can create a map
+        return new PhotonMap(photons, m_threshold);
+    }
+
+
+    std::vector<std::vector<Vector3>> PhotonMappingIntegrator::render(
+        const Scene& scene, const Camera& camera, int width, int height, 
+        ProgressReporter& reporter) {
+
+        // First calls trace photons
+        if(m_map) delete m_map;
+        m_map = tracePhotons(scene, reporter);
+
+        // After that we just call the render function from the super
+        // class, which will call the color function from this class.
+        return PixelIntegrator::render(scene, camera, width, height, reporter);
+    }    
 
 
     Vector3 PhotonMappingIntegrator::color(const Ray& ray, const Scene& scene) {
@@ -33,7 +171,7 @@ namespace pathtracer{
             Vector3 wo = -currRay.direction();
 
             // First we intersect the scene
-            bounceCount++;
+            m_bounceCount++;
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
@@ -124,5 +262,19 @@ namespace pathtracer{
 
         return color;
     }
+
+
+    void PhotonMappingIntegrator::printStatistics(int width, int height) const {
+
+        long long total = static_cast<long long>(width) * height * m_samples;
+        real averageBounceCount = static_cast<real>(m_bounceCount) / total;
+
+        LOG_DEBUG("Bounce count: " + std::to_string(m_bounceCount));
+        LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
+
+        // We also print photon statistics
+        LOG_DEBUG("Light samples: " + std::to_string(m_photonCount));
+    }
+
 
 }

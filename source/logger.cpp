@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <cstring>
+#include <filesystem>
 
 namespace pathtracer {
 
@@ -84,12 +85,16 @@ namespace pathtracer {
                 break;
         }
 
+        
+        // No need to print the whole file name including the path,
+        // the name alone is enough
+        std::string fileName = std::filesystem::path(file).filename().string();
         std::ostringstream location_stream;
-        location_stream << file << ":" << line << " (" << function << ")";
+        location_stream << fileName << " (" << function << ")";
 
         std::ostringstream rest_stream;
         rest_stream << " "
-                    << std::left << std::setfill(' ') << std::setw(65)
+                    << std::left << std::setfill(' ') << std::setw(45)
                     << location_stream.str()
                     << " " << message << "\n";
 
@@ -101,8 +106,7 @@ namespace pathtracer {
 
         const std::string text    = prefix + tag_stream.str() + rest;
         const std::string colored = prefix + color + tag + "\033[0m"
-                                  + std::string(12 - std::strlen(tag), ' ')
-                                  + rest;
+            + std::string(12 - std::strlen(tag), ' ') + rest;
    
         // Log file (could be console)
         // Note that ina  file, we can't write colors.

@@ -245,7 +245,7 @@ namespace pathtracer{
 
 
     Intersection Instance::constructIntersection(const Hit& hit,
-        const Ray& ray) const{
+        const Ray& ray, bool smooth) const{
 
         // First we get the point in local scape of the intersection.
         // The ray and hit are world coordinates.
@@ -263,7 +263,7 @@ namespace pathtracer{
 
         // We can also do normal mapping here
         if(m_normal != nullptr){
-            normalMap(sp);
+            normalMap(sp, smooth);
         }
         
         return Intersection(hit.t, sp);
@@ -275,7 +275,7 @@ namespace pathtracer{
 
         const SurfaceDifferentials& d = sp.differentials();
 
-        if (m_normal == nullptr) {
+        if (m_normal == nullptr || smooth) {
             return d;
         }
 
@@ -324,10 +324,11 @@ namespace pathtracer{
             Vector3 normal;
             if(!smooth){
                 normal = m_normal->sample(it.uv());
+                normal = it.baseFrame().toWorld(normal);
             }
             else{
                 int maxL = m_normal->maxMipMapLevel();
-                normal = m_normal->sampleMipMap(it.uv(), maxL);
+                normal = it.baseNormal();
             }
 
             // We need to map normal from shading frame to world coordinates
@@ -342,7 +343,7 @@ namespace pathtracer{
             // then it.shadingFrame() already uses the coarse normal map,
             // which will break normal mapping in case we want to
             // smooth it again. So we use the base frame here.
-            normal = it.baseFrame().toWorld(normal);
+
 
             // Then the frame is updated
             it.setShadingNormal(normal);

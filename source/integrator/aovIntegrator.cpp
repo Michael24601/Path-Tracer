@@ -14,12 +14,9 @@
 
 namespace pathtracer{
 
-    AovIntegrator::AovIntegrator(RenderVariable variable) :
-        m_variable{variable} {}
 
     Vector3 AovIntegrator::color(const Ray& ray, const Scene& scene) {
 
-        bounceCount++;
         Intersection it = scene.intersect(ray);
 
         // If background intersection

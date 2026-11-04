@@ -2,13 +2,18 @@
 #ifndef PATH_TRACER_PHOTON_MAPPING_INTEGRATOR_HPP
 #define PATH_TRACER_PHOTON_MAPPING_INTEGRATOR_HPP
 
-#include "integrator.hpp"
 #include "photonMapping/kernel.hpp"
-#include "photonMapping/photonMap.hpp"
+#include "pixelIntegrator.hpp"
 
 namespace pathtracer{
 
-    class PhotonMappingIntegrator: public Integrator{
+    class PhotonMap;
+    class Scene;
+    class Camera;
+    class ProgressReporter;
+
+
+    class PhotonMappingIntegrator: public PixelIntegrator{
 
     private:
 
@@ -19,24 +24,49 @@ namespace pathtracer{
         // Used to normalize irradiance
         int m_photonCount;
 
-        // Keeps a pointer to a map (does not own it)
+        // Threshold for photon kdTree
+        int m_threshold;
+
+        // Owns the photon map
         PhotonMap* m_map;
+        
+        // Used for debugging
+        std::atomic<long long> m_bounceCount{0};
+
+
+        // A function that disperses photon in scene and saves
+        // them into the map. Returns a new map.
+        PhotonMap* tracePhotons(const Scene& scene, ProgressReporter& reporter);
+
 
     public:
 
-        PhotonMappingIntegrator(int maxDepth, real kernelRadius, 
-            KernelType kernelType);
+        PhotonMappingIntegrator(int photonCount, int maxDepth, 
+            real kernelRadius, KernelType kernelType, int threshold);
+
+
+        ~PhotonMappingIntegrator() override;
+
+
+        // We will overwrite render() function in order to include the
+        // photon tracing phase.
+        std::vector<std::vector<Vector3>> render(const Scene&, 
+            const Camera&, int width, int height,
+            ProgressReporter&) override;        
+            
+
 
         // Uses whatever rendering technique it wants to render
         // the light received by the given shadow ray.
         Vector3 color(const Ray& ray, const Scene& scene) override;
 
-        void setPhotonMap(PhotonMap* map){
-            m_map = map;
-        }
 
-        void setPhotonCount(int photonCount){
-            m_photonCount = photonCount;
+        void printStatistics(int width, int height) const override;
+
+
+        // Jittering used for anti-aliasing
+        bool jitter() const override{
+            return true;
         }
 
 
@@ -50,7 +80,8 @@ namespace pathtracer{
             }
 
             return "PM PHOTON_COUNT=" + std::to_string(m_photonCount)
-                + " KERNEL=" + ker + " RADIUS=" + std::to_string(m_kernelRadius);
+                + " KERNEL=" + ker + " RADIUS=" + std::to_string(m_kernelRadius)
+                + " SPP=" + std::to_string(m_samples);
         }
 
     };

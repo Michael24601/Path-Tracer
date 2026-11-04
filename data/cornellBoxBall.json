@@ -185,6 +185,7 @@
                     "type": "texture",
                     "parameters": {
                         "file-name": "data/textures/very_wavy_normal.png",
+                        "file-type": "png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -219,25 +220,18 @@
         
 
     "renderer": {
-        "type": "path-tracer-renderer",
-        "parameters": {
-            "pixel-resolution": [1024, 1024],
-            "sample-count": 4,
-            "message-count": 10
-        },
+        "pixel-resolution": [1024, 1024],
+        "message-count": 10,
         "integrator": {
             "type": "path-tracer-sms",
             "parameters": {
                 "max-depth": 100,
+                "sample-count": 4,
                 "use-halfvector": false,
                 "biased": false,
                 "two-stage": true
             }
         }
-    },
-
-
-    "reference":{
-        "file-name": "data/references/cornellBoxBall.png"
     }
+
 }

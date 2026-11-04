@@ -1,31 +1,21 @@
 
-#include "integrator/PathTracerNeeMisGuided.hpp"
-#include <algorithm>
+#include "integrator/pathTracerNeeMisGuided.hpp"
 #include "bsdf/bsdfSample.hpp"
 #include "core/instance.hpp"
 #include "core/random.hpp"
 #include "core/ray.hpp"
 #include "core/scene.hpp"
-#include "core/sceneUtil.hpp"
-#include "intersection/areaSample.hpp"
 #include "intersection/intersection.hpp"
-#include "light/light.hpp"
-#include "light/lightSample.hpp"
-#include "math/mathUtil.hpp"
-#include "shapes/shape.hpp"
-#include "bsdf/bsdf.hpp"
-#include "math/constants.hpp"
 #include "nextEventEstimation/nextEventEstimation.hpp"
+#include "math/mathUtil.hpp"
+#include "bsdf/bsdf.hpp"
 #include "pathGuiding/kdTree.hpp"
 #include "pathGuiding/quadTree.hpp"
+#include "light/light.hpp"
 #include "math/constants.hpp"
 #include "logger.hpp"
 
-
 namespace pathtracer{
-
-    PathTracerNeeMisGuided::PathTracerNeeMisGuided(int maxDepth) :
-        m_maxDepth{maxDepth} {}
 
 
     Vector3 PathTracerNeeMisGuided::color(const Ray& ray, const Scene& scene) {
@@ -55,7 +45,7 @@ namespace pathtracer{
             Vector3 wo = -currRay.direction();
 
             // First we intersect the scene
-            bounceCount++;
+            m_bounceCount++;
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
@@ -167,9 +157,7 @@ namespace pathtracer{
                 }
             }
 
-
             contributions.push_back(contrib);
-
 
             // ------------------ This next step is guiding --------------------
 
@@ -218,7 +206,20 @@ namespace pathtracer{
         }
 
         return color;
+
     }
 
-}
 
+    void PathTracerNeeMisGuided::printStatistics(int width, int height) const {
+
+        long long total = static_cast<long long>(width) * height * m_samples;
+        real averageBounceCount = static_cast<real>(m_bounceCount) / total;
+
+        LOG_DEBUG("Bounce count: " + std::to_string(m_bounceCount));
+        LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
+
+        // TODO: add tree statistics
+    }
+
+
+}

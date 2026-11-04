@@ -1,15 +1,17 @@
-#ifndef PATH_TRACER_GUIDABLE_HPP
-#define PATH_TRACER_GUIDABLE_HPP
 
-#include <atomic>
-#include <vector>
+#ifndef PATH_TRACER_PIXEL_INTEGRATOR_GUIDED_HPP
+#define PATH_TRACER_PIXEL_INTEGRATOR_GUIDED_HPP
+
+#include "pixelIntegrator.hpp"
 #include "math/vector3.hpp"
 
 namespace pathtracer{
 
-    class Scene;
     class KdTree;
     class SurfacePoint;
+    class Scene;
+    class Camera;
+    class ProgressReporter;
 
 
     // The guided (or bsdf fallback) sample
@@ -25,34 +27,30 @@ namespace pathtracer{
     };
 
 
-    // An interface that any integrator that needs to use path guiding
-    // must implement to access trees.
-    class Guidable{
+    class PixelIntegratorGuided: public PixelIntegrator{
 
     protected:
-
+        
+        // One tree is used for guiding the other for training
         KdTree* m_guideTree;
         KdTree* m_trainTree;
 
+        // The alpha is used as a weight for guiding MIS
         real m_alpha;
 
-    public:
+        // The number of training iterations
+        int m_iterations;
 
-        Guidable();
+        // The initial number of training samples per pixel
+        int m_initialSamples;
 
-        void setGuideTree(KdTree* tree);
+        // The initial threshold for the kdTree
+        real m_c;
+        
+        // Used for debugging
+        std::atomic<long long> m_bounceCount{0};
 
-        void setTrainTree(KdTree* tree);
-
-        void setAlpha(real alpha);
-
-        real alpha() const{
-            return m_alpha;
-        }
-
-        const KdTree* guideTree() const{
-            return m_guideTree;
-        }
+        // These are guide and train tree functions
 
         // This function samples the current intersection point using alpha
         // and checking if it is specular.
@@ -90,6 +88,36 @@ namespace pathtracer{
             const Vector3& contribution,
             const Scene& scene
         );
+
+
+    public:
+
+    
+        PixelIntegratorGuided(int samples, real alpha,
+            int initialSamples, int iterations, real c) :
+            PixelIntegrator(samples), m_alpha{alpha},
+            m_guideTree{nullptr}, m_trainTree{nullptr}, m_c{c},
+            m_iterations{iterations}, m_initialSamples{initialSamples}{
+
+            assert(alpha > 0.0 && "MIS weight must be positive");
+        }
+
+
+        ~PixelIntegratorGuided() override;
+
+
+        // However, we will overwrite render() function in order to
+        // include the training phase.
+        std::vector<std::vector<Vector3>> render(const Scene&, 
+            const Camera&, int width, int height,
+            ProgressReporter&) override;        
+            
+            
+        // We don't overwrite print statistics or color,
+        // or jitter... as those can be overriden by the non-virtual 
+        // subclasses that need guiding.
+
+
     };
 
 }

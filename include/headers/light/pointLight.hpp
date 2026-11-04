@@ -26,7 +26,7 @@ namespace pathtracer{
         // Calculates in global coordinates.
         LightSample sample(const Vector3& origin) const override;
 
-        PhotonSample samplePhoton(const Scene& scene) const override;
+        EmissionSample sampleEmission(const Scene& scene) const override;
 
         LightSample evaluateLightSample(const Vector3& origin,
             const SurfaceSample& point) const override;

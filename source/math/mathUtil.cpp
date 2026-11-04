@@ -288,9 +288,9 @@ namespace pathtracer{
             real z0 = r * std::cos(theta);
             real z1 = r * std::sin(theta);
 
-            real a = sqrtReal(sigma(0, 0));
-            real b = sigma(1, 0) / a;
-            real c = sqrtReal(sigma(1, 1) - b * b);
+  real a = sqrtReal(std::max(sigma(0, 0), 1e-8));
+  real b = sigma(1, 0) / a;
+  real c = sqrtReal(std::max(sigma(1, 1) - b * b, 1e-8));
 
             return Vector2(
                 mu.x() + a * z0,

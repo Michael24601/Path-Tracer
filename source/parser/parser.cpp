@@ -1,3 +1,4 @@
+
 #include "parser/parser.hpp"
 #include <fstream>
 #include <string>
@@ -21,7 +22,6 @@
 #include "integrator/pathTracerNeeMis.hpp"
 #include "integrator/pathTracerGuided.hpp"
 #include "integrator/pathTracerNeeMisGuided.hpp"
-#include "integrator/pathTracerNeeGuided.hpp"
 #include "integrator/photonMappingIntegrator.hpp"
 #include "integrator/pathTracerSms.hpp"
 #include "integrator/pathTracerNeeSms.hpp"
@@ -35,9 +35,6 @@
 #include "math/vector2i.hpp"
 #include "math/vector3.hpp"
 #include "renderer/renderer.hpp"
-#include "renderer/pathTracerRenderer.hpp"
-#include "renderer/pathGuidingRenderer.hpp"
-#include "renderer/photonMappingRenderer.hpp"
 #include "shapes/mesh.hpp"
 #include "shapes/sphere.hpp"
 #include "shapes/triangle.hpp"
@@ -65,16 +62,30 @@ namespace pathtracer{
     }
 
 
-    std::vector<std::vector<Vector3>> parseImage(const std::string& filename) {
+    std::vector<std::vector<Vector3>> parseImage(const std::string& filename,
+        const std::string& type) {
 
         std::vector<std::vector<Vector3>> image;
 
-        if(!ImageIo::loadImage(filename, image)){
+        bool loaded = false;
+
+        if (type == "png") {
+            loaded = ImageIo::loadPng(filename, image);
+        }
+        else if (type == "exr") {
+            loaded = ImageIo::loadEXR(filename, image);
+        }
+        else {
+            LOG_ERROR("Unsupported image type: " + type);
+            throw std::runtime_error("");
+        }
+
+        if (!loaded) {
             LOG_ERROR("Could not load image: " + filename);
             throw std::runtime_error("");
         }
 
-        if(image.empty() || image[0].empty()){
+        if (image.empty() || image[0].empty()) {
             LOG_ERROR("Image is empty: " + filename);
             throw std::runtime_error("");
         }
@@ -176,6 +187,7 @@ namespace pathtracer{
             std::string filename = parseString(value, "file-name");
             std::string borderMode = parseString(value, "border-mode");
             std::string filterMode = parseString(value, "filter-mode");
+            std::string filetype = parseString(value, "file-type");
 
             // If the texture already exists, we don't need to recreate it
             auto it = textures.find(filename);
@@ -219,8 +231,13 @@ namespace pathtracer{
                 throw std::runtime_error("");
             }
 
-            Texture* newTexture = new Texture(parseImage(filename), bm, fm, 
-                linearize, isNormalMap);
+
+            // Normal maps are not gamma decoded. EXR is never gamma
+            // decoded. Only color images that are png are.
+            bool linearizeFlag = linearize && filetype == "png";
+
+            Texture* newTexture = new Texture(parseImage(filename, filetype), 
+                bm, fm, linearizeFlag, isNormalMap);
 
             textures[filename] = newTexture;
             return newTexture;
@@ -606,10 +623,14 @@ namespace pathtracer{
         if(data.contains("renderer")){
 
             const json& rendererJson = data["renderer"];
-            const json& rendererParams = require(rendererJson, "parameters");
             const json& integratorJson = require(rendererJson, "integrator");
 
-            Vector2i resolution = parseVector2i(rendererParams, "pixel-resolution");
+            Vector2i resolution = parseVector2i(rendererJson, "pixel-resolution");
+            
+            int messageCount = 10;
+            if(rendererJson.contains("message-count")){
+                messageCount = parseInt(rendererJson, "message-count");
+            }
 
             std::string integratorType = parseString(integratorJson, "type");
             const json& ip = require(integratorJson, "parameters");
@@ -676,22 +697,47 @@ namespace pathtracer{
                 }
             }
             else if(integratorType == "path-tracer"){
-                integrator = new PathTracer(parseInt(ip, "max-depth"));
+
+                int maxDepth = parseInt(ip, "max-depth");
+                int samples = parseInt(ip, "sample-count");
+
+                integrator = new PathTracer(samples, maxDepth);
             }
             else if(integratorType == "path-tracer-nee"){
-                integrator = new PathTracerNee(parseInt(ip, "max-depth"));
+                int maxDepth = parseInt(ip, "max-depth");
+                int samples = parseInt(ip, "sample-count");
+
+                integrator = new PathTracerNee(samples, maxDepth);
             }
             else if(integratorType == "path-tracer-nee-mis"){
-                integrator = new PathTracerNeeMis(parseInt(ip, "max-depth"));
+                int maxDepth = parseInt(ip, "max-depth");
+                int samples = parseInt(ip, "sample-count");
+
+                integrator = new PathTracerNeeMis(samples, maxDepth);
             }
             else if(integratorType == "path-tracer-guided"){
-                integrator = new PathTracerGuided(parseInt(ip, "max-depth"));
-            }
-            else if(integratorType == "path-tracer-nee-guided"){
-                integrator = new PathTracerNeeGuided(parseInt(ip, "max-depth"));
+                int maxDepth = parseInt(ip, "max-depth");
+                int samples = parseInt(ip, "sample-count");
+                int firstIterationSamples = parseInt(ip, 
+                    "first-iteration-sample-count");
+                int iterationCount = parseInt(ip, "iteration-count");
+                int c = parseInt(ip, "spatial-subdivision-c");
+                real alpha = parseReal(ip, "mis-alpha");
+                
+                integrator = new PathTracerGuided(samples, alpha, 
+                    firstIterationSamples, iterationCount, c, maxDepth);
             }
             else if(integratorType == "path-tracer-nee-mis-guided"){
-                integrator = new PathTracerNeeMisGuided(parseInt(ip, "max-depth"));
+                int maxDepth = parseInt(ip, "max-depth");
+                int samples = parseInt(ip, "sample-count");
+                int firstIterationSamples = parseInt(ip, 
+                    "first-iteration-sample-count");
+                int iterationCount = parseInt(ip, "iteration-count");
+                int c = parseInt(ip, "spatial-subdivision-c");
+                real alpha = parseReal(ip, "mis-alpha");
+                
+                integrator = new PathTracerNeeMisGuided(samples, alpha, 
+                    firstIterationSamples, iterationCount, c, maxDepth);
             }
             else if(integratorType == "path-tracer-sms"){
 
@@ -699,9 +745,10 @@ namespace pathtracer{
                 bool useHalfVector = parseBool(ip, "use-halfvector");
                 bool biased = parseBool(ip, "biased");
                 bool twoStage = parseBool(ip, "two-stage");
+                int samples = parseInt(ip, "sample-count");
 
-                integrator =
-                    new PathTracerSms(maxDepth, useHalfVector, biased, twoStage, scene);
+                integrator = new PathTracerSms(samples, maxDepth, useHalfVector, 
+                    biased, twoStage, *scene);
             }
             else if(integratorType == "path-tracer-nee-sms"){
 
@@ -709,14 +756,17 @@ namespace pathtracer{
                 bool useHalfVector = parseBool(ip, "use-halfvector");
                 bool biased = parseBool(ip, "biased");
                 bool twoStage = parseBool(ip, "two-stage");
+                int samples = parseInt(ip, "sample-count");
 
-                integrator =
-                    new PathTracerNeeSms(maxDepth, useHalfVector, biased, twoStage, scene);
+                integrator = new PathTracerNeeSms(samples, maxDepth, useHalfVector, 
+                    biased, twoStage, *scene);
             }
             else if(integratorType == "photon-mapping-integrator"){
 
                 int maxDepth = parseInt(ip, "max-depth");
                 real kernelRadius = parseReal(ip, "kernel-radius");
+                int threshold = parseInt(ip, "threshold");
+                int photonCount = parseInt(ip, "photon-count");
 
                 KernelType type;
                 std::string var = parseString(ip, "kernel-type");
@@ -732,74 +782,18 @@ namespace pathtracer{
                     throw std::runtime_error("");
                 }
 
-                integrator = new PhotonMappingIntegrator(maxDepth,
-                    kernelRadius, type);
+                integrator = new PhotonMappingIntegrator(photonCount, maxDepth, 
+                    kernelRadius, type, threshold);
             }
             else{
                 LOG_ERROR("No integrator found.");
                 throw std::runtime_error("");
             }
 
-            int messageCount = 10;
-            if(rendererParams.contains("message-count")){
-                messageCount = parseInt(rendererParams, "message-count");
-            }
-
-            std::string rendererType = parseString(rendererJson, "type");
-
-            if(rendererType == "path-tracer-renderer"){
-
-                int sampleCount = parseInt(rendererParams, "sample-count");
-
-                renderer = new PathTracerRenderer(
-                    resolution.x(), resolution.y(),
-                    camera, scene, integrator, sampleCount, messageCount
-                );
-            }
-            else if(rendererType == "photon-mapping-renderer"){
-
-                int maxDepth = parseInt(rendererParams, "max-depth");
-                int threshold = parseInt(rendererParams, "threshold");
-                int photonCount = parseInt(rendererParams, "photon-count");
-
-                renderer = new PhotonMappingRenderer(
-                    resolution.x(), resolution.y(),
-                    camera, scene, integrator, photonCount, threshold, maxDepth,
-                    messageCount
-                );
-            }
-            else if(rendererType == "renderer"){
-
-                renderer = new Renderer(
-                    resolution.x(), resolution.y(), camera, scene,
-                    integrator, messageCount
-                );
-            }
-            else if(rendererType == "path-guiding-renderer"){
-
-                int renderSamples = parseInt(rendererParams, "sample-count");
-
-                int firstIterationSamples = 4;
-                if(rendererParams.contains("first-iteration-sample-count")){
-                    firstIterationSamples =
-                        parseInt(rendererParams, "first-iteration-sample-count");
-                }
-
-                int iterationCount = parseInt(rendererParams, "iteration-count");
-                int c = parseInt(rendererParams, "spatial-subdivision-c");
-                real alpha = parseReal(rendererParams, "mis-alpha");
-
-                renderer = new PathGuidingRenderer(
-                    resolution.x(), resolution.y(),
-                    camera, scene, integrator,
-                    iterationCount, renderSamples, c, alpha,
-                    firstIterationSamples, messageCount
-                );
-            }
-            else{
-                LOG_ERROR("No renderer found.");
-                throw std::runtime_error("");
-            }
+            // Finally we instantiate the renderer
+            renderer = new Renderer(scene, camera, integrator, resolution.x(), 
+                resolution.y(), messageCount);
+    
         }
         else{
             LOG_ERROR("No renderer in: " + filename);
@@ -808,18 +802,20 @@ namespace pathtracer{
 
         // Reference
         std::vector<std::vector<Vector3>> reference;
-        if(data.contains("reference")){
+        if (data.contains("reference")) {
             const json& referenceData = data["reference"];
             std::string name = parseString(referenceData, "file-name");
-            reference = parseImage(name);
+            std::string type = parseString(referenceData, "file-type");
 
-            // Decode sRGB to linear so it matches the linear render
-            for(auto& row : reference){
-                for(Vector3& pixel : row){
-                    pixel = Texture::srgbToLinear(pixel);
-                }
+            if (type == "png") {
+                LOG_WARNING("Using PNG as reference is not supported.");
             }
+            else{
+                reference = parseImage(name, type);
+            }
+
         }
+
 
         return std::make_tuple(scene, renderer, reference);
     }

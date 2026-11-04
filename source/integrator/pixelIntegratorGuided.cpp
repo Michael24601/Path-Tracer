@@ -1,5 +1,5 @@
 
-#include "integrator/guidable.hpp"
+#include "integrator/pixelIntegratorGuided.hpp"
 #include "pathGuiding/kdTree.hpp"
 #include <cassert>
 #include <algorithm>
@@ -17,25 +17,28 @@
 namespace pathtracer{
 
 
-    Guidable::Guidable() : m_guideTree{nullptr}, m_trainTree{nullptr} {}
+    PixelIntegratorGuided::~PixelIntegratorGuided(){
+        if(m_guideTree){
+            delete m_guideTree;
+        }
+        if(m_trainTree){
+            delete m_trainTree;
+        }
+    }
 
+    
+    Vector3 PixelIntegratorGuided::toTreeLocalSpace(
+        const Vector3& position, const Scene& scene) const {
 
-    void Guidable::setGuideTree(KdTree* tree) {
-        m_guideTree = tree;
+        Vector3 min = scene.getBoundingBox().minCorner();
+        Vector3 size = scene.getBoundingBox().maxCorner() - min;
+
+        Vector3 result = (position - min) / size;
+        return result;
     }
 
 
-    void Guidable::setTrainTree(KdTree* tree) {
-        m_trainTree = tree;
-    }
-
-
-    void Guidable::setAlpha(real alpha){
-        m_alpha = alpha;
-    }
-
-
-    GuidedSample Guidable::sampleGuided(const Vector3& wo,
+    GuidedSample PixelIntegratorGuided::sampleGuided(const Vector3& wo,
         const SurfacePoint& it, const Scene& scene) const{
 
         Vector3 wi;
@@ -90,8 +93,8 @@ namespace pathtracer{
 
 
     // Does the same, but evaluates it using a given direction
-    GuidedSample Guidable::evaluateGuided(const Vector3& wo, const Vector3& wi,
-        const SurfacePoint& it, const Scene& scene) const {
+    GuidedSample PixelIntegratorGuided::evaluateGuided(const Vector3& wo, 
+        const Vector3& wi, const SurfacePoint& it, const Scene& scene) const {
 
         Vector3 weight;
         real pdf;
@@ -135,25 +138,16 @@ namespace pathtracer{
     }
     
 
-    Vector3 Guidable::toTreeLocalSpace(
-        const Vector3& position, const Scene& scene) const {
 
-        Vector3 min = scene.getBoundingBox().minCorner();
-        Vector3 size = scene.getBoundingBox().maxCorner() - min;
-
-        Vector3 result = (position - min) / size;
-        return result;
-    }
-
-
-    void Guidable::recordPath(
+    void PixelIntegratorGuided::recordPath(
         const std::vector<SurfacePoint>& position,
         const std::vector<Vector3>& wi,
         const std::vector<Vector3>& weight,
         const std::vector<real>& pdf,
         const std::vector<Vector3>& contribution,
         const Vector3& finalEmission,
-        const Scene& scene) {
+        const Scene& scene
+    ) {
 
         assert(position.size() == wi.size());
         assert(position.size() == weight.size());
@@ -208,7 +202,7 @@ namespace pathtracer{
     }
 
 
-    void Guidable::recordVertex(const SurfacePoint& position,
+    void PixelIntegratorGuided::recordVertex(const SurfacePoint& position,
         const Vector3& wi, const Vector3& contribution, const Scene& scene){
 
         if(m_trainTree && !position.instance()->bsdf()->isSpecular()){
@@ -218,6 +212,94 @@ namespace pathtracer{
             m_trainTree->accumulate(localPoint, wi, 0.5, contribution.mean(), 
                 SpatialFilter::NEAREST, DirectionalFilter::NEAREST);
         }
+        
+    }
+
+
+    // This is the overriden render function that now includes training.
+    std::vector<std::vector<Vector3>> PixelIntegratorGuided::render(
+        const Scene& scene, const Camera& camera, int width, int height, 
+        ProgressReporter& reporter) {
+
+        // In the first iteration, we don't use any guide tree, only
+        // the training tree. The threshold is c * 2^k where k = 0.
+
+        int threshold = m_c;
+
+        // If guiding tree is nullptr, then they just use bsdf.
+        // If training tree is nullptr, then they just render and don't train.
+        // If neither is nullptr, then they train using guiding tree.
+        if(m_trainTree) delete m_trainTree;
+        if(m_guideTree) delete m_guideTree;
+        
+        m_trainTree = new KdTree(threshold);
+        m_guideTree = nullptr;
+
+        // Saves the number of samples needed for the actual final render
+        // as it will be overwritten during training.
+        int renderSamples = m_samples;
+
+        // Samples used
+        m_samples = m_initialSamples;
+
+        // While we don't need an image to be rendered while training,
+        // it is best to saved rendered training image in case of early
+        // exit.
+        std::vector<std::vector<Vector3>> latest;
+
+        // Then loops
+        for(int k = 0; k < m_iterations; k++){
+
+            // Does one iteration, by calling the renderer
+            // from the base class.
+            latest = PixelIntegrator::render(scene, camera, width, height, reporter);
+
+            // If we break during training, there is nothing to return
+            if(g_stopRendering) {
+                // Restores sample count before leaving
+                m_samples = renderSamples;
+                return latest;
+            }
+
+            // We recompute the trees and swap them
+            m_trainTree->recomputeSampleWeight();
+
+            if(m_guideTree) {
+                delete m_guideTree;
+            }
+
+            m_guideTree = m_trainTree->copyTree();
+
+            // Training tree is reset
+            // Threshold is recomputed
+            threshold = m_c * sqrtReal(static_cast<real>(std::pow(2, k)));
+
+            m_trainTree->setThreshold(threshold);
+            m_trainTree->adaptTree();
+            m_trainTree->reset();
+
+            // We update samples, counter, and total path count
+            m_samples *= 2;
+
+            LOG_INFO("Training iteration: " + std::to_string(k) 
+                + " was completed.");
+        }
+
+        // After this, render be called again, for the last time,
+        // and actually saved. So we need to set up the trees to be correct.
+        
+        // We are in render mode now so training tree is null
+        if(m_trainTree){
+            delete m_trainTree;
+        }
+        m_trainTree = nullptr;
+
+        // The number of samples is the one initially reserved
+        // for rendering (the one we preserved).
+        m_samples = renderSamples;
+        
+        // Then we render and return the result
+        return PixelIntegrator::render(scene, camera, width, height, reporter);
         
     }
 

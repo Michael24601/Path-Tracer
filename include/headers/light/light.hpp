@@ -11,7 +11,8 @@ namespace pathtracer{
     class SurfaceDifferentials;
     class Scene;
 
-    struct PhotonSample{
+    
+    struct EmissionSample{
         // The intensity, weighted by the direction and the area
         // pdfs if applicable.
         Vector3 intensity;
@@ -20,6 +21,7 @@ namespace pathtracer{
         // The sampled direction, from photon light to the outside.
         Vector3 direction;
     };
+
 
     class Light{
 
@@ -35,7 +37,9 @@ namespace pathtracer{
         virtual LightSample sample(const Vector3&) const = 0;
 
 
-        virtual PhotonSample samplePhoton(const Scene& scene) const = 0;
+        // Does not sample from an origin. Instead it samples
+        // a random point on the light and a direction.
+        virtual EmissionSample sampleEmission(const Scene& scene) const = 0;
 
 
         // Given a particular point on the light, this returns the

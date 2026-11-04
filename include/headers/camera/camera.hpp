@@ -17,6 +17,8 @@ namespace pathtracer{
         real m_width;
         real m_height;
         Transform m_transform;
+        // Stores the inverse for faster inverse operations
+        Transform m_inverse;
         
     public:
 
@@ -26,6 +28,8 @@ namespace pathtracer{
         Camera(real width, real height, const Transform& transform);
 
         virtual Ray generateRay(const Vector2& point) const = 0;
+
+        virtual Vector2 receiveRay(const Ray& ray) const = 0;
 
         real width() const;
 

@@ -53,18 +53,18 @@
         },
         {
             "id": "conductor-bsdf",
-            "type": "rough-conductor",
+            "type": "mirror",
             "parameters": {
                 "reflectance": {
                     "type": "color",
                     "parameters": {
-                        "color": [0.84, 0.65, 0.32]
+                        "color": [1.0, 0.71, 0.29]
                     }
                 },
                 "roughness": {
                     "type": "color",
                     "parameters": {
-                        "color": [0.0001, 0.0001, 0.0001]
+                        "color": [0.00001, 0.00001, 0.00001]
                     }
                 }
             }
@@ -78,9 +78,9 @@
             "material": "diffuse-white",
             "parameters": {
                 "transform": [
-                    0.3, 0.0, 0.0, 0.0,
+                    0.15, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 0.3, 0.0
+                    0.0, 0.0, 0.15, 0.0
                 ],
                 "vertex-data":{ 
                     "format": "obj",
@@ -110,7 +110,8 @@
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/very_wavy_bumpy_normal.png",
+                        "file-name": "data/textures/very_bumpy_normal.png",
+                        "file-type": "png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -125,8 +126,8 @@
             "id": "ceiling-light",
             "type": "directional",
             "parameters": {
-                "direction": [-0.1, -1.4, -1.6],
-                "power": [1, 1, 1]
+                "direction": [-0.1, -0.4, -1.6],
+                "power": [1.5, 1.5, 1.5]
             }
         }
     ],
@@ -134,7 +135,7 @@
     "camera": {
         "type": "perspective",
         "parameters": {
-            "focal-length": 0.060,
+            "focal-length": 0.08,
             "sensor-dimension": [0.036, 0.036],
             "look-at": {
                 "eye": [2.4559, 4.8173, 4.1689],
@@ -144,21 +145,43 @@
         }
     },
 
+
     "renderer": {
-        "type": "path-tracer-renderer",
-        "parameters": {
-            "pixel-resolution": [512, 512],
-            "sample-count": 12
-        },
+        "pixel-resolution": [512, 512],
+        "message-count": 10,
         "integrator": {
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
+                "sample-count": 2,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": false
+                "two-stage": true
             }
         }
+    },
+
+
+    "renderer-": {
+        "pixel-resolution": [512, 512],
+        "message-count": 10,
+        "integrator": {
+            "type": "photon-mapping-integrator",
+            "parameters": {
+                "max-depth": 100,
+                "sample-count": 1,
+                "threshold": 4,
+                "photon-count": 100000000,
+                "kernel-radius": 0.005,
+                "kernel-type": "uniform"
+            }
+        }
+    },
+
+
+    "reference":{
+        "file-name": "data/references/conductor.exr",
+        "file-type": "exr"
     }
 
 }

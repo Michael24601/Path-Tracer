@@ -28,6 +28,8 @@ namespace pathtracer{
     Camera::Camera(real width, real height, const Transform& transform) :
         m_width{width}, m_height{height}, m_transform(transform) {
 
+        m_inverse = m_transform.inverse();
+
         assert((m_width > EPSILON && m_height > EPSILON)
             && "Camera dimensions are too small");
     }

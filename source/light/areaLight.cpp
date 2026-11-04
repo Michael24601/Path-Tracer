@@ -55,7 +55,7 @@ namespace pathtracer{
     }
 
 
-    PhotonSample AreaLight::samplePhoton(const Scene& scene) const{
+    EmissionSample AreaLight::sampleEmission(const Scene& scene) const{
 
         // Samples a random point
         AreaSample s = m_instance->sampleArea();
@@ -75,7 +75,7 @@ namespace pathtracer{
         Vector3 radiance = s.evaluateEmission(wo);
         radiance = radiance / (directionPdf * solidAnglePdf);
 
-        return PhotonSample{radiance, s.position(), wo};
+        return EmissionSample{radiance, s.position(), wo};
 
     }
 

@@ -130,7 +130,7 @@ namespace pathtracer{
 
         // Given a Hit and Ray in world coordinates, computes the Intersection
         Intersection constructIntersection(const Hit& hit,
-            const Ray& ray) const;
+            const Ray& ray, bool smooth = false) const;
 
 
         // Computes the differential info on the surface of the shape

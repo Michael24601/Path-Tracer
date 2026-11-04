@@ -7,17 +7,12 @@
 #include "core/scene.hpp"
 #include "intersection/intersection.hpp"
 #include "math/mathUtil.hpp"
-#include "bsdf/bsdf.hpp"
 #include "pathGuiding/kdTree.hpp"
 #include "pathGuiding/quadTree.hpp"
 #include "math/constants.hpp"
 #include "logger.hpp"
 
 namespace pathtracer{
-    
-
-    PathTracerGuided::PathTracerGuided(int maxDepth) :
-        m_maxDepth{maxDepth} {}
 
 
     Vector3 PathTracerGuided::color(const Ray& ray, const Scene& scene) {
@@ -45,7 +40,7 @@ namespace pathtracer{
             Vector3 wo = -currRay.direction();
 
             // First we intersect the scene
-            bounceCount++;
+            m_bounceCount++;
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
@@ -123,5 +118,18 @@ namespace pathtracer{
 
         return color;
     }
+
+
+    void PathTracerGuided::printStatistics(int width, int height) const {
+
+        long long total = static_cast<long long>(width) * height * m_samples;
+        real averageBounceCount = static_cast<real>(m_bounceCount) / total;
+
+        LOG_DEBUG("Bounce count: " + std::to_string(m_bounceCount));
+        LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
+
+        // TODO: add tree statistics
+    }
+
 
 }

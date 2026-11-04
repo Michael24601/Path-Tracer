@@ -14,6 +14,13 @@ namespace pathtracer{
         real relativeMse(const std::vector<std::vector<Vector3>>& image,
             const std::vector<std::vector<Vector3>>& reference);
 
+
+        real mse(const std::vector<std::vector<Vector3>>& image,
+            const std::vector<std::vector<Vector3>>& reference);
+
+
+        Vector3 meanColor(const std::vector<std::vector<Vector3>>& image);
+
     }
 
 }

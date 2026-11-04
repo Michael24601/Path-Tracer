@@ -69,11 +69,12 @@ namespace pathtracer{
         std::atomic<real> averageUniquePerRun{0.0};
         std::atomic<long> contributingSamples{0};
         std::atomic<long> zeroGeometricTerm{0};
+        std::atomic<long> maxUnbiasedSamplesReached{0};
 
-        SpecularManifoldSampling(const Scene* scene, bool useHalfVector, 
-            bool biased, bool twoStage, int maxIterations = 30, 
-            int maxTrials = 1000, int maxBiasedTrials = 10, 
-            real epsilon = 1e-9, real threshold = 1e-6);
+        SpecularManifoldSampling(const Scene& scene, bool useHalfVector, 
+            bool biased, bool twoStage, int maxIterations = 20, 
+            int maxTrials = 20000, int maxBiasedTrials = 10, 
+            real epsilon = 1e-5, real threshold = 1e-5);
 
 
         // Returns the outgoing radiance from x0, after connecting
@@ -129,6 +130,9 @@ namespace pathtracer{
             const SurfacePoint& causticPoint, const LightSample& lightPoint, 
             const SmsSample& sample, const SpecularManifoldBsdf* bsdf, 
             const Vector3& wo, const Scene* scene, const Vector3& lon);
+
+
+        void printStatistics() const;
 
 
         std::string toString() const{

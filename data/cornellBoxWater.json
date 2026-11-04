@@ -237,16 +237,13 @@
         
     
     "renderer": {
-        "type": "path-tracer-renderer",
-        "parameters": {
-            "pixel-resolution": [512, 512],
-            "sample-count": 5,
-            "message-count": 10
-        },
+        "pixel-resolution": [512, 512],
+        "message-count": 10,
         "integrator": {
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
+                "sample-count": 5,
                 "use-halfvector": false,
                 "biased": false,
                 "two-stage": false
@@ -254,7 +251,9 @@
         }
     },
     
+
     "reference":{
-        "file-name": "data/references/cornellBoxWater.png"
+        "file-name": "data/references/cornellBoxWater.exr",
+        "file-type": "exr"
     }
 }

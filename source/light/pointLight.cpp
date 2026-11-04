@@ -37,7 +37,7 @@ namespace pathtracer{
     }
 
 
-    PhotonSample PointLight::samplePhoton(const Scene& scene) const{
+    EmissionSample PointLight::sampleEmission(const Scene& scene) const{
         // The point on the light is always the same, the only thing
         // to sample is the direction.
         
@@ -50,7 +50,7 @@ namespace pathtracer{
         // matter the distance.
         Vector3 power = m_power / directionPdf;
 
-        return PhotonSample{power, m_position, wo};
+        return EmissionSample{power, m_position, wo};
     }
 
 

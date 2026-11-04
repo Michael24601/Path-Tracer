@@ -207,7 +207,8 @@
                     "parameters": {
                         "file-name": "data/textures/wave.png",
                         "border-mode": "repeat",
-                        "filter-mode": "bilinear"
+                        "filter-mode": "bilinear",
+                        "file-type": "png"
                     }
                 }
             }
@@ -238,18 +239,16 @@
     },
     
     "renderer": {
-        "type": "path-tracer-renderer",
-        "parameters": {
-            "pixel-resolution": [512, 512],
-            "sample-count": 5
-        },
+        "pixel-resolution": [512, 512],
+        "message-count": 10,
         "integrator": {
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
+                "sample-count": 10,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": true
+                "two-stage": false
             }
         }
     }

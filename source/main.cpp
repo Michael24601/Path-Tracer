@@ -13,39 +13,58 @@
 #include <filesystem>
 #include <algorithm>
 #include <windows.h>
-
-#include "integrator/guidable.hpp"
-#include "pathGuiding/kdTree.hpp"
-#include "pathGuiding/quadTreeUtil.hpp"
+#include "config.hpp"
+#include <cstdlib>
 
 
 using namespace pathtracer;
 
 
+// Defined in config.hpp
+namespace pathtracer {
+    std::atomic<bool> g_stopRendering = false;
+}
+
+
+BOOL WINAPI consoleHandler(DWORD signal) {
+    if(signal == CTRL_C_EVENT) {
+        g_stopRendering = true;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+
 int main(int argc, char* argv[]) {
-
-    
-    std::ofstream logFile("file.log");
-    Logger::setOutput(logFile);
-    Logger::setMaxTimeInterval(-1.0);
-    Logger::setConsoleOutput(true);
-
-    Logger::enableDebug(true);
-
-    SetConsoleOutputCP(CP_UTF8);
-    std::string line;
-    for(int i = 0; i < 130; i++) line += "─";
-    std::cout << "\n" << line << "\n\n";
-    std::cout.flush();
 
     if(argc != 3 && argc != 2) {
         LOG_ERROR("Invalid arguments");
         return 1;
     }
 
-    Scene* scene;
-    Renderer* renderer;
+
+
+    std::ofstream logFile("file.log");
+    Logger::setOutput(logFile);
+    Logger::setMaxTimeInterval(-1.0);
+    Logger::setConsoleOutput(true);
+    Logger::enableDebug(true);
+
+
+    std::string line;
+    for(int i = 0; i < 140; i++) line += "─";
+
+    SetConsoleOutputCP(CP_UTF8);
+    std::cout << "\n" << line << "\n\n";
+    std::cout.flush();
+
+
+    Scene* scene = nullptr;
+    Renderer* renderer = nullptr;
     std::vector<std::vector<Vector3>> reference;
+
+    bool openImage = true;
 
     try {
 
@@ -58,6 +77,7 @@ int main(int argc, char* argv[]) {
 
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
+        SetConsoleCtrlHandler(consoleHandler, TRUE);
         auto image = renderer->render();
 
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -82,13 +102,13 @@ int main(int argc, char* argv[]) {
             outputName += "_" + std::to_string(duration) + "ms";
         }
 
-        std::string output = "output/" + outputName + ".png";
+        std::string output = "output/" + outputName;
 
         int index = 1;
 
         while (std::ifstream(output).good()) {
             output = "output/" + outputName +
-                "[" + std::to_string(index) + "].png";
+                "[" + std::to_string(index) + "]";
             index++;
         }
 
@@ -96,16 +116,27 @@ int main(int argc, char* argv[]) {
         std::cout << "\n" << line << "\n\n";
         std::cout.flush();
 
-        real difference = ImageUtil::relativeMse(image, reference);
-        LOG_INFO("Relative mean square error: " + std::to_string(difference));
-        renderer->printStatistics();
-        
+        real difference = ImageUtil::mse(image, reference);
+        LOG_INFO("Mean square error: " + std::to_string(difference));
 
-        ImageIo::savePNG(image, output);
+        difference = ImageUtil::relativeMse(image, reference);
+        LOG_INFO("Relative mean square error: " + std::to_string(difference));
+
+        Vector3 mean = ImageUtil::meanColor(image);
+        Vector3 meanRef = ImageUtil::meanColor(reference);
+        LOG_INFO("Average render color: " + mean.toString());
+        LOG_INFO("Average reference color: " + meanRef.toString());
+
+        renderer->printStatistics();
+
+        ImageIo::savePNG(image, output + ".png");
+        ImageIo::saveEXR(image, output + ".exr");
 
         // Opens image when done
-        std::string command = "start \"\" \"" + output + "\"";
-        system(command.c_str());
+        if(openImage){
+            std::string command = "start \"\" \"" + output + ".png\"";
+            system(command.c_str());
+        }
 
     }
     catch(const std::exception& e) {

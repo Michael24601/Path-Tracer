@@ -29,7 +29,7 @@
 namespace pathtracer{
 
 
-    SpecularManifoldSampling::SpecularManifoldSampling(const Scene* scene, 
+    SpecularManifoldSampling::SpecularManifoldSampling(const Scene& scene, 
         bool useHalfVector, bool biased, bool twoStage, int maxIterations, 
         int maxTrials, int maxBiasedTrials, real epsilon, real threshold) :
         m_epsilon{epsilon},
@@ -41,14 +41,14 @@ namespace pathtracer{
         m_biased{biased},
         m_twoStage{twoStage} {
 
-        for(int i = 0; i < scene->instanceCount(); i++){
+        for(int i = 0; i < scene.instanceCount(); i++){
 
             const SpecularManifoldBsdf* bsdf =
-                dynamic_cast<const SpecularManifoldBsdf*>(scene->instance(i)->bsdf());
+                dynamic_cast<const SpecularManifoldBsdf*>(scene.instance(i)->bsdf());
 
             // Saves only surfaces that inherit specular manifold class
             if(bsdf){
-                m_specularInstances.push_back(scene->instance(i));
+                m_specularInstances.push_back(scene.instance(i));
                 m_bsdfs.push_back(bsdf);
             }
         }
@@ -154,7 +154,7 @@ namespace pathtracer{
         Vector3 dir = (sample.finalPoint().position()
             - causticPoint.position()).normalized();
 
-        while(counter < m_maxTrials){
+        while(m_maxTrials < 0 || counter < m_maxTrials){
 
             counter++;
 
@@ -174,6 +174,7 @@ namespace pathtracer{
 
         // Failure (if none are found)
         if(!found){
+            maxUnbiasedSamplesReached++;
             return Vector3(0.0);
         }
 
@@ -360,14 +361,13 @@ namespace pathtracer{
                 leanNormal, scene, true);
 
             // If not converged, we just return a false sample
-            if(!result.isConverged()){
-                return result;
+            if(result.isConverged()){
+            
+                // And we use a new seed
+                seedIt = result.finalPoint();
+                // Which we also normal map again to get back the original map
+                it.instance()->normalMap(seedIt);
             }
-
-            // And we use a new seed
-            seedIt = result.finalPoint();
-            // Which we also normal map again to get back the original map
-            it.instance()->normalMap(seedIt, false); 
         }
 
         // We then do a newton solver, either with initial seed or new seed
@@ -492,7 +492,7 @@ namespace pathtracer{
                 direction = direction / direction.length();
 
                 Ray ray(x0.position() + direction * SHADOW_EPSILON, direction);
-                nextIt = scene->intersect(ray);
+                nextIt = scene->intersect(ray, smooth);
 
                 valid = nextIt && nextIt.instance() == seedIt.instance();
 
@@ -508,12 +508,6 @@ namespace pathtracer{
             if(!valid){
             // We ran out of iterations, so we just leave the outer loop
                 break;
-            }
-
-            // If this is stage 1 manifold walk, we can smooth the
-            // intersection we get.
-            if(smooth && nextIt.instance()->normalTexture()){
-                nextIt.instance()->normalMap(nextIt, true);
             }
 
             finalIt = nextIt;
@@ -603,6 +597,36 @@ namespace pathtracer{
         }
 
         return lightSample.contribution * s1Weight * s0Weight * g;
+    }
+
+
+
+    void SpecularManifoldSampling::printStatistics() const{
+
+        int smoothUnconverged = smoothRun - smoothConverged;
+        int trueUnconverged = trueRun - trueConverged;
+        real smoothConvergenceRate = real(smoothConverged) / real(smoothRun);
+        real trueConvergenceRate = real(trueConverged) / real(trueRun);
+        real averageInverseProbability = real(counterSum) / real(unbiasedSuccess);
+        real averageIterationsSmooth = real(smoothIterationSum) / real(smoothConverged);
+        real averageIterationsTrue = real(trueIterationSum) / real(trueConverged);
+
+        LOG_DEBUG("Smooth solvers run: " + std::to_string(smoothRun.load()));
+        LOG_DEBUG("Smooth converged: " + std::to_string(smoothConverged.load()));
+        LOG_DEBUG("Smooth unconverged: " + std::to_string(smoothUnconverged));
+        LOG_DEBUG("Smooth convergence rate: " + std::to_string(smoothConvergenceRate));
+        LOG_DEBUG("True solvers run: " + std::to_string(trueRun.load()));
+        LOG_DEBUG("True converged: " + std::to_string(trueConverged.load()));
+        LOG_DEBUG("True unconverged: " + std::to_string(trueUnconverged));
+        LOG_DEBUG("True convergence rate: " + std::to_string(trueConvergenceRate));
+        LOG_DEBUG("Unbiased successes: " + std::to_string(unbiasedSuccess.load()));
+        LOG_DEBUG("Average unique biased samples: " + std::to_string(averageUniquePerRun.load()));
+        LOG_DEBUG("Average inverse probability (counter): " + std::to_string(averageInverseProbability));
+        LOG_DEBUG("Average iterations smooth: " + std::to_string(averageIterationsSmooth));
+        LOG_DEBUG("Average iterations true: " + std::to_string(averageIterationsTrue));
+        LOG_DEBUG("Contributing samples: " + std::to_string(contributingSamples.load()));
+        LOG_DEBUG("Zero geometric term samples: " + std::to_string(zeroGeometricTerm.load()));
+        LOG_DEBUG("Max unbiased samples reached: " + std::to_string(maxUnbiasedSamplesReached.load()));
     }
 
 }

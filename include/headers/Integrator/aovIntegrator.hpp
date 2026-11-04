@@ -1,11 +1,12 @@
+
 #ifndef PATH_TRACER_AOV_INTEGRATOR_HPP
 #define PATH_TRACER_AOV_INTEGRATOR_HPP
 
-#include "integrator.hpp"
+#include "pixelIntegrator.hpp"
 
 namespace pathtracer{
 
-    class AovIntegrator: public Integrator{
+    class AovIntegrator: public PixelIntegrator{
 
     public:
 
@@ -13,6 +14,8 @@ namespace pathtracer{
             ALBEDO,
             GEOMETRY_NORMAL,
             SHADING_NORMAL,
+            LEAN_NORMAL,
+            MIPMAP_NORMAL,
             DIRECTION,
             DPDU,
             DPDV,
@@ -22,9 +25,7 @@ namespace pathtracer{
             DSDV,
             DTDU,
             DTDV,
-            S,
-            LEAN_NORMAL,
-            MIPMAP_NORMAL
+            S
         };
 
     private:
@@ -35,12 +36,24 @@ namespace pathtracer{
 
     public:
 
-        AovIntegrator(RenderVariable variable);
+        AovIntegrator(RenderVariable variable) :
+            // Only one sample per pixel for an AOV integrator
+            PixelIntegrator(1), m_variable{variable}{}
 
 
         // Uses whatever rendering technique it wants to render
         // the light received by the given shadow ray.
         Vector3 color(const Ray& ray, const Scene& scene) override;
+
+
+        // No statistics for AOV integrator
+        void printStatistics(int width, int height) const override {}
+
+
+        // No jittering for AOV since only one SPP
+        bool jitter() const override{
+            return false;
+        }
 
 
         std::string toString() const override{

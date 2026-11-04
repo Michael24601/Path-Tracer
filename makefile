@@ -6,8 +6,10 @@ DEBUG_FLAGS = -g -O0
 SOURCES = $(wildcard source/*.cpp) \
           $(wildcard source/*/*.cpp)
 
-OBJECTS = $(patsubst source/%.cpp,build/%.o,$(SOURCES))
+C_OBJECTS = $(patsubst include/libs/tinyexr/%.c,build/tinyexr/%.o,$(wildcard include/libs/tinyexr/*.c))
+OBJECTS = $(patsubst source/%.cpp,build/%.o,$(SOURCES)) $(C_OBJECTS)
 DEBUG_OBJECTS = $(patsubst source/%.cpp,build/%.debug.o,$(SOURCES))
+
 
 CLEAR = cmd /c cls
 
@@ -22,6 +24,10 @@ DEBUG_DEPS = $(DEBUG_OBJECTS:.debug.o=.debug.d)
 # Builds
 all: build/build.exe
 
+build/tinyexr/%.o: include/libs/tinyexr/%.c
+	if not exist "$(@D)" mkdir "$(@D)"
+	gcc -c $< -o $@
+
 build/build.exe: $(OBJECTS)
 	if not exist build mkdir build
 	$(CXX) $(CXXFLAGS) $(RELEASE_FLAGS) $(OBJECTS) -o build/build.exe
@@ -29,7 +35,7 @@ build/build.exe: $(OBJECTS)
 # Compile release source files
 build/%.o: source/%.cpp
 	if not exist "$(@D)" mkdir "$(@D)"
-	$(CXX) $(CXXFLAGS) $(RELEASE_FLAGS) -MMD -MP -Iinclude/libs -Iinclude/headers -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(RELEASE_FLAGS) -MMD -MP -Iinclude/libs  -Iinclude/libs/tinyexr -Iinclude/headers -c $< -o $@
 
 # Builds debug version
 debug: build/build-debug.exe

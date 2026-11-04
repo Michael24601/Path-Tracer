@@ -19,6 +19,9 @@ namespace pathtracer{
         // We assume the point ranges from -1 to 1
         Ray generateRay(const Vector2& point) const override;
 
+        // We assume the point ranges from -1 to 1
+        Vector2 receiveRay(const Ray& ray) const override;
+
     };
 
 }

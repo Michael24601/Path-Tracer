@@ -38,7 +38,7 @@ namespace pathtracer{
     }
 
 
-    PhotonSample DirectionalLight::samplePhoton(const Scene& scene) const {
+    EmissionSample DirectionalLight::sampleEmission(const Scene& scene) const {
 
         // We don't have an origin for the directional light, so we
         // are forced to disperse photons from a disk that covers the
@@ -69,7 +69,7 @@ namespace pathtracer{
         real diskArea = PI * radius * radius;
         Vector3 power = m_power * diskArea;
 
-        return PhotonSample{power, origin, m_direction};
+        return EmissionSample{power, origin, m_direction};
     }
 
 

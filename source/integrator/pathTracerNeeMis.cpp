@@ -1,6 +1,5 @@
 
 #include "integrator/pathTracerNeeMis.hpp"
-#include <algorithm>
 #include "bsdf/bsdfSample.hpp"
 #include "core/instance.hpp"
 #include "core/random.hpp"
@@ -16,12 +15,11 @@
 #include "bsdf/bsdf.hpp"
 #include "math/constants.hpp"
 #include "nextEventEstimation/nextEventEstimation.hpp"
+#include "logger.hpp"
 
 
 namespace pathtracer{
 
-    PathTracerNeeMis::PathTracerNeeMis(int maxDepth) :
-        m_maxDepth{maxDepth} {}
 
     Vector3 PathTracerNeeMis::color(const Ray& ray, const Scene& scene) {
 
@@ -32,7 +30,6 @@ namespace pathtracer{
         // If the last frame is specular, then no NEE was performed,
         // which is relevant information for MIS.
         BsdfSample lastFrameSample(BsdfSample::INVALID);
-        bool isLastFrameSpecular = false;
         Vector3 previousPos(0.0);
 
         for(int i = 0; i < m_maxDepth; i++){
@@ -40,7 +37,7 @@ namespace pathtracer{
             Vector3 wo = -currRay.direction();
 
             // First we intersect the scene
-            bounceCount++;
+            m_bounceCount++;
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
@@ -86,11 +83,7 @@ namespace pathtracer{
 
             // We only perform NEE if the current surface is not
             // delta surface (specular)
-            if(it.instance()->bsdf()->isSpecular()){
-                isLastFrameSpecular = true;
-            }
-            else{
-                isLastFrameSpecular = false;
+            if(!it.instance()->bsdf()->isSpecular()){
 
                 NextEventSample s = NextEventEstimation::sample(scene, it);
 
@@ -163,6 +156,16 @@ namespace pathtracer{
         }
 
         return color;
+    }
+
+
+    void PathTracerNeeMis::printStatistics(int width, int height) const {
+
+        long long total = static_cast<long long>(width) * height * m_samples;
+        real averageBounceCount = static_cast<real>(m_bounceCount) / total;
+
+        LOG_DEBUG("Bounce count: " + std::to_string(m_bounceCount));
+        LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
     }
 
 }

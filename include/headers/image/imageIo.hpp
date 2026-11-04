@@ -10,11 +10,16 @@ namespace pathtracer{
 
     namespace ImageIo{
 
-        void savePNG(
-            const std::vector<std::vector<Vector3>>& image,
+        void savePNG(const std::vector<std::vector<Vector3>>& image,
             const std::string& filename);
 
-        bool loadImage(const std::string& filename,
+        bool loadPng(const std::string& filename,
+            std::vector<std::vector<Vector3>>& im);
+
+        bool saveEXR(const std::vector<std::vector<Vector3>>& image,
+            const std::string& filename);
+
+        bool loadEXR(const std::string& filename,
             std::vector<std::vector<Vector3>>& im);
 
     }

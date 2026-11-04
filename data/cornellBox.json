@@ -229,20 +229,19 @@
         
 
     "renderer": {
-        "type": "path-tracer-renderer",
-        "parameters": {
-            "pixel-resolution": [512, 512],
-            "sample-count": 100
-        },
+        "pixel-resolution": [512, 512],
+        "message-count": 10,
         "integrator": {
-            "type": "path-tracer",
+            "type": "path-tracer-nee",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 100,
+                "sample-count": 10
             }
         }
     },
 
     "reference":{
-        "file-name": "data/references/cornellBox.png"
+        "file-name": "data/references/cornellBox.exr",
+        "file-type": "exr"
     }
 }

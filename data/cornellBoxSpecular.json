@@ -256,15 +256,13 @@
     
 
     "renderer": {
-        "type": "path-tracer-renderer",
-        "parameters": {
-            "pixel-resolution": [512, 412],
-            "sample-count": 10
-        },
+        "pixel-resolution": [512, 412],
+        "message-count": 10,
         "integrator": {
             "type": "path-tracer-nee-mis",
             "parameters": {
-                "max-depth": 100
+                "max-depth": 100,
+                "sample-count": 10
             }
         }
     }

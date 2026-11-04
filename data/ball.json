@@ -30,6 +30,7 @@
                     "type": "texture",
                     "parameters": {
                         "file-name": "data/textures/wavy_normal.png",
+                        "file-type": "png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -64,11 +65,8 @@
         
 
     "renderer": {
-        "type": "renderer",
-        "parameters": {
-            "pixel-resolution": [512, 512],
-            "sample-count": 10
-        },
+        "pixel-resolution": [512, 512],
+        "message-count": 0,
         "integrator": {
             "type": "aov-integrator",
             "parameters": {

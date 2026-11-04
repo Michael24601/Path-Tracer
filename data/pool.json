@@ -22,6 +22,7 @@
                     "type": "texture",
                     "parameters": {
                         "file-name": "data/textures/grass.png",
+                        "file-type": "png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -36,6 +37,7 @@
                     "type": "texture",
                     "parameters": {
                         "file-name": "data/textures/stone.png",
+                        "file-type": "png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -50,6 +52,7 @@
                     "type": "texture",
                     "parameters": {
                         "file-name": "data/textures/tiles.png",
+                        "file-type": "png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear"
                     }
@@ -266,15 +269,13 @@
     },
 
     "renderer": {
-        "type": "path-tracer-renderer",
-        "parameters": {
-            "pixel-resolution": [512, 512],
-            "sample-count": 50
-        },
+        "pixel-resolution": [512, 512],
+        "message-count": 10,
         "integrator": {
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
+                "sample-count": 10,
                 "use-halfvector": false,
                 "biased": false,
                 "two-stage": false

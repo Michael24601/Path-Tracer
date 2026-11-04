@@ -2,28 +2,46 @@
 #ifndef PATH_TRACER_PATH_TRACER_NEE_MIS_HPP
 #define PATH_TRACER_PATH_TRACER_NEE_MIS_HPP
 
-#include "integrator.hpp"
+#include "pixelIntegrator.hpp"
 
 namespace pathtracer{
 
     // A pure path tracer
-    class PathTracerNeeMis: public Integrator{
+    class PathTracerNeeMis: public PixelIntegrator{
 
     private:
 
         int m_maxDepth;
+        
+        // Used for debugging
+        std::atomic<long long> m_bounceCount{0};
 
     public:
 
-        // Uses both NEE and BSDF sampling, but instead of using one
-        // or the other, blends them with MIS.
-        PathTracerNeeMis(int maxDepth);
+        PathTracerNeeMis(int samples, int maxDepth) :
+            PixelIntegrator(samples), m_maxDepth{maxDepth}{
+
+            assert(maxDepth > 0 && "Max depth must be positive");        
+        }
+
 
         Vector3 color(const Ray& ray, const Scene& scene) override;
 
-        std::string toString() const override{
-            return "PT NEE MIS";
+
+        // The only statistic for a path tracer is the bounce count
+        void printStatistics(int width, int height) const override;
+
+
+        // Jittering used for anti-aliasing
+        bool jitter() const override{
+            return true;
         }
+
+
+        std::string toString() const override{
+            return "PT NEE MIS SPP=" + std::to_string(m_samples);
+        }
+        
     };
 
 }

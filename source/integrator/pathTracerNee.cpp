@@ -2,23 +2,19 @@
 #include "integrator/pathTracerNee.hpp"
 #include "bsdf/bsdfSample.hpp"
 #include "core/instance.hpp"
-#include "core/random.hpp"
 #include "core/ray.hpp"
 #include "core/scene.hpp"
-#include "core/sceneUtil.hpp"
 #include "intersection/intersection.hpp"
 #include "light/light.hpp"
 #include "light/lightSample.hpp"
 #include "math/mathUtil.hpp"
+#include "core/random.hpp"
 #include "bsdf/bsdf.hpp"
 #include "math/constants.hpp"
 #include "nextEventEstimation/nextEventEstimation.hpp"
 #include "logger.hpp"
 
 namespace pathtracer{
-
-
-    PathTracerNee::PathTracerNee(int maxDepth) :m_maxDepth{maxDepth} {}
 
 
     Vector3 PathTracerNee::color(const Ray& ray, const Scene& scene) {
@@ -37,7 +33,7 @@ namespace pathtracer{
             Vector3 wo = -currRay.direction();
 
             // First we intersect the scene
-            bounceCount++;
+            m_bounceCount++;
             Intersection it = scene.intersect(currRay);
             // If no hits (we can break or sample envmap)
             if(!it){
@@ -98,7 +94,7 @@ namespace pathtracer{
             Vector3 weight = sample.weight();
 
             // Russian roulette
-            float p = Util::russianRoulette(throughput, i);
+            real p = Util::russianRoulette(throughput, i);
             if (Random::next() > p){
                 break;
             }
@@ -114,4 +110,14 @@ namespace pathtracer{
         return color;
     }
 
+
+    void PathTracerNee::printStatistics(int width, int height) const {
+
+        long long total = static_cast<long long>(width) * height * m_samples;
+        real averageBounceCount = static_cast<real>(m_bounceCount) / total;
+
+        LOG_DEBUG("Bounce count: " + std::to_string(m_bounceCount));
+        LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
+    }
+    
 }

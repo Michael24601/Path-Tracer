@@ -10,6 +10,7 @@ namespace pathtracer{
         Camera(width, height, transform),
         m_focalLength{focalLength}{}
 
+
     // We assume the point ranges from -1 to 1
     Ray PerspectiveCamera::generateRay(const Vector2& point) const {
         // In local space, we always assume that the aperture
@@ -33,6 +34,32 @@ namespace pathtracer{
         Vector3 direction = (worldPixel - worldOrigin).normalized();
 
         return Ray(worldOrigin, direction);
+    }
+
+
+    Vector2 PerspectiveCamera::receiveRay(const Ray& ray) const {
+
+        const Ray localRay = m_inverse.transform(ray);
+
+        // Intersect with the image plane at z = -focalLength
+        real t = (-m_focalLength - localRay.origin().z()) 
+            / localRay.direction().z();
+
+        if (t <= 0){
+            // This means it is invalid
+            return Vector2(-2, -2); 
+        }
+
+        Vector3 point = localRay.origin() + localRay.direction() * t;
+
+        real x = point.x() / (m_width * 0.5);
+        real y = point.y() / (m_height * 0.5);
+
+        if (std::abs(x) > 1 || std::abs(y) > 1){
+            return Vector2(-2, -2);
+        }
+
+        return Vector2(x, y);
     }
 
 }
