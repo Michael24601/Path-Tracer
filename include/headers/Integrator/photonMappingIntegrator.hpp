@@ -41,7 +41,7 @@ namespace pathtracer{
 
     public:
 
-        PhotonMappingIntegrator(int photonCount, int maxDepth, 
+        PhotonMappingIntegrator(int maxDepth, int photonCount, 
             real kernelRadius, KernelType kernelType, int threshold);
 
 

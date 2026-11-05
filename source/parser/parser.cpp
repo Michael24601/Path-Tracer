@@ -782,7 +782,7 @@ namespace pathtracer{
                     throw std::runtime_error("");
                 }
 
-                integrator = new PhotonMappingIntegrator(photonCount, maxDepth, 
+                integrator = new PhotonMappingIntegrator(maxDepth, photonCount,
                     kernelRadius, type, threshold);
             }
             else{

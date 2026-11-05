@@ -67,10 +67,10 @@ namespace pathtracer{
                 Vector3 intensity = sample.intensity / lightPdf;
                 Vector3 throughput(1.0);
 
-                Ray currRay(
-                    sample.point + sample.direction * SHADOW_EPSILON,
+                Ray currRay(sample.point + sample.direction * SHADOW_EPSILON,
                     sample.direction);
 
+                    
                 for (int depth = 0; depth < m_maxDepth; depth++) {
                     
                     if (g_stopRendering) {
