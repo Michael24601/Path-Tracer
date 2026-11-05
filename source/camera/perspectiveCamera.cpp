@@ -37,29 +37,40 @@ namespace pathtracer{
     }
 
 
-    Vector2 PerspectiveCamera::receiveRay(const Ray& ray) const {
+    CameraConnection PerspectiveCamera::getConnection(const Vector3& origin) const{
 
-        const Ray localRay = m_inverse.transform(ray);
+        CameraConnection connection;
+        connection.valid = false;
 
-        // Intersect with the image plane at z = -focalLength
-        real t = (-m_focalLength - localRay.origin().z()) 
-            / localRay.direction().z();
+        Vector3 local = m_inverse.transform(origin);
 
-        if (t <= 0){
-            // This means it is invalid
-            return Vector2(-2, -2); 
-        }
+        // Point must be in front of the camera
+        if(local.z() >= 0) return connection;
 
-        Vector3 point = localRay.origin() + localRay.direction() * t;
+        // Projection
+        real scale = -m_focalLength / local.z();
+        real x = local.x() * scale / (m_width  * 0.5);
+        real y = local.y() * scale / (m_height * 0.5);
 
-        real x = point.x() / (m_width * 0.5);
-        real y = point.y() / (m_height * 0.5);
+        // Outside the camera imagine plane
+        if(std::abs(x) > 1 || std::abs(y) > 1) return connection;
 
-        if (std::abs(x) > 1 || std::abs(y) > 1){
-            return Vector2(-2, -2);
-        }
+        Vector3 toCamera = m_transform.translation() - origin;
+        real distance = toCamera.length();
 
-        return Vector2(x, y);
+        real dist2 = local.lengthSquared();
+        real cosCam = -local.z() / std::sqrt(dist2);
+        real area = m_width * m_height;
+
+        connection.valid = true;
+        connection.point = Vector2(x, y);
+        connection.direction = toCamera / distance;
+        connection.distance = distance;
+        connection.importance = (m_focalLength * m_focalLength)
+            / (area * cosCam * cosCam * cosCam * dist2);
+
+        return connection;
+
     }
 
 }

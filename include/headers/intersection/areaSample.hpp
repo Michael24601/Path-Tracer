@@ -16,7 +16,7 @@ namespace pathtracer{
     private:
 
         // The pdf of having chosen the specific position m_position,
-        // according to our sampling scheme.
+        // according to our sampling scheme. In area measure.
         real m_pdf;
 
     public:

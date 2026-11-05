@@ -4,6 +4,7 @@
 
 #include "pixelIntegratorGuided.hpp"
 #include <cassert>
+#include <atomic>
 
 namespace pathtracer{
 

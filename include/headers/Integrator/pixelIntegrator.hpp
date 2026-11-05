@@ -4,7 +4,6 @@
 
 #include "integrator.hpp"
 #include <cassert>
-#include <atomic>
 
 namespace pathtracer{
 
@@ -47,9 +46,8 @@ namespace pathtracer{
             int i, int j, int width, int height, bool jitter);
 
 
-        virtual bool jitter() const {
-            return false;
-        }
+        // Returns true for anti aliasing
+        virtual bool jitter() const = 0;
         
     };
 

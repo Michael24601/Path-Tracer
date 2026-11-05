@@ -158,7 +158,19 @@ namespace pathtracer{
 
         // After that we just call the render function from the super
         // class, which will call the color function from this class.
-        return PixelIntegrator::render(scene, camera, width, height, reporter);
+        auto image = PixelIntegrator::render(scene, camera, width, height, reporter);
+
+        if(m_photonCount > 0) {
+            real normalization = 1.0 / static_cast<real>(m_photonCount);
+
+            for(int j = 0; j < height; j++) {
+                for(int i = 0; i < width; i++) {
+                    image[j][i] = image[j][i] * normalization;
+                }
+            }
+        }
+
+        return image;
     }    
 
 
@@ -228,9 +240,8 @@ namespace pathtracer{
                 // Then we normalize the total to get the kernel
                 irradiance = irradiance / (PI * radiusSquared);
                 
-                // This is normalization by number of photons
-                color = color + irradiance * throughput 
-                    / static_cast<real>(m_photonCount);
+                // This is later normalized by number of photons
+                color = color + irradiance * throughput;
 
                 // No need to recurse further
                 break;

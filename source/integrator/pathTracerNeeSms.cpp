@@ -57,7 +57,7 @@ namespace pathtracer{
             if(!it){
                 break;
             }
-
+            
             // If we have an emissive surface, add emission and break.
             // If last hit was a specular (can cast caustic), we ignore it,
             // since it would have double counted SMS sample.

@@ -18,6 +18,7 @@
 #include "image/imageIo.hpp"
 #include "integrator/aovIntegrator.hpp"
 #include "integrator/pathTracer.hpp"
+#include "integrator/lightTracer.hpp"
 #include "integrator/pathTracerNee.hpp"
 #include "integrator/pathTracerNeeMis.hpp"
 #include "integrator/pathTracerGuided.hpp"
@@ -784,6 +785,13 @@ namespace pathtracer{
 
                 integrator = new PhotonMappingIntegrator(maxDepth, photonCount,
                     kernelRadius, type, threshold);
+            }
+            else if(integratorType == "light-tracer"){
+
+                int maxDepth = parseInt(ip, "max-depth");
+                int pathCount = parseInt(ip, "path-count");
+
+                integrator = new LightTracer(pathCount, maxDepth);
             }
             else{
                 LOG_ERROR("No integrator found.");

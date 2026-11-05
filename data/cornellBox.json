@@ -232,10 +232,10 @@
         "pixel-resolution": [512, 512],
         "message-count": 10,
         "integrator": {
-            "type": "path-tracer-nee",
+            "type": "light-tracer",
             "parameters": {
                 "max-depth": 100,
-                "sample-count": 10
+                "path-count": 10000000
             }
         }
     },

@@ -2,12 +2,26 @@
 #define PATH_TRACER_CAMERA_HPP
 
 #include "core/transform.hpp"
+#include "math/vector2.hpp"
+
 
 namespace pathtracer{
 
-    class Vector2;
-    class Vector3;
     class Ray;
+
+    // When we need to check visibility with camera, we need direction
+    // and distance (since some cameras, like the orthographic camera),
+    // don't have origins.
+    // This also includes info on if the point is even visible from the
+    // camera, and the camera importance.
+    struct CameraConnection {
+        bool valid;
+        Vector2 point;
+        Vector3 direction;
+        real distance;
+        real importance;
+    };
+
 
     class Camera{
 
@@ -29,7 +43,8 @@ namespace pathtracer{
 
         virtual Ray generateRay(const Vector2& point) const = 0;
 
-        virtual Vector2 receiveRay(const Ray& ray) const = 0;
+        // Returns connection in world coordinates
+        virtual CameraConnection getConnection(const Vector3& origin) const = 0;
 
         real width() const;
 

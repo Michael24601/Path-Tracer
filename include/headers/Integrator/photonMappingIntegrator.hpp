@@ -4,6 +4,7 @@
 
 #include "photonMapping/kernel.hpp"
 #include "pixelIntegrator.hpp"
+#include <atomic>
 
 namespace pathtracer{
 

@@ -78,9 +78,9 @@
             "material": "diffuse-white",
             "parameters": {
                 "transform": [
-                    0.15, 0.0, 0.0, 0.0,
+                    1.0, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0,
-                    0.0, 0.0, 0.15, 0.0
+                    0.0, 0.0, 1.0, 0.0
                 ],
                 "vertex-data":{ 
                     "format": "obj",
@@ -146,34 +146,30 @@
     },
 
 
-    "renderer-": {
-        "pixel-resolution": [512, 512],
+    "renderer": {
+        "pixel-resolution": [1024, 1024],
         "message-count": 10,
         "integrator": {
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
-                "sample-count": 2,
+                "sample-count": 100,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": true
+                "two-stage": false
             }
         }
     },
 
 
-    "renderer": {
-        "pixel-resolution": [512, 512],
+    "renderer-": {
+        "pixel-resolution": [1024, 1024],
         "message-count": 10,
         "integrator": {
-            "type": "photon-mapping-integrator",
+            "type": "light-tracer",
             "parameters": {
                 "max-depth": 100,
-                "sample-count": 1,
-                "threshold": 4,
-                "photon-count": 100000000,
-                "kernel-radius": 0.003,
-                "kernel-type": "uniform"
+                "path-count": 1000000000
             }
         }
     },

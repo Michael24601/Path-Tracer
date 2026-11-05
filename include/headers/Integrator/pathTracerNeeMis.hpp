@@ -3,6 +3,8 @@
 #define PATH_TRACER_PATH_TRACER_NEE_MIS_HPP
 
 #include "pixelIntegrator.hpp"
+#include <atomic>
+
 
 namespace pathtracer{
 

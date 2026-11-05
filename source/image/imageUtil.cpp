@@ -31,14 +31,14 @@ namespace pathtracer{
                 for(int j = 0; j < image[i].size(); j++){
 
                     Vector3 ref = Vector3(
-                        std::clamp(reference[i][j].x(), 0.0, 30.0),
-                        std::clamp(reference[i][j].y(), 0.0, 30.0),
-                        std::clamp(reference[i][j].z(), 0.0, 30.0)
+                        std::clamp(reference[i][j].x(), 0.0, 50.0),
+                        std::clamp(reference[i][j].y(), 0.0, 50.0),
+                        std::clamp(reference[i][j].z(), 0.0, 50.0)
                     );
                     Vector3 im = Vector3(
-                        std::clamp(image[i][j].x(), 0.0, 30.0),
-                        std::clamp(image[i][j].y(), 0.0, 30.0),
-                        std::clamp(image[i][j].z(), 0.0, 30.0)
+                        std::clamp(image[i][j].x(), 0.0, 50.0),
+                        std::clamp(image[i][j].y(), 0.0, 50.0),
+                        std::clamp(image[i][j].z(), 0.0, 50.0)
                     );
                     Vector3 difference = im - ref;
 
@@ -79,14 +79,14 @@ namespace pathtracer{
                     // we assume the reference image uses HDR format.
 
                     Vector3 ref = Vector3(
-                        std::clamp(reference[i][j].x(), 0.0, 30.0),
-                        std::clamp(reference[i][j].y(), 0.0, 30.0),
-                        std::clamp(reference[i][j].z(), 0.0, 30.0)
+                        std::clamp(reference[i][j].x(), 0.0, 50.0),
+                        std::clamp(reference[i][j].y(), 0.0, 50.0),
+                        std::clamp(reference[i][j].z(), 0.0, 50.0)
                     );
                     Vector3 im = Vector3(
-                        std::clamp(image[i][j].x(), 0.0, 30.0),
-                        std::clamp(image[i][j].y(), 0.0, 30.0),
-                        std::clamp(image[i][j].z(), 0.0, 30.0)
+                        std::clamp(image[i][j].x(), 0.0, 50.0),
+                        std::clamp(image[i][j].y(), 0.0, 50.0),
+                        std::clamp(image[i][j].z(), 0.0, 50.0)
                     );
                     Vector3 difference = im - ref;
 
