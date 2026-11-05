@@ -67,7 +67,7 @@ namespace pathtracer{
     public:
 
         // Initializes a tree with the given photons
-        PhotonMap(const std::vector<Photon>& photons, int threshold);
+        PhotonMap(std::vector<Photon>&& photons, int threshold);
 
         ~PhotonMap();
 

@@ -14,6 +14,7 @@
 #include "light/light.hpp"
 #include "photonMapping/photonMap.hpp"
 #include "renderer/progressReporter.hpp"
+#include <utility>
 #include "logger.hpp"
 #include <omp.h>
 
@@ -138,11 +139,12 @@ namespace pathtracer{
             photons.insert(
                 photons.end(),
                 std::make_move_iterator(localPhotons.begin()),
-                std::make_move_iterator(localPhotons.end()));
+                std::make_move_iterator(localPhotons.end())
+            );
         }
 
         // Once we have our photons, we can create a map
-        return new PhotonMap(photons, m_threshold);
+        return new PhotonMap(std::move(photons), m_threshold);
     }
 
 

@@ -94,7 +94,7 @@ namespace pathtracer {
 
         std::ostringstream rest_stream;
         rest_stream << " "
-                    << std::left << std::setfill(' ') << std::setw(45)
+                    << std::left << std::setfill(' ') << std::setw(50)
                     << location_stream.str()
                     << " " << message << "\n";
 

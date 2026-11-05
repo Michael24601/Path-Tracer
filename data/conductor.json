@@ -146,7 +146,7 @@
     },
 
 
-    "renderer": {
+    "renderer-": {
         "pixel-resolution": [512, 512],
         "message-count": 10,
         "integrator": {
@@ -162,7 +162,7 @@
     },
 
 
-    "renderer-": {
+    "renderer": {
         "pixel-resolution": [512, 512],
         "message-count": 10,
         "integrator": {
@@ -172,7 +172,7 @@
                 "sample-count": 1,
                 "threshold": 4,
                 "photon-count": 100000000,
-                "kernel-radius": 0.005,
+                "kernel-radius": 0.003,
                 "kernel-type": "uniform"
             }
         }

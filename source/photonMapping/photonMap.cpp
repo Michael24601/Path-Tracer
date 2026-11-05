@@ -1,8 +1,9 @@
 
 #include "photonMapping/photonMap.hpp"
 #include <algorithm>
-#include <cassert>
+#include <utility>
 #include "logger.hpp"
+#include <omp.h>
 
 namespace pathtracer{
 
@@ -23,19 +24,16 @@ namespace pathtracer{
 
 
     // Subdivides the node.
-    void PhotonMap::Node::subdivide(std::vector<Photon>& photons, int threshold,
-        int depth){
+    void PhotonMap::Node::subdivide(std::vector<Photon>& photons, 
+        int threshold, int depth){
 
         if(!isLeaf()){
             LOG_WARNING("Not a leaf, can't subdivide.");
             return;
         }
 
-        if(numberOfPhotons <= threshold){
-            return;
-        }
+        if(numberOfPhotons <= threshold) return;
 
-        // We reorder the vector
         int axis = depth % 3;
         int middleIndex = firstIndex + numberOfPhotons / 2;
 
@@ -43,27 +41,25 @@ namespace pathtracer{
         auto middle = photons.begin() + middleIndex;
         auto end = photons.begin() + firstIndex + numberOfPhotons;
 
-        // This then sorts the sub array around axis for this node
-        // (the axis is not necessarily in the middle of the node,
-        // but there are (give or take) the same number of nodes in each
-        // of the children).
         std::nth_element(begin, middle, end,
-        [axis](const Photon& a, const Photon& b){
-            return a.point.position()[axis] < b.point.position()[axis];
-        });
+            [axis](const Photon& a, const Photon& b){
+                return a.point.position()[axis] < b.point.position()[axis];
+            });
 
-        // We need to store the split value of the axis because the middle
-        // node may be jumbled if the children  are then subdivided,
-        // so the split value becomes lost.
         m_splitValue = middle->point.position()[axis];
 
-        // Then we create the children
         int leftPhotonsCount = middleIndex - firstIndex;
+
         left = new Node(firstIndex, leftPhotonsCount);
         right = new Node(middleIndex, numberOfPhotons - leftPhotonsCount);
 
-        left->subdivide(photons, threshold, depth+1);
-        right->subdivide(photons, threshold, depth+1);
+        #pragma omp task shared(photons) if(leftPhotonsCount > 10000)
+        left->subdivide(photons, threshold, depth + 1);
+
+        #pragma omp task shared(photons) if(numberOfPhotons - leftPhotonsCount > 10000)
+        right->subdivide(photons, threshold, depth + 1);
+
+        #pragma omp taskwait
     }
 
 
@@ -125,8 +121,8 @@ namespace pathtracer{
 
 
     // Initializes a tree with the given photons
-    PhotonMap::PhotonMap(const std::vector<Photon>& photons, int threshold):
-        m_threshold{threshold}, m_photons{photons}{
+    PhotonMap::PhotonMap(std::vector<Photon>&& photons, int threshold):
+        m_threshold{threshold}, m_photons{std::move(photons)}, m_root{nullptr}{
 
         if(threshold < 1){
             LOG_ERROR("Threshold of photon map must be 1 or larger.");
@@ -134,7 +130,13 @@ namespace pathtracer{
         }
         
         m_root = new Node(0, m_photons.size());
-        m_root->subdivide(m_photons, m_threshold, 0);
+
+        // The tree construction is parallelized
+        #pragma omp parallel
+        {
+            #pragma omp single
+            m_root->subdivide(m_photons, m_threshold, 0);
+        }
     }
 
     PhotonMap::~PhotonMap(){
