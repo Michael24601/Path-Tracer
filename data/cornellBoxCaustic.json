@@ -248,8 +248,29 @@
                 "sample-count": 10,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": false
+                "two-stage": false,
+                "max-newton-iterations": 20,
+                "max-unbiased-trials": 20000,
+                "max-biased-trials": 10
+            }
+        }
+    },
+
+
+    "renderer-": {
+        "pixel-resolution": [512, 512],
+        "message-count": 5,
+        "integrator": {
+            "type": "path-tracer-nee-mis-guided",
+            "parameters": {
+                "max-depth": 100,
+                "sample-count": 40,
+                "iteration-count": 4,
+                "first-iteration-sample-count": 4,
+                "spatial-subdivision-c": 12000,
+                "mis-alpha": 0.5
             }
         }
     }
+
 }

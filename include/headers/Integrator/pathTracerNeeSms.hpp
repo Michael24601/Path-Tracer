@@ -25,7 +25,8 @@ namespace pathtracer{
     public:
 
         PathTracerNeeSms(int samples, int maxDepth, bool useHalfVector, 
-            bool biased, bool twoStage, const Scene& scene);
+            bool biased, bool twoStage, int newtonIterations, 
+            int unbiasedTrials, int biasedTrials, const Scene& scene);
 
 
         ~PathTracerNeeSms() override;

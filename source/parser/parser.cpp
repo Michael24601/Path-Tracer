@@ -115,6 +115,16 @@ namespace pathtracer{
     }
 
 
+    long long parseLongLong(const json& object, const std::string& key) {
+        const json& value = require(object, key);
+        if(!value.is_number_integer()){
+            LOG_ERROR("Parameter is not an integer: " + key);
+            throw std::runtime_error("");
+        }
+        return value.get<long long>();
+    }
+
+
     bool parseBool(const json& object, const std::string& key) {
         const json& value = require(object, key);
         if(!value.is_boolean()){
@@ -747,9 +757,13 @@ namespace pathtracer{
                 bool biased = parseBool(ip, "biased");
                 bool twoStage = parseBool(ip, "two-stage");
                 int samples = parseInt(ip, "sample-count");
+                int newtonIts = parseInt(ip, "max-newton-iterations");
+                int unbiasedTrials = parseInt(ip, "max-unbiased-trials");
+                int biasedTrials = parseInt(ip, "max-biased-trials");
 
                 integrator = new PathTracerSms(samples, maxDepth, useHalfVector, 
-                    biased, twoStage, *scene);
+                    biased, twoStage, newtonIts, unbiasedTrials, 
+                    biasedTrials, *scene);
             }
             else if(integratorType == "path-tracer-nee-sms"){
 
@@ -758,9 +772,13 @@ namespace pathtracer{
                 bool biased = parseBool(ip, "biased");
                 bool twoStage = parseBool(ip, "two-stage");
                 int samples = parseInt(ip, "sample-count");
+                int newtonIts = parseInt(ip, "max-newton-iterations");
+                int unbiasedTrials = parseInt(ip, "max-unbiased-trials");
+                int biasedTrials = parseInt(ip, "max-biased-trials");
 
                 integrator = new PathTracerNeeSms(samples, maxDepth, useHalfVector, 
-                    biased, twoStage, *scene);
+                    biased, twoStage, newtonIts, unbiasedTrials, 
+                    biasedTrials, *scene);
             }
             else if(integratorType == "photon-mapping-integrator"){
 
@@ -789,7 +807,7 @@ namespace pathtracer{
             else if(integratorType == "light-tracer"){
 
                 int maxDepth = parseInt(ip, "max-depth");
-                int pathCount = parseInt(ip, "path-count");
+                long long pathCount = parseLongLong(ip, "path-count");
 
                 integrator = new LightTracer(pathCount, maxDepth);
             }

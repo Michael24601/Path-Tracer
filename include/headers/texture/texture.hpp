@@ -68,7 +68,7 @@ namespace pathtracer{
 
 
         virtual void sampleGradient(const Vector2& uv,
-            Vector3& dU, Vector3& dV) const;
+            Vector3& dU, Vector3& dV, int level = 0) const;
 
 
         int maxMipMapLevel() const{

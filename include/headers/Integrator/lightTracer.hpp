@@ -19,7 +19,7 @@ namespace pathtracer{
 
     public:
 
-        LightTracer(int lightPaths, int maxDepth) :
+        LightTracer(long long lightPaths, int maxDepth) :
             LightIntegrator(lightPaths), m_maxDepth{maxDepth}{
 
             assert(maxDepth > 0 && "Max depth must be positive");        

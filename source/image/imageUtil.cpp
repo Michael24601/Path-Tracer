@@ -10,6 +10,33 @@ namespace pathtracer{
     namespace ImageUtil{
 
 
+        real outlierThreshold(const std::vector<std::vector<Vector3>>& image) {
+
+            std::vector<real> brightness;
+            brightness.reserve(image.size() * image[0].size());
+
+            for(const auto& row : image){
+                for(const Vector3& pixel : row){
+                    brightness.push_back(std::max({
+                        pixel.x(), pixel.y(), pixel.z()
+                    }));
+                }
+            }
+
+            // Computes the outlier threshold for 0.1% of the brightest
+            // pixels.
+            int index = static_cast<size_t>(brightness.size() * 0.999);
+
+            std::nth_element(
+                brightness.begin(),
+                brightness.begin() + index,
+                brightness.end()
+            );
+
+            return brightness[index];
+        }
+
+
         real mse(const std::vector<std::vector<Vector3>>& image,
             const std::vector<std::vector<Vector3>>& reference) {
 
@@ -25,21 +52,20 @@ namespace pathtracer{
                 return INFINITY;
             }
 
+            real threshold = outlierThreshold(image);
             real sum = 0.0;
 
             for(int i = 0; i < image.size(); i++){
                 for(int j = 0; j < image[i].size(); j++){
 
-                    Vector3 ref = Vector3(
-                        std::clamp(reference[i][j].x(), 0.0, 50.0),
-                        std::clamp(reference[i][j].y(), 0.0, 50.0),
-                        std::clamp(reference[i][j].z(), 0.0, 50.0)
-                    );
-                    Vector3 im = Vector3(
-                        std::clamp(image[i][j].x(), 0.0, 50.0),
-                        std::clamp(image[i][j].y(), 0.0, 50.0),
-                        std::clamp(image[i][j].z(), 0.0, 50.0)
-                    );
+                    Vector3 ref = reference[i][j];
+                    Vector3 im = image[i][j];
+
+                    // Ignores outliers
+                    if(std::max({im.x(), im.y(), im.z()}) > threshold){
+                        continue;
+                    }
+
                     Vector3 difference = im - ref;
 
                     sum += difference.x() * difference.x()
@@ -69,6 +95,7 @@ namespace pathtracer{
                 return INFINITY;
             }
 
+            real threshold = outlierThreshold(image);
             real sum = 0.0;
             constexpr real epsilon = 0.01;
 
@@ -78,16 +105,14 @@ namespace pathtracer{
                     // No need to clamp the rendered output here because
                     // we assume the reference image uses HDR format.
 
-                    Vector3 ref = Vector3(
-                        std::clamp(reference[i][j].x(), 0.0, 50.0),
-                        std::clamp(reference[i][j].y(), 0.0, 50.0),
-                        std::clamp(reference[i][j].z(), 0.0, 50.0)
-                    );
-                    Vector3 im = Vector3(
-                        std::clamp(image[i][j].x(), 0.0, 50.0),
-                        std::clamp(image[i][j].y(), 0.0, 50.0),
-                        std::clamp(image[i][j].z(), 0.0, 50.0)
-                    );
+                    Vector3 ref = reference[i][j];
+                    Vector3 im = image[i][j];
+
+                    // Ignores outliers
+                    if(std::max({im.x(), im.y(), im.z()}) > threshold){
+                        continue;
+                    }
+                
                     Vector3 difference = im - ref;
 
                     sum += (difference.x() * difference.x()) / (ref.x() * ref.x() + epsilon)

@@ -26,7 +26,7 @@ namespace pathtracer{
 
 
         virtual void sampleGradient(const Vector2& uv, Vector3& dU, 
-            Vector3& dV) const override;
+            Vector3& dV, int level = 0) const override;
 
     };
 

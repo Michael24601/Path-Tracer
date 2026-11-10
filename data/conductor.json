@@ -135,45 +135,47 @@
     "camera": {
         "type": "perspective",
         "parameters": {
-            "focal-length": 0.08,
-            "sensor-dimension": [0.036, 0.036],
+            "focal-length": 0.05,
+            "sensor-dimension": [0.036, 0.018],
             "look-at": {
-                "eye": [2.4559, 4.8173, 4.1689],
-                "target": [2.09647, 4.26285, 3.41830],
-                "up": [-0.39756, 0.81869, -0.41436]
+                "eye": [0, 5, 1],
+                "target": [0, 2, -0.5],
+                "up": [0, 1, 0]
             }
         }
     },
 
 
     "renderer": {
-        "pixel-resolution": [1024, 1024],
+        "pixel-resolution": [1024, 512],
         "message-count": 10,
         "integrator": {
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
-                "sample-count": 100,
+                "sample-count": 5,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": false
+                "two-stage": false,
+                "max-newton-iterations": 20,
+                "max-unbiased-trials": -1,
+                "max-biased-trials": 10
             }
         }
     },
 
 
     "renderer-": {
-        "pixel-resolution": [1024, 1024],
-        "message-count": 10,
+        "pixel-resolution": [1024, 512],
+        "message-count": 10000,
         "integrator": {
             "type": "light-tracer",
             "parameters": {
                 "max-depth": 100,
-                "path-count": 1000000000
+                "path-count": 100000000
             }
         }
     },
-
 
     "reference":{
         "file-name": "data/references/conductor.exr",

@@ -27,11 +27,9 @@ namespace pathtracer{
         // The power radiates in a sphere, so.
         real dist = (m_position - origin).length();
         real distSquared = dist * dist;
-        Vector3 radiance =
-            m_power * (1.0 / (4 * PI * distSquared));
+        Vector3 radiance = m_power * (1.0 / (4 * PI * distSquared));
 
-        Vector3 wi =
-            (m_position - origin).normalized();
+        Vector3 wi = (m_position - origin).normalized();
 
         return LightSample(wi, radiance, m_position, pdf, dist, this);
     }
@@ -43,7 +41,7 @@ namespace pathtracer{
         
         // Samples a random direction locally in upper hemisphere
         Vector3 wo = SquareToSphereUniform::transform(Random::next2D());
-        real directionPdf = SquareToHemisphereUniform::pdf(wo);
+        real directionPdf = SquareToSphereUniform::pdf(wo);
 
         // Notice that power has nothing to do with distance.
         // In photon mapping, photons arrive with the same power no

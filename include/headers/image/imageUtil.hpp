@@ -11,6 +11,9 @@ namespace pathtracer{
 
     namespace ImageUtil{
 
+        real outlierThreshold(const std::vector<std::vector<Vector3>>& image);
+        
+
         real relativeMse(const std::vector<std::vector<Vector3>>& image,
             const std::vector<std::vector<Vector3>>& reference);
 

@@ -23,6 +23,7 @@
 #include "texture/leanMap.hpp"
 #include "core/random.hpp"
 #include "logger.hpp"
+#include "texture/texture.hpp"
 #include "math/mathUtil.hpp"
 
 
@@ -30,10 +31,10 @@ namespace pathtracer{
 
 
     SpecularManifoldSampling::SpecularManifoldSampling(const Scene& scene, 
-        bool useHalfVector, bool biased, bool twoStage, int maxIterations, 
+        bool useHalfVector, bool biased, bool twoStage, int newtonIterations, 
         int maxTrials, int maxBiasedTrials, real epsilon, real threshold) :
         m_epsilon{epsilon},
-        m_maxIterations{maxIterations},
+        m_newtonIterations{newtonIterations},
         m_maxTrials{maxTrials},
         m_maxBiasedTrials{maxBiasedTrials},
         m_threshold{threshold},
@@ -149,10 +150,6 @@ namespace pathtracer{
         // If all is valid, we can calculate the path contribution.
         int counter = 0;
         bool found = false;
-
-        // Direction from x1 to x0
-        Vector3 dir = (sample.finalPoint().position()
-            - causticPoint.position()).normalized();
 
         while(m_maxTrials < 0 || counter < m_maxTrials){
 
@@ -334,7 +331,8 @@ namespace pathtracer{
         if(m_twoStage && it.instance()->normalTexture()){
             // First we create a new instance with smooth normal map
             Intersection newIt = it;
-            newIt.instance()->normalMap(newIt, true);
+            int maxL = newIt.instance()->normalTexture()->maxMipMapLevel();
+            newIt.instance()->normalMap(newIt, maxL);
 
             // We also sample a random local offset from LEAN map
             const MipMap* map = it.instance()->leanMap();
@@ -344,7 +342,6 @@ namespace pathtracer{
                 throw std::runtime_error("");
             }
 
-            int maxL = map->maxLevel();
             Vector2 mu = LeanMap::mean(map, it.uv(), maxL);
             Matrix2 sigma = LeanMap::covariance(map, it.uv(), maxL);
 
@@ -366,7 +363,7 @@ namespace pathtracer{
                 // And we use a new seed
                 seedIt = result.finalPoint();
                 // Which we also normal map again to get back the original map
-                it.instance()->normalMap(seedIt);
+                it.instance()->normalMap(seedIt, 0);
             }
         }
 
@@ -407,12 +404,18 @@ namespace pathtracer{
         bool reflection;
         SurfaceDifferentials d;
 
+        int level = 0;
+        if(finalIt.instance()->normalTexture()){
+            int maxL = finalIt.instance()->normalTexture()->maxMipMapLevel();
+            level = smooth ? maxL : 0;
+        }
+
         // Adaptive step size
         real beta = 1.0;
 
         // We then run newton solver
         int k{0};
-        while(k < m_maxIterations){
+        while(k < m_newtonIterations){
 
             // First we compute intermediate values
 
@@ -427,9 +430,11 @@ namespace pathtracer{
             }
 
             reflection = SmsUtil::isReflection(wo, finalIt, wi);
+
             Vector3 localWo = finalIt.shadingFrame().toLocal(wo);
             eta = bsdf->eta(localWo, finalIt.uv());
-            d = finalIt.instance()->computeDifferentials(finalIt, smooth);
+
+            d = finalIt.instance()->computeDifferentials(finalIt, level);
 
             // Notice that half vector is updated regardless of which
             // constraint we use as we need it for the geometric term anyway.
@@ -484,7 +489,7 @@ namespace pathtracer{
             Intersection nextIt;
             bool valid = false;
 
-            while(!valid && k < m_maxIterations){
+            while(!valid && k < m_newtonIterations){
                 Vector3 proposedPosition = finalIt.position()
                     - (d.dpdu() * step.dx.x() + d.dpdv() * step.dx.y()) * beta;
 
@@ -492,7 +497,8 @@ namespace pathtracer{
                 direction = direction / direction.length();
 
                 Ray ray(x0.position() + direction * SHADOW_EPSILON, direction);
-                nextIt = scene->intersect(ray, smooth);
+
+                nextIt = scene->intersect(ray, level);
 
                 valid = nextIt && nextIt.instance() == seedIt.instance();
 

@@ -100,7 +100,7 @@ namespace pathtracer{
 
     // Expects ray this is in world coordinates.
     // Returns the closest hit.
-    Intersection Scene::intersect(const Ray& ray, bool smooth) const {
+    Intersection Scene::intersect(const Ray& ray, int level) const {
 
         Hit hit;
         hit.t = REAL_INFINITY;
@@ -115,7 +115,7 @@ namespace pathtracer{
         }
 
         // Otherwise we can generate a surface point
-        return hit.instance->constructIntersection(hit, ray, smooth);
+        return hit.instance->constructIntersection(hit, ray, level);
     }
 
 

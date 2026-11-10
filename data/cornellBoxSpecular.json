@@ -255,7 +255,7 @@
     },
     
 
-    "renderer": {
+    "renderer-": {
         "pixel-resolution": [512, 412],
         "message-count": 10,
         "integrator": {
@@ -263,6 +263,18 @@
             "parameters": {
                 "max-depth": 100,
                 "sample-count": 10
+            }
+        }
+    },
+
+    "renderer": {
+        "pixel-resolution": [512, 412],
+        "message-count": 1000,
+        "integrator": {
+            "type": "light-tracer",
+            "parameters": {
+                "max-depth": 100,
+                "path-count": 10000000
             }
         }
     }

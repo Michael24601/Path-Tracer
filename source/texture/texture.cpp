@@ -73,10 +73,10 @@ namespace pathtracer{
 
 
     void Texture::sampleGradient(const Vector2& uv,
-        Vector3& dndu, Vector3& dndv) const {
+        Vector3& dndu, Vector3& dndv, int level) const {
 
         real val[3], gu[3], gv[3];
-        mipmap.level(0).sampleGradient(uv, val, gu, gv);
+        mipmap.level(level).sampleGradient(uv, val, gu, gv);
 
         Vector3 v(val[0], val[1], val[2]);
         Vector3 dvu(gu[0], gu[1], gu[2]);

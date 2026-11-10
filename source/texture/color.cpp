@@ -27,7 +27,8 @@ namespace pathtracer{
     }
 
 
-    void Color::sampleGradient(const Vector2& uv, Vector3& dU, Vector3& dV) const{
+    void Color::sampleGradient(const Vector2& uv, Vector3& dU, Vector3& dV,
+        int level) const{
         // No gradient
         dU = Vector3(0.0);
         dV = Vector3(0.0);

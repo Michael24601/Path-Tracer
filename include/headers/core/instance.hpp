@@ -130,13 +130,13 @@ namespace pathtracer{
 
         // Given a Hit and Ray in world coordinates, computes the Intersection
         Intersection constructIntersection(const Hit& hit,
-            const Ray& ray, bool smooth = false) const;
+            const Ray& ray, int level = 0) const;
 
 
         // Computes the differential info on the surface of the shape
         // (gets surface point in global coordinates)
         SurfaceDifferentials computeDifferentials(const SurfacePoint&, 
-            bool smooth = false) const;
+            int level = 0) const;
 
 
         // Returns position given uv coordinates
@@ -145,7 +145,7 @@ namespace pathtracer{
 
         // Normal maps a surfacePoint object.
         // Smooth means we use the highest mipmap level instead.
-        void normalMap(SurfacePoint& it, bool smooth = false) const;
+        void normalMap(SurfacePoint& it, int level = 0) const;
 
     };
 

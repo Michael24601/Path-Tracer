@@ -1,0 +1,264 @@
+
+{
+    "materials" : [
+        {
+            "id": "diffuse-white",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.725, 0.71, 0.68]
+                    }
+                }
+            }
+        },
+        {
+            "id": "diffuse-green",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.14, 0.45, 0.091]
+                    }
+                }
+            }
+        },
+        {
+            "id": "diffuse-red",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.63, 0.065, 0.05]
+                    }
+                }
+            }
+        },
+        {
+            "id": "light-bsdf",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.0, 0.0, 0.0]
+                    }
+                }
+            }
+        },
+        {
+        "id": "glass",
+            "type": "dielectric",
+            "parameters": {
+                "ior": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [1.8, 1.8, 1.8]
+                    }
+                },
+                "reflectance": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [1.0, 1.0, 1.0]
+                    }
+                },
+                "transmittance": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [1.0, 1.0, 1.0]
+                    }
+                }
+            }
+        }
+    ],
+
+    "instances" : [
+        {
+            "id": "ceiling",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cornellBox/ceiling.obj"
+                    }
+                }
+            }
+        },
+        {
+            "id": "floor",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cornellBox/floor.obj"
+                    }
+                },
+                "is-caustic-receiver": true
+            }
+        },
+        {
+            "id": "back-wall",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cornellBox/backWall.obj"
+                    }
+                }
+            }
+        },
+        {
+            "id": "window",
+            "type": "mesh",
+            "material": "glass",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/window/window.obj"
+                    }
+                },
+                "normal-map": {
+                    "type": "texture",
+                    "parameters": {
+                        "file-name": "data/textures/normal_.png",
+                        "border-mode": "repeat",
+                        "filter-mode": "bilinear",
+                        "file-type": "png"
+                    }
+                }
+            }
+        },
+        {
+            "id": "right-wall",
+            "type": "mesh",
+            "material": "diffuse-green",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cornellBox/rightWall.obj"
+                    }
+                }
+            }
+        },
+        {
+            "id": "left-wall",
+            "type": "mesh",
+            "material": "diffuse-red",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/window/leftWall.obj"
+                    }
+                }
+            }
+        },
+        {
+            "id": "short-block",
+            "type": "mesh",
+            "material": "diffuse-white",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cornellBox/shortBlock.obj"
+                    }
+                }
+            }
+        }
+    ],
+
+    "lights": [
+       {
+            "id": "ceiling-light",
+            "type": "directional",
+            "parameters": {
+                "direction": [1.0, -0.5, 0.2],
+                "power": [1.5, 1.5, 1.5]
+            }
+        }
+    ],
+
+    "camera": {
+        "type": "perspective",
+        "parameters": {
+            "focal-length": 0.02165,
+            "sensor-dimension": [0.025, 0.025],
+            "look-at": {
+                "eye": [0, 0.9, 2.5],
+                "target": [0, 0.9, -100],
+                "up": [0, 1, 0]
+            }
+        }
+    },
+        
+
+    "renderer": {
+        "pixel-resolution": [512, 512],
+        "message-count": 10,
+        "integrator": {
+            "type": "path-tracer-nee-sms",
+            "parameters": {
+                "max-depth": 100,
+                "sample-count": 5,
+                "use-halfvector": false,
+                "biased": true,
+                "two-stage": true,
+                "max-newton-iterations": 20,
+                "max-unbiased-trials": 100,
+                "max-biased-trials": 20
+            }
+        }
+    },
+
+    "reference":{
+        "file-name": "data/references/cornellBox.exr",
+        "file-type": "exr"
+    }
+}

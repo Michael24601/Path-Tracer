@@ -21,12 +21,15 @@ namespace pathtracer{
 
 
     PathTracerNeeSms::PathTracerNeeSms(int samples, int maxDepth, 
-        bool useHalfVector, bool biased, bool twoStage, const Scene& scene) : 
+        bool useHalfVector, bool biased, bool twoStage, 
+        int newtonIterations, int unbiasedTrials, int biasedTrials,
+        const Scene& scene) : 
         PixelIntegrator(samples), m_maxDepth{maxDepth}, sms{nullptr}{
 
         assert(maxDepth > 0 && "Max depth must be positive");    
         
-        sms = new SpecularManifoldSampling(scene, useHalfVector, biased, twoStage);
+        sms = new SpecularManifoldSampling(scene, useHalfVector, biased, 
+            twoStage, newtonIterations, unbiasedTrials, biasedTrials);
     }
 
 
@@ -57,7 +60,10 @@ namespace pathtracer{
             if(!it){
                 break;
             }
-            
+
+            //if(it.instance()->bsdf()->isSpecular()
+            //    && i == 0) return Vector3(0.0);
+
             // If we have an emissive surface, add emission and break.
             // If last hit was a specular (can cast caustic), we ignore it,
             // since it would have double counted SMS sample.
@@ -65,7 +71,7 @@ namespace pathtracer{
             // since it was sampled by NEE.
             // So we only consider first hit.
             if(it.instance()->emission()){
-                if(i== 0){
+                if(i == 0){
                     Vector3 emission = it.evaluateEmission(wo);
                     color = color + emission * throughput;
                 }

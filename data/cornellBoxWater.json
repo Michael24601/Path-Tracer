@@ -243,10 +243,13 @@
             "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
-                "sample-count": 5,
+                "sample-count": 10,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": false
+                "two-stage": false,
+                "max-newton-iterations": 20,
+                "max-unbiased-trials": -1,
+                "max-biased-trials": 10
             }
         }
     },

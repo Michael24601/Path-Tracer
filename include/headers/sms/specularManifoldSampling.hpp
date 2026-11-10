@@ -33,7 +33,7 @@ namespace pathtracer{
         std::vector<const SpecularManifoldBsdf*> m_bsdfs;
 
         // Maximum numbers of allowed iterations for the newton solver
-        int m_maxIterations;
+        int m_newtonIterations;
 
         // Maximum trials allowed to compute inverse probability
         int m_maxTrials;
@@ -72,8 +72,8 @@ namespace pathtracer{
         std::atomic<long> maxUnbiasedSamplesReached{0};
 
         SpecularManifoldSampling(const Scene& scene, bool useHalfVector, 
-            bool biased, bool twoStage, int maxIterations = 20, 
-            int maxTrials = 20000, int maxBiasedTrials = 10, 
+            bool biased, bool twoStage, int newtonIterations = 20, 
+            int maxTrials = -1, int maxBiasedTrials = 15, 
             real epsilon = 1e-5, real threshold = 1e-5);
 
 

@@ -113,8 +113,8 @@ namespace pathtracer{
 
                 // We also undo solid angle conversion, even though we
                 // don't have a cosine or a valid pdf for point light.
-                Vector3 lightContribution = newSample.radiance() 
-                    * sample.distance() * sample.distance();
+                Vector3 lightContribution = newSample.radiance()
+                    * newSample.distance() * newSample.distance();
 
                 return SmsLightSample{newSample, lightContribution};
             }

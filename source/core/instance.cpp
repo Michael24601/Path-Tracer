@@ -245,7 +245,7 @@ namespace pathtracer{
 
 
     Intersection Instance::constructIntersection(const Hit& hit,
-        const Ray& ray, bool smooth) const{
+        const Ray& ray, int level) const{
 
         // First we get the point in local scape of the intersection.
         // The ray and hit are world coordinates.
@@ -263,7 +263,7 @@ namespace pathtracer{
 
         // We can also do normal mapping here
         if(m_normal != nullptr){
-            normalMap(sp, smooth);
+            normalMap(sp, level);
         }
         
         return Intersection(hit.t, sp);
@@ -271,11 +271,11 @@ namespace pathtracer{
 
 
     SurfaceDifferentials Instance::computeDifferentials(
-        const SurfacePoint& sp, bool smooth) const {
+        const SurfacePoint& sp, int level) const {
 
         const SurfaceDifferentials& d = sp.differentials();
 
-        if (m_normal == nullptr || smooth) {
+        if (m_normal == nullptr) {
             return d;
         }
 
@@ -293,13 +293,16 @@ namespace pathtracer{
         Vector3 dndu(0.0f);
         Vector3 dndv(0.0f);
 
-        if (smooth) {
-            normal = m_normal->sampleMipMap(uv, m_normal->maxMipMapLevel()).normalized();
-        }
-        else {
-            normal = m_normal->sample(uv).normalized();
-            m_normal->sampleGradient(uv, dndu, dndv);
-        }
+        //if (smooth) {
+            normal = m_normal->sampleMipMap(uv, level).normalized();
+       // }
+       // else {
+          //  normal = m_normal->sample(uv).normalized();
+        //}
+
+        //int maxL = m_normal->maxMipMapLevel();
+        //int level = smooth ? maxL : 0;
+        m_normal->sampleGradient(uv, dndu, dndv, level);
 
         Vector3 resU = fd.dsdu * normal.x() + fd.dtdu * normal.y() 
             + d.dndu() * normal.z() + s * dndu.x() + t * dndu.y() + n * dndu.z();
@@ -316,20 +319,21 @@ namespace pathtracer{
 
 
 
-    void Instance::normalMap(SurfacePoint& it, bool smooth) const {
+    void Instance::normalMap(SurfacePoint& it, int level) const {
 
         if(m_normal != nullptr){
 
             // It's already mapped to correct range and normal
-            Vector3 normal;
-            if(!smooth){
-                normal = m_normal->sample(it.uv());
+           // Vector3 normal;
+           // if(!smooth){
+            //    normal = m_normal->sample(it.uv());
+             //   normal = it.baseFrame().toWorld(normal);
+           // }
+          //  else{
+           //     int maxL = m_normal->maxMipMapLevel();
+                Vector3 normal = m_normal->sampleMipMap(it.uv(), level);
                 normal = it.baseFrame().toWorld(normal);
-            }
-            else{
-                int maxL = m_normal->maxMipMapLevel();
-                normal = it.baseNormal();
-            }
+           // }
 
             // We need to map normal from shading frame to world coordinates
             // We can't use normal transform since it applies translation

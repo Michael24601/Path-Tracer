@@ -14,13 +14,25 @@
             }
         },
         {
-            "id": "diffuse-blue",
+            "id": "diffuse-grey",
             "type": "diffuse",
             "parameters": {
                 "albedo": {
                     "type": "color",
                     "parameters": {
-                        "color": [0.28, 0.21, 0.56]
+                        "color": [0.5, 0.45, 0.35]
+                    }
+                }
+            }
+        },
+        {
+            "id": "diffuse-green",
+            "type": "diffuse",
+            "parameters": {
+                "albedo": {
+                    "type": "color",
+                    "parameters": {
+                        "color": [0.14, 0.45, 0.091]
                     }
                 }
             }
@@ -50,13 +62,13 @@
             }
         },
         {
-            "id": "water",
+            "id": "glass",
             "type": "dielectric",
             "parameters": {
                 "ior": {
                     "type": "color",
                     "parameters": {
-                        "color": [1.5, 1.5, 1.5]
+                        "color": [1.4, 1.4, 1.4]
                     }
                 },
                 "reflectance": {
@@ -82,7 +94,7 @@
             "material": "diffuse-white",
             "parameters": {
                 "transform": [
-                    1.0, 0.0, 0.0, 0.0,
+                    2.0, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0
                 ],
@@ -91,8 +103,7 @@
                     "parameters":{
                         "file-name": "data/models/cornellBox/ceiling.obj"
                     }
-                },
-                "is-caustic-receiver": true
+                }
             }
         },
         {
@@ -101,7 +112,7 @@
             "material": "diffuse-white",
             "parameters": {
                 "transform": [
-                    1.0, 0.0, 0.0, 0.0,
+                    2.0, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0
                 ],
@@ -120,7 +131,7 @@
             "material": "diffuse-white",
             "parameters": {
                 "transform": [
-                    1.0, 0.0, 0.0, 0.0,
+                    2.0, 0.0, 0.0, 0.0,
                     0.0, 1.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0
                 ],
@@ -129,17 +140,16 @@
                     "parameters":{
                         "file-name": "data/models/cornellBox/backWall.obj"
                     }
-                },
-                "is-caustic-receiver": true
+                }
             }
         },
         {
             "id": "right-wall",
             "type": "mesh",
-            "material": "diffuse-blue",
+            "material": "diffuse-green",
             "parameters": {
                 "transform": [
-                    1.0, 0.0, 0.0, 0.0,
+                    1.0, 0.0, 0.0, 1.0,
                     0.0, 1.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0
                 ],
@@ -148,8 +158,7 @@
                     "parameters":{
                         "file-name": "data/models/cornellBox/rightWall.obj"
                     }
-                },
-                "is-caustic-receiver": true
+                }
             }
         },
         {
@@ -158,7 +167,7 @@
             "material": "diffuse-red",
             "parameters": {
                 "transform": [
-                    1.0, 0.0, 0.0, 0.0,
+                    1.0, 0.0, 0.0, -1.0,
                     0.0, 1.0, 0.0, 0.0,
                     0.0, 0.0, 1.0, 0.0
                 ],
@@ -167,40 +176,74 @@
                     "parameters":{
                         "file-name": "data/models/cornellBox/leftWall.obj"
                     }
-                },
-                "is-caustic-receiver": true
+                }
             }
         },
         {
-            "id": "glass-sphere",
-            "type": "sphere",
-            "material": "water",
+            "id": "cone-1",
+            "type": "mesh",
+            "material": "diffuse-grey",
             "parameters": {
                 "transform": [
-                    0.35, 0.0, 0.0, 0.0,
-                    0.0, 0.35, 0.0, 1.0,
-                    0.0, 0.0, 0.35, 0.0
+                    1.0, 0.0, 0.0, -1.2,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
                 ],
-                "normal-map": {
-                    "type": "texture",
-                    "parameters": {
-                        "file-name": "data/textures/very_wavy_normal.png",
-                        "file-type": "png",
-                        "border-mode": "repeat",
-                        "filter-mode": "bilinear"
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cone.obj"
                     }
                 }
+            }
+        },
+        {
+            "id": "cone-2",
+            "type": "mesh",
+            "material": "diffuse-grey",
+            "parameters": {
+                "transform": [
+                    1.0, 0.0, 0.0, 1.2,
+                    0.0, 1.0, 0.0, 0.0,
+                    0.0, 0.0, 1.0, 0.0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/cone.obj"
+                    }
+                }
+            }
+        },
+        {
+            "id": "bulb-1",
+            "type": "sphere",
+            "material": "glass",
+            "parameters": {
+                "transform": [
+                    0.05, 0.0, 0.0, -1.2,
+                    0.0, 0.05, 0.0, 1.32,
+                    0.0, 0.0, 0.05, -0.9
+                ]
             }
         }
     ],
 
     "lights": [
         {
-            "id": "ceiling-light",
+            "id": "light-1",
             "type": "point",
             "parameters": {
-                "power": [1, 1, 1],
-                "position": [0, 1.0, 0]
+                "power": [12, 10, 7],
+                "position": [-1.2, 1.32, -0.9]
+            }
+        },
+        {
+            "id": "light-2",
+            "type": "point",
+            "parameters": {
+                "power": [12, 10, 7],
+                "position": [1.2, 1.32, -0.9]
             }
         }
     ],
@@ -209,7 +252,7 @@
         "type": "perspective",
         "parameters": {
             "focal-length": 0.02165,
-            "sensor-dimension": [0.025, 0.025],
+            "sensor-dimension": [0.05, 0.025],
             "look-at": {
                 "eye": [0, 0.9, 2.5],
                 "target": [0, 0.9, -100],
@@ -220,18 +263,25 @@
         
 
     "renderer": {
-        "pixel-resolution": [1024, 1024],
+        "pixel-resolution": [1024, 512],
         "message-count": 10,
         "integrator": {
-            "type": "path-tracer-sms",
+            "type": "path-tracer-nee-sms",
             "parameters": {
                 "max-depth": 100,
-                "sample-count": 4,
+                "sample-count": 100,
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": true
+                "two-stage": false,
+                "max-newton-iterations": 20,
+                "max-unbiased-trials": -1,
+                "max-biased-trials": 10
             }
         }
-    }
+    },
 
+    "reference":{
+        "file-name": "data/references/cornellBox.exr",
+        "file-type": "exr"
+    }
 }

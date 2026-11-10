@@ -20,12 +20,14 @@ namespace pathtracer{
 
 
     PathTracerSms::PathTracerSms(int samples, int maxDepth, bool useHalfVector, 
-        bool biased, bool twoStage, const Scene& scene) : 
+        bool biased, bool twoStage, int newtonIterations, 
+        int unbiasedTrials, int biasedTrials, const Scene& scene) : 
         PixelIntegrator(samples), m_maxDepth{maxDepth}, sms{nullptr}{
 
         assert(maxDepth > 0 && "Max depth must be positive");    
         
-        sms = new SpecularManifoldSampling(scene, useHalfVector, biased, twoStage);
+        sms = new SpecularManifoldSampling(scene, useHalfVector, biased, 
+            twoStage, newtonIterations, unbiasedTrials, biasedTrials);
     }
 
 
