@@ -30,6 +30,11 @@ namespace pathtracer{
         // Wi is sampled in teh upper hemisphere, so it's always
         // positive, but we need to check this for wo.
         if(ShadingSpace::cosineTheta(wo) <= 0) {
+
+            if(adjoint){
+                return BsdfSample::INVALID;
+            }
+
             direction = -direction;
         }
 

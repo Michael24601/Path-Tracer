@@ -46,7 +46,8 @@ namespace pathtracer{
         // Notice that power has nothing to do with distance.
         // In photon mapping, photons arrive with the same power no
         // matter the distance.
-        Vector3 power = m_power / directionPdf;
+        Vector3 intensity = m_power / (4 * PI);
+        Vector3 power = intensity / directionPdf;
 
         return EmissionSample{power, m_position, wo};
     }
