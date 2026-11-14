@@ -7,6 +7,7 @@
 #include "sms/specularManifoldSampling.hpp"
 #include "image/imageUtil.hpp"
 #include "core/scene.hpp"
+#include "integrator/pixelIntegratorGuided.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -42,7 +43,6 @@ int main(int argc, char* argv[]) {
         LOG_ERROR("Invalid arguments");
         return 1;
     }
-
 
 
     std::ofstream logFile("file.log");
@@ -131,6 +131,13 @@ int main(int argc, char* argv[]) {
 
         ImageIo::savePNG(image, output + ".png");
         ImageIo::saveEXR(image, output + ".exr");
+
+
+        auto* in = dynamic_cast<PixelIntegratorGuided*>(renderer->integrator());
+        if(in){
+            // Add code later
+        }
+
 
         // Opens image when done
         if(openImage){

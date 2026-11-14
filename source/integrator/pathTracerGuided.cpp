@@ -29,6 +29,7 @@ namespace pathtracer{
         std::vector<Vector3> weights;
         std::vector<Vector3> directions;
         std::vector<real> pdfs;
+        std::vector<real> cosines;
 
         Vector3 finalEmission(0.0);
 
@@ -100,6 +101,7 @@ namespace pathtracer{
                 positions.push_back(it);
                 directions.push_back(sample.wi);
                 pdfs.push_back(sample.pdf);
+                cosines.push_back(sample.cosine);
             }
 
             throughput = throughput * sample.weight;
@@ -113,8 +115,8 @@ namespace pathtracer{
         std::vector<Vector3> contributions(positions.size(), Vector3(0.0));
 
         // Saved for training
-        recordPath(positions, directions, weights, pdfs, contributions, 
-            finalEmission, scene);
+        recordPath(positions, directions, weights, pdfs, cosines, 
+            contributions, finalEmission, scene);
 
         return color;
     }
@@ -128,7 +130,7 @@ namespace pathtracer{
         LOG_DEBUG("Bounce count: " + std::to_string(m_bounceCount));
         LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
 
-        // TODO: add tree statistics
+        m_guideTree->printStatistics();
     }
 
 

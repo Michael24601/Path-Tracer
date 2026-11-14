@@ -20,6 +20,7 @@ namespace pathtracer{
         // Weight includes bsdf, cosine, and the pdf
         Vector3 weight;
         real pdf;
+        real cosine;
         bool isValid;
         // This is false if we use non-guided sample (like on first
         // iteration or on speculars)
@@ -50,6 +51,11 @@ namespace pathtracer{
         // Used for debugging
         std::atomic<long long> m_bounceCount{0};
 
+        
+        // These are used for debugging
+        std::vector<std::vector<std::vector<Vector3>>> m_trainingRenders;
+
+
         // These are guide and train tree functions
 
         // This function samples the current intersection point using alpha
@@ -73,6 +79,7 @@ namespace pathtracer{
             const std::vector<Vector3>& wi,
             const std::vector<Vector3>& weight,
             const std::vector<real>& pdf,
+            const std::vector<real>& cos,
             const std::vector<Vector3>& contribution,
             const Vector3& finalEmission,
             const Scene& scene
@@ -116,7 +123,6 @@ namespace pathtracer{
         // We don't overwrite print statistics or color,
         // or jitter... as those can be overriden by the non-virtual 
         // subclasses that need guiding.
-
 
     };
 

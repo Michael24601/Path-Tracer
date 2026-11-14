@@ -6,6 +6,13 @@
 #include "bvh/axisAlignedBox.hpp"
 #include "core/random.hpp"
 #include "logger.hpp"
+#include <limits>
+#include <algorithm>
+#include "pathGuiding/quadTreeUtil.hpp"
+#include "image/imageIo.hpp"
+#include <iomanip>
+#include <filesystem>
+
 
 namespace pathtracer{
     
@@ -345,10 +352,13 @@ namespace pathtracer{
     KdTree* KdTree::copyTree(){
         KdTree* newTree = new KdTree(m_threshold);
 
-        // We delete default quadtree to avoid memory leak when replaced
         delete newTree->m_root->getDTree();
         newTree->m_root->setDTree(nullptr);
-        
+
+        // Copies the root's own weight into the new one, since
+        // root.copy does not handle that.
+        newTree->m_root->addSample(m_root->getSampleWeight());
+
         m_root->copy(newTree->m_root);
         return newTree;
     }
@@ -456,6 +466,80 @@ namespace pathtracer{
             }
         }
 
+    }
+
+
+    void KdTree::Node::gatherStatistics(int depth, int& kdNodes, int& kdLeaves,
+        int& kdMaxDepth, real& minWeight, real& maxWeight, real& weightSum,
+        int& qNodes, int& qLeaves, int& qMaxDepth, int& qZeroLeaves,
+        real& qMinFlux, real& qMaxFlux, real& qLeafSum,
+        real& qDepthSum) const{
+
+        kdNodes++;
+        kdMaxDepth = std::max(kdMaxDepth, depth);
+
+        if(isLeaf()){
+            real w = getSampleWeight();
+            kdLeaves++;
+            weightSum += w;
+            minWeight = std::min(minWeight, w);
+            maxWeight = std::max(maxWeight, w);
+
+            dTree->gatherStatistics(qNodes, qLeaves, qMaxDepth, qZeroLeaves,
+                qMinFlux, qMaxFlux, qLeafSum, qDepthSum);
+
+            return;
+        }
+
+        for(int i = 0; i < 2; i++){
+            children[i]->gatherStatistics(depth + 1, kdNodes, kdLeaves, kdMaxDepth,
+                minWeight, maxWeight, weightSum, qNodes, qLeaves, qMaxDepth,
+                qZeroLeaves, qMinFlux, qMaxFlux, qLeafSum, qDepthSum);
+        }
+    }
+
+
+    void KdTree::printStatistics() const{
+
+        int kdNodes = 0, kdLeaves = 0, kdMaxDepth = 0;
+        real minWeight = std::numeric_limits<real>::max();
+        real maxWeight = 0.0, weightSum = 0.0;
+
+        int qNodes = 0, qLeaves = 0, qMaxDepth = 0, qZeroLeaves = 0;
+        real qMinFlux = std::numeric_limits<real>::max();
+        real qMaxFlux = 0.0, qLeafSum = 0.0;
+        real qDepthSum = 0.0;
+
+        m_root->gatherStatistics(0, kdNodes, kdLeaves, kdMaxDepth, minWeight,
+            maxWeight, weightSum, qNodes, qLeaves, qMaxDepth, qZeroLeaves,
+            qMinFlux, qMaxFlux, qLeafSum, qDepthSum);
+
+        if(kdLeaves == 0) minWeight = 0.0;
+        if(qLeaves == 0) qMinFlux = 0.0;
+
+        real avgWeight = kdLeaves > 0 ? weightSum / kdLeaves : 0.0;
+        real avgQDepth = qLeaves > 0 ? qDepthSum / qLeaves : 0.0;
+        real avgQFlux = qLeaves > 0 ? qLeafSum / qLeaves : 0.0;
+        real avgQPerLeaf = kdLeaves > 0 ? (double) qNodes / kdLeaves : 0.0;
+
+        LOG_DEBUG("KdTree node count: " + std::to_string(kdNodes));
+        LOG_DEBUG("KdTree leaf count: " + std::to_string(kdLeaves));
+        LOG_DEBUG("KdTree maximum depth: " + std::to_string(kdMaxDepth));
+        LOG_DEBUG("KdTree root sample weight: " + std::to_string(m_root->getSampleWeight()));
+        LOG_DEBUG("KdTree leaf weight sum: " + std::to_string(weightSum));
+        LOG_DEBUG("KdTree leaf weight minimum: " + std::to_string(minWeight));
+        LOG_DEBUG("KdTree leaf weight average: " + std::to_string(avgWeight));
+        LOG_DEBUG("KdTree leaf weight maximum: " + std::to_string(maxWeight));
+        LOG_DEBUG("DTree total node count: " + std::to_string(qNodes));
+        LOG_DEBUG("DTree average node count per tree: " + std::to_string(avgQPerLeaf));
+        LOG_DEBUG("DTree total leaf count: " + std::to_string(qLeaves));
+        LOG_DEBUG("DTree maximum depth: " + std::to_string(qMaxDepth));
+        LOG_DEBUG("DTree average leaf depth: " + std::to_string(avgQDepth));
+        LOG_DEBUG("DTree leaf flux sum: " + std::to_string(qLeafSum));
+        LOG_DEBUG("DTree leaf flux minimum: " + std::to_string(qMinFlux));
+        LOG_DEBUG("DTree leaf flux average: " + std::to_string(avgQFlux));
+        LOG_DEBUG("DTree leaf flux maximum: " + std::to_string(qMaxFlux));
+        LOG_DEBUG("DTree zero flux leaf count: " + std::to_string(qZeroLeaves));
     }
 
 

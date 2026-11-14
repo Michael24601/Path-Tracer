@@ -51,6 +51,9 @@ namespace pathtracer{
 
 
         void printStatistics() const;
+
+
+        Integrator* integrator() const;
     };
 
 }

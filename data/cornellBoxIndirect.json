@@ -231,7 +231,7 @@
             "type": "path-tracer-nee-mis-guided",
             "parameters": {
                 "max-depth": 100,
-                "sample-count": 20,
+                "sample-count": 10,
                 "iteration-count": 3,
                 "first-iteration-sample-count": 4,
                 "spatial-subdivision-c": 12000,

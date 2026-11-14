@@ -44,6 +44,7 @@ namespace pathtracer{
         Vector3 wi;
         Vector3 weight;
         real pdf;
+        real cosine;
         BsdfSample sample = BsdfSample::INVALID;
 
         bool isGuided = false;
@@ -73,6 +74,7 @@ namespace pathtracer{
 
             pdf = m_alpha * guidePdf + (1.0 - m_alpha) * bsdfPdf;
             weight = sample.bsdf() * sample.cosine() / pdf;
+            cosine = sample.cosine();
 
             isGuided = true;
         }
@@ -81,14 +83,16 @@ namespace pathtracer{
             wi = sample.wi();
             weight = sample.weight();
             pdf = sample.pdf();
+            cosine = sample.cosine();
         }
 
 
         if(sample.isInvalid()){
-            return GuidedSample{Vector3(0.0), Vector3(0.0), 0.0, false, false};
+            return GuidedSample{Vector3(0.0), Vector3(0.0), 0.0, 0.0, 
+                false, false};
         }
 
-        return GuidedSample{wi, weight, pdf, true, isGuided};
+        return GuidedSample{wi, weight, pdf, cosine, true, isGuided};
     }
 
 
@@ -99,6 +103,7 @@ namespace pathtracer{
         Vector3 weight;
         real pdf;
         BsdfSample sample = BsdfSample::INVALID;
+        real cosine;
 
         bool isGuided = false;
         
@@ -120,6 +125,7 @@ namespace pathtracer{
 
             pdf = m_alpha * guidePdf + (1.0 - m_alpha) * bsdfPdf;
             weight = sample.bsdf() * sample.cosine() / pdf;
+            cosine = sample.cosine();
 
             isGuided = true;
         }
@@ -127,13 +133,15 @@ namespace pathtracer{
             sample = it.evaluateBsdf(wo, wi);
             weight = sample.weight();
             pdf = sample.pdf();
+            cosine = sample.cosine();
         }
 
         if(sample.isInvalid()){
-            return GuidedSample{Vector3(0.0), Vector3(0.0), 0.0, false, false};
+            return GuidedSample{Vector3(0.0), Vector3(0.0), 0.0, 0.0, 
+                false, false};
         }
 
-        return GuidedSample{wi, weight, pdf, true, isGuided};
+        return GuidedSample{wi, weight, pdf, cosine, true, isGuided};
 
     }
     
@@ -144,6 +152,7 @@ namespace pathtracer{
         const std::vector<Vector3>& wi,
         const std::vector<Vector3>& weight,
         const std::vector<real>& pdf,
+        const std::vector<real>& cos,
         const std::vector<Vector3>& contribution,
         const Vector3& finalEmission,
         const Scene& scene
@@ -171,12 +180,14 @@ namespace pathtracer{
                     Vector3 direction = wi[i];
 
                     // In accumulate, we add the incoming radiance from wi to
-                    // current vertex, divided by the pdf of the direction wi.
-                    // We DO NOT include the bsdf and the cosine because they
-                    // are unique to the wo direction during training, and will
+                    // current vertex, with the cosine, divided by the pdf 
+                    // of the direction wi.
+                    // We DO NOT include the bsdf because as a value it is
+                    // unique to the wo direction during training, and will
                     // wrongly skew the result during rendering when the wo
                     // direction at the same point x is different.
-                    Vector3 incoming = intensity / pdf[i];
+                    // In other words, we use an estimate of the irradiance.
+                    Vector3 incoming = intensity * cos[i] / pdf[i];
 
                     real weight = 0.5;
                     // We weight it fully if no NEE or other contribution
@@ -242,6 +253,8 @@ namespace pathtracer{
         // Samples used
         m_samples = m_initialSamples;
 
+        m_trainingRenders.clear();
+
         // While we don't need an image to be rendered while training,
         // it is best to saved rendered training image in case of early
         // exit.
@@ -260,6 +273,8 @@ namespace pathtracer{
                 m_samples = renderSamples;
                 return latest;
             }
+
+            m_trainingRenders.push_back(latest);
 
             // We recompute the trees and swap them
             m_trainTree->recomputeSampleWeight();

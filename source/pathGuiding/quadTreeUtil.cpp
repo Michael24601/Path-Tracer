@@ -41,6 +41,7 @@ namespace pathtracer{
             return data;
         }
 
+        
         std::vector<std::vector<Vector3>> renderSamples(
             QuadTree* tree,
             int dimension,

@@ -28,6 +28,7 @@ namespace pathtracer{
         std::vector<Vector3> weights;
         std::vector<Vector3> directions;
         std::vector<real> pdfs;
+        std::vector<real> cosines;
 
         // The contributions at each path point (not including last one),
         // from next event estimation.
@@ -185,6 +186,7 @@ namespace pathtracer{
                 positions.push_back(it);
                 directions.push_back(sample.wi);
                 pdfs.push_back(sample.pdf);
+                cosines.push_back(sample.cosine);
             }
 
             // And we update the throughput (along with RR probability)
@@ -201,8 +203,8 @@ namespace pathtracer{
 
 
         if(m_trainTree){
-            recordPath(positions, directions, weights, pdfs, contributions, 
-                finalEmission, scene);
+            recordPath(positions, directions, weights, pdfs, cosines, 
+                contributions, finalEmission, scene);
         }
 
         return color;
@@ -218,7 +220,8 @@ namespace pathtracer{
         LOG_DEBUG("Bounce count: " + std::to_string(m_bounceCount));
         LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
 
-        // TODO: add tree statistics
+        m_guideTree->printStatistics();
+        m_guideTree->renderDTrees(48, "output/dtrees/");
     }
 
 

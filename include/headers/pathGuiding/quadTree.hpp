@@ -131,6 +131,11 @@ namespace pathtracer{
             // proportion.
             void accumulateBox(const AxisAlignedRectangle& box, 
                 real contribution);
+
+
+            void gatherStatistics(int depth, int& nodes, int& leaves, 
+                int& maxDepth, int& zeroLeaves, real& minFlux, 
+                real& maxFlux, real& leafSum, real& depthSum) const;
         };
 
         // The root of the tree
@@ -202,6 +207,11 @@ namespace pathtracer{
 
 
         real getFlux(const Vector3& direction) const;
+
+
+        void gatherStatistics(int& nodes, int& leaves, int& maxDepth,
+            int& zeroLeaves, real& minFlux, real& maxFlux, real& leafSum,
+            real& depthSum) const;
 
     };
 

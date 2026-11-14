@@ -31,4 +31,9 @@ namespace pathtracer{
         m_integrator->printStatistics(m_width, m_height);
     }
 
+
+    Integrator* Renderer::integrator() const{
+        return m_integrator;
+    }
+
 }

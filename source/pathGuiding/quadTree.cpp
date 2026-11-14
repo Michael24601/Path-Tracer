@@ -546,4 +546,44 @@ namespace pathtracer{
 
     }
 
+
+
+    void QuadTree::Node::gatherStatistics(int depth, int& nodes, int& leaves,
+        int& maxDepth, int& zeroLeaves, real& minFlux, real& maxFlux,
+        real& leafSum, real& depthSum) const{
+
+        nodes++;
+        maxDepth = std::max(maxDepth, depth);
+
+        if(isLeaf()){
+
+            real f = getFlux();
+            leaves++;
+            depthSum += depth;
+            leafSum += f;
+            minFlux = std::min(minFlux, f);
+            maxFlux = std::max(maxFlux, f);
+
+            if(f <= 0) {
+                zeroLeaves++;
+            }
+
+            return;
+        }
+
+        for(int i = 0; i < 4; i++){
+            children[i]->gatherStatistics(depth + 1, nodes, leaves, maxDepth,
+                zeroLeaves, minFlux, maxFlux, leafSum, depthSum);
+        }
+    }
+
+
+    void QuadTree::gatherStatistics(int& nodes, int& leaves, int& maxDepth,
+        int& zeroLeaves, real& minFlux, real& maxFlux, real& leafSum,
+        real& depthSum) const{
+
+        m_root->gatherStatistics(0, nodes, leaves, maxDepth, zeroLeaves,
+            minFlux, maxFlux, leafSum, depthSum);
+    }
+
 }

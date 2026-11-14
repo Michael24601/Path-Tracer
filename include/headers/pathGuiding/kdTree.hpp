@@ -5,6 +5,7 @@
 #include <atomic>
 #include <vector>
 #include "config.hpp"
+#include <string>
 
 namespace pathtracer{
 
@@ -28,6 +29,8 @@ namespace pathtracer{
         typedef Node* NodePtr;
 
         class Node{
+
+            friend class KdTree;
 
         private:
 
@@ -152,6 +155,13 @@ namespace pathtracer{
                 const Vector3& direction, real weight, real contribution, 
                 DirectionalFilter dFilter, int depth);
 
+
+            void gatherStatistics(int depth, int& kdNodes, int& kdLeaves, 
+                int& kdMaxDepth, real& minWeight, real& maxWeight, 
+                real& weightSum, int& qNodes, int& qLeaves, int& qMaxDepth, 
+                int& qZeroLeaves, real& qMinFlux, real& qMaxFlux, 
+                real& qLeafSum, real& qDepthSum) const;
+
         };
 
         // How many samples per leaf node we tolerate
@@ -206,6 +216,8 @@ namespace pathtracer{
 
         real getSampleWeight(const Vector3& p) const;
 
+
+        void printStatistics() const;
 
     };
 
