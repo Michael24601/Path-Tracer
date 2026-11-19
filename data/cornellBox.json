@@ -230,12 +230,17 @@
 
     "renderer": {
         "pixel-resolution": [512, 512],
-        "message-count": 10,
+        "message-count": 5,
         "integrator": {
-            "type": "light-tracer",
+            "type": "path-tracer-guided",
             "parameters": {
                 "max-depth": 100,
-                "path-count": 10000000
+                "sample-count": 50,
+
+                "iteration-count": 3,
+                "first-iteration-sample-count": 4,
+                "spatial-subdivision-c": 12000,
+                "mis-alpha": 0.5
             }
         }
     },

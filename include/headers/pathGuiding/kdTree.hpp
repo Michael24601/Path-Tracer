@@ -35,7 +35,7 @@ namespace pathtracer{
         private:
 
             // The children of this node
-            std::vector<NodePtr> children;
+            Node* children[2];
 
             // The sample count in a spatial node. 
             // It is atomic as multiple threads may write (sum) into it. 

@@ -56,7 +56,8 @@ namespace pathtracer{
             auto dTree = m_guideTree->getDTree(localPoint);
 
             // We use MIS to blend the two guiding techniques
-            if(Random::next() <= m_alpha){
+            real random = Random::next();
+            if(random <= m_alpha){
                 wi = dTree->sample();
                 sample = it.evaluateBsdf(wo, wi);
             }
@@ -72,7 +73,7 @@ namespace pathtracer{
             real guidePdf = dTree->pdf(wi);
             real bsdfPdf = sample.pdf();
 
-            pdf = m_alpha * guidePdf + (1.0 - m_alpha) * bsdfPdf;
+            pdf = (random <= m_alpha) ? guidePdf : bsdfPdf;
             weight = sample.bsdf() * sample.cosine() / pdf;
             cosine = sample.cosine();
 
@@ -187,7 +188,7 @@ namespace pathtracer{
                     // wrongly skew the result during rendering when the wo
                     // direction at the same point x is different.
                     // In other words, we use an estimate of the irradiance.
-                    Vector3 incoming = intensity * cos[i] / pdf[i];
+                    Vector3 incoming = intensity / pdf[i];
 
                     real weight = 0.5;
                     // We weight it fully if no NEE or other contribution

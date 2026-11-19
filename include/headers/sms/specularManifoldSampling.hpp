@@ -4,6 +4,7 @@
 
 #include <atomic>
 #include <vector>
+#include "math/vector3.hpp"
 #include <string>
 #include "config.hpp"
 
@@ -13,9 +14,18 @@ namespace pathtracer{
     class Instance;
     class SpecularManifoldBsdf;
     class Scene;
-    class Vector3;
     class SmsSample;
     class LightSample;
+
+
+    struct SmsOutput{
+        // The output includes the full contribution EXCEPT the bsdf
+        // and cosine at the caustic vertex.
+        Vector3 contribution;
+        // Direction towards specular surface
+        Vector3 wi;
+        bool success;
+    };
 
 
     // Single scatter event SMS
@@ -81,21 +91,25 @@ namespace pathtracer{
         // x0 to a specular point x1, connected to x2 on the light, 
         // satisfying the specular constraint.
         // The wo pointing away from x0 to the previous point is also sent.
-        Vector3 sample(const SurfacePoint& causticPoint, 
+        // The output is a vector because we can sample multiple
+        // specular objects.
+        std::vector<SmsOutput> sample(const SurfacePoint& causticPoint, 
             const Vector3& wo, const Scene* scene);
 
 
         // Samples a path and computes the contribution without bias.
         // This includes all terms except the light selection pdf which sample
         // handles.
-        Vector3 unbiasedSample(const SurfacePoint& causticPoint,
+        SmsOutput unbiasedSample(const SurfacePoint& causticPoint,
             const Instance* specular, const SpecularManifoldBsdf* bsdf,
             const LightSample& lightPoint, const Vector3& wo, 
             const Vector3& localOffsetNormal, const Scene* scene);
 
 
         // Same but biased (less variance).
-        Vector3 biasedSample(const SurfacePoint& causticPoint,
+        // The output is a vector because biased SMS finds multiple
+        // converged solutions.
+        std::vector<SmsOutput> biasedSample(const SurfacePoint& causticPoint,
             const Instance* specular, const SpecularManifoldBsdf* bsdf,
             const LightSample& lightPoint, const Vector3& wo, 
             const Vector3& localOffsetNormal, const Scene* scene);

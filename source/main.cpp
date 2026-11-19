@@ -17,6 +17,9 @@
 #include "config.hpp"
 #include <cstdlib>
 
+#include "pathGuiding/kdTree.hpp"
+#include "pathGuiding/quadTreeUtil.hpp"
+
 
 using namespace pathtracer;
 
@@ -135,7 +138,26 @@ int main(int argc, char* argv[]) {
 
         auto* in = dynamic_cast<PixelIntegratorGuided*>(renderer->integrator());
         if(in){
-            // Add code later
+            Vector3 p(0, 1.98, 0.0);
+            p = in->toTreeLocalSpace(p, *scene);
+            auto dtree = in->m_guideTree->getDTree(p);
+            auto image = QuadTreeUtil::renderQuadTree(dtree, 512);
+
+            ImageIo::savePNG(image, "output/0,2,0.png");
+
+            p = Vector3(1.98, 1, 0.0);
+            p = in->toTreeLocalSpace(p, *scene);
+            dtree = in->m_guideTree->getDTree(p);
+            image = QuadTreeUtil::renderQuadTree(dtree, 512);
+
+            ImageIo::savePNG(image, "output/2,1,0.png");
+
+            p = Vector3(-1.98, 1, 0.0);
+            p = in->toTreeLocalSpace(p, *scene);
+            dtree = in->m_guideTree->getDTree(p);
+            image = QuadTreeUtil::renderQuadTree(dtree, 512);
+
+            ImageIo::savePNG(image, "output/-2,1,0.png");
         }
 
 

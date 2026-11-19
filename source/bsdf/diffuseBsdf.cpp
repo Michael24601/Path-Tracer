@@ -59,13 +59,16 @@ namespace pathtracer{
     BsdfSample DiffuseBsdf::evaluate(const Vector3& wo, const Vector3& wi, 
         const Vector2& uv, bool adjoint) const{
 
-        real pdf = SquareToHemisphereCosine::pdf(wi);
+        Vector3 wiUp = wi;
+        wiUp.setZ(std::abs(wiUp.z()));
+        real pdf = SquareToHemisphereCosine::pdf(wiUp);
 
         Vector3 albedo = m_albedo->sample(uv);
         Vector3 bsdf = albedo * INV_PI;
         // The cosine term is the normal dot wi, and since we
         // are in local coordinates, the normal is the z axis.
-        real cosine = ShadingSpace::cosineTheta(wi);
+        real cosWi = ShadingSpace::cosineTheta(wi);
+        real cosine = std::abs(cosWi);
 
         // If the direction is the wrong way (diffuse
         // only scatters in upper hemisphere)
@@ -74,10 +77,15 @@ namespace pathtracer{
         // on the lighted side.
 
         Vector3 weight = albedo;
+        Vector3 cosWo = ShadingSpace::cosineTheta(wo);
+
+        if(adjoint && cosWo <= 0){
+            return BsdfSample::INVALID;
+        }
 
         // In this case, both wi and wo are given to us,
         // so we make sure they are on the same side.
-        if(ShadingSpace::cosineTheta(wo) * cosine < 0){
+        if(cosWo * cosWi <= 0){
             return BsdfSample::INVALID;            
         }
 

@@ -33,7 +33,7 @@ namespace pathtracer{
         private:
 
             // The children of this node
-            std::vector<NodePtr> children;
+            Node* children[4];
 
             // The flux of the node. It is atomic as multiple threads
             // may write (sum) into it. Other datafields are only

@@ -238,7 +238,7 @@
         }
     },
     
-    "renderer": {
+    "renderer-": {
         "pixel-resolution": [512, 512],
         "message-count": 10,
         "integrator": {
@@ -257,15 +257,15 @@
     },
 
 
-    "renderer-": {
+    "renderer": {
         "pixel-resolution": [512, 512],
         "message-count": 5,
         "integrator": {
             "type": "path-tracer-nee-mis-guided",
             "parameters": {
                 "max-depth": 100,
-                "sample-count": 40,
-                "iteration-count": 4,
+                "sample-count": 20,
+                "iteration-count": 3,
                 "first-iteration-sample-count": 4,
                 "spatial-subdivision-c": 12000,
                 "mis-alpha": 0.5

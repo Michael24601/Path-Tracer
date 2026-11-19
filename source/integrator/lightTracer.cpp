@@ -49,6 +49,8 @@ namespace pathtracer{
                 break;
             }
 
+            Vector3 ng = it.geometryNormal();
+
             // We can't do a camera path at a specular surface as only
             // one outgoing direction is correct
             if(!it.instance()->bsdf()->isSpecular()){
@@ -70,20 +72,27 @@ namespace pathtracer{
 
                     // Adjoint is set to true as these are light paths
                     BsdfSample eval = it.evaluateBsdf(wo, wi, true);
+                    if(!eval.isInvalid() && wo.dot(ng) * wi.dot(ng) > 0){ 
+ 
+                        // Instead of using the full weight, we use only
+                        // the cosine and bsdf, since pdf is not needed
+                        // (this part is just a projection e.g. deterministic).
+                        Vector3 contribution = throughput * eval.bsdf()
+                            * eval.cosine() * connection.importance;
 
-                    // Instead of using the full weight, we use only
-                    // the cosine and bsdf, since pdf is not needed
-                    // (this part is just a projection e.g. deterministic).
-                    Vector3 contribution = throughput * eval.bsdf()
-                        * eval.cosine() * connection.importance;
-
-                    // Then we add contribution to image
-                    splat(contribution, connection, image);
+                        // Then we add contribution to image
+                        splat(contribution, connection, image);
+                    }
                 }
             }
 
             // We set adjoint to true since the path starts from the light
             BsdfSample bsdfSample = it.sampleBsdf(wo, true);
+            
+            if(bsdfSample.isInvalid()){ 
+                break;
+            }
+            
             Vector3 weight = bsdfSample.weight();
 
             real p = Util::russianRoulette(throughput, depth);

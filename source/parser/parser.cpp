@@ -26,6 +26,7 @@
 #include "integrator/photonMappingIntegrator.hpp"
 #include "integrator/pathTracerSms.hpp"
 #include "integrator/pathTracerNeeSms.hpp"
+#include "integrator/pathTracerSmsGuided.hpp"
 #include "light/light.hpp"
 #include "light/areaLight.hpp"
 #include "light/pointLight.hpp"
@@ -764,6 +765,28 @@ namespace pathtracer{
                 integrator = new PathTracerSms(samples, maxDepth, useHalfVector, 
                     biased, twoStage, newtonIts, unbiasedTrials, 
                     biasedTrials, *scene);
+            }
+            else if(integratorType == "path-tracer-sms-guided"){
+
+                int maxDepth = parseInt(ip, "max-depth");
+                bool useHalfVector = parseBool(ip, "use-halfvector");
+                bool biased = parseBool(ip, "biased");
+                bool twoStage = parseBool(ip, "two-stage");
+                int samples = parseInt(ip, "sample-count");
+                int newtonIts = parseInt(ip, "max-newton-iterations");
+                int unbiasedTrials = parseInt(ip, "max-unbiased-trials");
+                int biasedTrials = parseInt(ip, "max-biased-trials");
+
+                int firstIterationSamples = parseInt(ip, 
+                    "first-iteration-sample-count");
+                int iterationCount = parseInt(ip, "iteration-count");
+                int c = parseInt(ip, "spatial-subdivision-c");
+                real alpha = parseReal(ip, "mis-alpha");
+
+                integrator = new PathTracerSmsGuided(samples, maxDepth, 
+                    useHalfVector, biased, twoStage, newtonIts, unbiasedTrials, 
+                    biasedTrials, alpha, firstIterationSamples, iterationCount,
+                    c, *scene);
             }
             else if(integratorType == "path-tracer-nee-sms"){
 

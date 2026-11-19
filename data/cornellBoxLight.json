@@ -215,33 +215,45 @@
                     }
                 }
             }
-        },
+        },  
         {
             "id": "bulb-1",
-            "type": "sphere",
+            "type": "mesh",
             "material": "glass",
             "parameters": {
                 "transform": [
-                    0.05, 0.0, 0.0, -1.2,
-                    0.0, 0.05, 0.0, 1.32,
-                    0.0, 0.0, 0.05, -0.9
-                ]
+                    1.0, 0.0, 0.0, -1.2,
+                    0.0, 1.0, 0.0, 0.02,
+                    0.0, 0.0, 1.0, 0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/bulb.obj"
+                    }
+                }
             }
         },
         {
             "id": "bulb-2",
-            "type": "sphere",
+            "type": "mesh",
             "material": "glass",
             "parameters": {
                 "transform": [
-                    0.05, 0.0, 0.0, 1.2,
-                    0.0, 0.05, 0.0, 1.32,
-                    0.0, 0.0, 0.05, -0.9
-                ],             
+                    1.0, 0.0, 0.0, 1.2,
+                    0.0, 1.0, 0.0, 0.02,
+                    0.0, 0.0, 1.0, 0
+                ],
+                "vertex-data":{ 
+                    "format": "obj",
+                    "parameters":{
+                        "file-name": "data/models/bulb.obj"
+                    }
+                },
                 "normal-map": {
                     "type": "texture",
                     "parameters": {
-                        "file-name": "data/textures/very_wavy_normal.png",
+                        "file-name": "data/textures/very_wavy_bumpy_normal.png",
                         "border-mode": "repeat",
                         "filter-mode": "bilinear",
                         "file-type": "png"
@@ -256,16 +268,16 @@
             "id": "light-1",
             "type": "point",
             "parameters": {
-                "power": [35, 10, 10],
-                "position": [-1.2, 1.32, -0.9]
+                "power": [40, 25, 15],
+                "position": [-1.2, 1.3, -0.9]
             }
         },
         {
             "id": "light-2",
             "type": "point",
             "parameters": {
-                "power": [10, 35, 10],
-                "position": [1.2, 1.32, -0.9]
+                "power": [40, 25, 15],
+                "position": [1.2, 1.3, -0.9]
             }
         }
     ],
@@ -285,24 +297,31 @@
         
 
     "renderer": {
-        "pixel-resolution": [2048, 1024],
-        "message-count": 10,
+        "pixel-resolution": [512, 256],
+        "message-count": 20,
         "integrator": {
-            "type": "light-tracer",
+            "type": "path-tracer-sms",
+
             "parameters": {
                 "max-depth": 100,
-                "path-count": 5000000,
+                "sample-count": 30,
+
                 "use-halfvector": false,
                 "biased": false,
-                "two-stage": false,
+                "two-stage": true,
                 "max-newton-iterations": 20,
                 "max-unbiased-trials": -1,
-                "max-biased-trials": 10
+                "max-biased-trials": 20,
+
+                "iteration-count": 3,
+                "first-iteration-sample-count": 4,
+                "spatial-subdivision-c": 12000,
+                "mis-alpha": 0.5
             }
         }
     },
 
-    "reference":{
+    "reference-":{
         "file-name": "data/references/cornellBox.exr",
         "file-type": "exr"
     }

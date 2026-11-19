@@ -83,10 +83,20 @@ namespace pathtracer{
             if(!it.instance()->bsdf()->isSpecular() && !it.instance()->emission() &&
                 it.instance()->isCausticReceiver()){
 
-                Vector3 contribution = sms->sample(it, wo, &scene);
+                std::vector<SmsOutput> outputs = sms->sample(it, wo, &scene);
 
                 // If it worked, we can just return contribution
                 // weighted by throughput. Otherwise it is 0.0 anyway.
+                Vector3 contribution(0.0);
+                
+                for(const SmsOutput& output: outputs){
+
+                    BsdfSample eval = it.evaluateBsdf(wo, output.wi);
+                    Vector3 c = output.contribution * eval.bsdf() * eval.cosine();
+
+                    contribution = contribution + c;
+                }
+
                 color = color + contribution * throughput;
             }
 
@@ -99,12 +109,10 @@ namespace pathtracer{
             // Because this is a solid angle estimator, the
             // sampled point is always visible.
             BsdfSample sample = it.sampleBsdf(wo);
-
             Vector3 weight = sample.weight();
 
             // Russian roulette
             real p = Util::russianRoulette(throughput, i);
-
             if (Random::next() > p){
                 break;
             }

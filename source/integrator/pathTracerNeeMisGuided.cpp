@@ -221,7 +221,6 @@ namespace pathtracer{
         LOG_DEBUG("Average bounce count: " + std::to_string(averageBounceCount));
 
         m_guideTree->printStatistics();
-        m_guideTree->renderDTrees(48, "output/dtrees/");
     }
 
 

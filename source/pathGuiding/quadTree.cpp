@@ -18,7 +18,7 @@ namespace pathtracer{
 
     QuadTree::Node::Node(real flux) :
         flux{flux},
-        children(4, nullptr) {
+        children{nullptr, nullptr, nullptr, nullptr} {
     }
 
 

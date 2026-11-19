@@ -19,7 +19,7 @@ namespace pathtracer{
 
     KdTree::Node::Node(real weight) :
         sampleWeight{weight},
-        children(2, nullptr),
+        children{nullptr, nullptr},
         dTree{nullptr} {
     }
 

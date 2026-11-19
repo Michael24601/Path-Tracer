@@ -56,25 +56,24 @@ namespace pathtracer{
     }
 
 
-    Vector3 SpecularManifoldSampling::sample(const SurfacePoint& causticPoint, 
-        const Vector3& wo, const Scene* scene) {
+    std::vector<SmsOutput> SpecularManifoldSampling::sample(
+        const SurfacePoint& causticPoint, const Vector3& wo, 
+        const Scene* scene) {
 
         // First the light is sampled.
         const Light* light = UniformLight::sample(*scene);
         LightSample lightPoint = light->sample(causticPoint.position());
         real lightSelectionPdf = UniformLight::pdf(*scene, light);
 
-        if(!lightPoint.isValid()){
-            return Vector3(0.0);
-        }
+        std::vector<SmsOutput> outputs(0);
 
-        Vector3 totalColor(0.0);
+        if(!lightPoint.isValid()){
+            return outputs;
+        }
 
         // First we loop over all shapes and search until we find
         // a shape with a valid SMS sample.
         for(int i = 0; i < m_specularInstances.size(); i++){
-
-            Vector3 weight; 
 
             // We can sample a normal if it rough, else we use the
             // default (0, 0, 1) offset, which is no offset at all.
@@ -93,29 +92,40 @@ namespace pathtracer{
             }
             
             if(m_biased){
-                weight = biasedSample(causticPoint, m_specularInstances[i], 
-                    m_bsdfs[i], lightPoint, wo, localOffsetNormal, scene);
+                std::vector<SmsOutput> output = biasedSample(causticPoint,
+                    m_specularInstances[i], m_bsdfs[i], lightPoint, wo,
+                    localOffsetNormal, scene);
+
+                for(SmsOutput& sample : output){
+                    sample.contribution = sample.contribution
+                        / (lightSelectionPdf * offsetPdf);
+
+                    outputs.push_back(sample);
+                }
             }
             else{
-                weight = unbiasedSample(causticPoint, m_specularInstances[i], 
-                    m_bsdfs[i], lightPoint, wo, localOffsetNormal, scene);
+                SmsOutput output = unbiasedSample(causticPoint, 
+                    m_specularInstances[i], m_bsdfs[i], lightPoint, wo, 
+                    localOffsetNormal, scene);
+
+                // We divide weight by light selection probability, and the
+                // offset normal probability.
+                if(output.success){
+                    output.contribution = output.contribution
+                        / (lightSelectionPdf * offsetPdf);
+
+                    outputs.push_back(output);
+                } 
             }
-
-            // We divide weight by light selection probability, and the
-            // offset normal probability.
-            weight = weight / (lightSelectionPdf * offsetPdf);
-
-            // We add up the weight from each specular
-            totalColor = totalColor + weight;
         }
 
         // If we get here, it is a failure, and we return 0.0
-        return totalColor;
+        return outputs;
     }
 
 
 
-    Vector3 SpecularManifoldSampling::unbiasedSample(
+    SmsOutput SpecularManifoldSampling::unbiasedSample(
         const SurfacePoint& causticPoint,
         const Instance* specular, const SpecularManifoldBsdf* bsdf,
         const LightSample& lightPoint, const Vector3& wo, 
@@ -127,7 +137,7 @@ namespace pathtracer{
 
         // If not valid, we discard this path
         if(!sample.isConverged()){
-            return Vector3(0.0);
+            return SmsOutput{Vector3(0.0), Vector3(0.0), false};
         }
 
         // We know x0 to x1 is visible (samplePath checks),
@@ -144,7 +154,7 @@ namespace pathtracer{
         }
 
         if(!visible){
-            return Vector3(0.0);
+            return SmsOutput{Vector3(0.0), Vector3(0.0), false};
         }
 
         // If all is valid, we can calculate the path contribution.
@@ -172,7 +182,7 @@ namespace pathtracer{
         // Failure (if none are found)
         if(!found){
             maxUnbiasedSamplesReached++;
-            return Vector3(0.0);
+            return SmsOutput{Vector3(0.0), Vector3(0.0), false};
         }
 
         unbiasedSuccess++;
@@ -194,18 +204,19 @@ namespace pathtracer{
         // We add both the invProbability for x1.
         weight = weight * invProbability;
 
-        return weight;
+        Vector3 wi = sample.finalPoint().position() - causticPoint.position();
+        wi.normalize();
+
+        return SmsOutput{weight, wi, true};
     }
 
 
 
-    Vector3 SpecularManifoldSampling::biasedSample(
+    std::vector<SmsOutput> SpecularManifoldSampling::biasedSample(
         const SurfacePoint& causticPoint,
         const Instance* specular, const SpecularManifoldBsdf* bsdf,
         const LightSample& lightPoint, const Vector3& wo, 
         const Vector3& localOffsetNormal, const Scene* scene){
-
-        Vector3 value(0.0);
 
         // For biased SMS, we will run it M times, and then cluster
         // the same solutions together, weight them by appropriate
@@ -216,6 +227,9 @@ namespace pathtracer{
         solutions.reserve(m_maxBiasedTrials);
 
         real threshold = m_threshold * m_threshold;
+
+        std::vector<SmsOutput> output;
+        output.reserve(m_maxBiasedTrials);
 
         for(int i = 0; i < m_maxBiasedTrials; i++){
 
@@ -272,14 +286,17 @@ namespace pathtracer{
             // to estimate it). This is because they cancel out (we divide
             // and multiply by number of repetitions for same converged
             // sample point).
-            value = value + weight;
+            Vector3 wi = sample.finalPoint().position() - causticPoint.position();
+            wi.normalize();
+
+            output.push_back({weight, wi, true});
         }
 
         // Average number of unique samples per run
         real old = averageUniquePerRun.load();
         averageUniquePerRun.store(old + (solutions.size() - old) * 0.001);
 
-        return value;
+        return output;
 
     }
 
@@ -535,11 +552,6 @@ namespace pathtracer{
         Vector3 wi = (sample.finalPoint().position() 
             - causticPoint.position()).normalized();
 
-        // First we compute bsdf at x0.
-        BsdfSample s0 = causticPoint.evaluateBsdf(wo, wi);
-        // No need to include the pdf since accounted for.
-        Vector3 s0Weight = s0.bsdf() * s0.cosine();
-
         // Same for the bsdf at the specular point. However, note that
         // the bsdf at the specular can't be evaluated since it is
         // a delta distribution, so we instead use specular specific 
@@ -602,7 +614,7 @@ namespace pathtracer{
             zeroGeometricTerm++;
         }
 
-        return lightSample.contribution * s1Weight * s0Weight * g;
+        return lightSample.contribution * s1Weight * g;
     }
 
 

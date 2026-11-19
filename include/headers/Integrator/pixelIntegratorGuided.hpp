@@ -30,7 +30,7 @@ namespace pathtracer{
 
     class PixelIntegratorGuided: public PixelIntegrator{
 
-    protected:
+    public:
         
         // One tree is used for guiding the other for training
         KdTree* m_guideTree;
